@@ -1,0 +1,132 @@
+.layout {
+    display: flex;
+    min-height: 100vh;
+    background: var(--color-bg);
+}
+
+.sidebar {
+    width: 260px;
+    background: var(--color-bg-card);
+    border-right: 1px solid var(--color-border-light);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-xl);
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.logoIcon {
+    font-size: 2rem;
+    animation: pulse 3s ease-in-out infinite;
+}
+
+.logoText {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.nav {
+    flex: 1;
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    font-weight: 500;
+    transition: all var(--transition-fast);
+    cursor: pointer;
+}
+
+.navItem:hover {
+    background: var(--color-bg-elevated);
+    color: var(--color-text);
+    transform: translateX(4px);
+}
+
+.navItemActive {
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
+    color: var(--color-primary-light);
+    border-left: 3px solid var(--color-primary);
+}
+
+.navIcon {
+    font-size: 1.25rem;
+    width: 24px;
+    text-align: center;
+}
+
+.navLabel {
+    font-size: 0.875rem;
+}
+
+.sidebarFooter {
+    padding: var(--spacing-lg);
+    border-top: 1px solid var(--color-border-light);
+}
+
+.footerText {
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+    text-align: center;
+}
+
+.main {
+    flex: 1;
+    margin-left: 260px;
+    min-height: 100vh;
+}
+
+.content {
+    padding: var(--spacing-2xl);
+    max-width: 1400px;
+    margin: 0 auto;
+    animation: fadeIn var(--transition-base) ease-out;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        width: 70px;
+    }
+
+    .logoText,
+    .navLabel {
+        display: none;
+    }
+
+    .logo {
+        justify-content: center;
+    }
+
+    .navItem {
+        justify-content: center;
+        padding: var(--spacing-md);
+    }
+
+    .main {
+        margin-left: 70px;
+    }
+
+    .content {
+        padding: var(--spacing-lg);
+    }
+}

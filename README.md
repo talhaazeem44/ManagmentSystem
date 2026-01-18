@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Honda Dealership Management System - Setup Instructions
 
-## Getting Started
+## Prerequisites
+- Docker Desktop (for PostgreSQL)
+- Node.js 18+ and npm
 
-First, run the development server:
+## Quick Start
 
+### 1. Start the Database
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Start PostgreSQL container
+docker compose up -d
+
+# Verify it's running
+docker ps
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Run Database Migrations
+```bash
+# Generate Prisma client
+npx prisma generate
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# Run migrations to create tables
+npx prisma migrate dev --name init
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Start the Development Server
+```bash
+npm run dev
+```
 
-## Learn More
+The application will be available at `http://localhost:3000`
 
-To learn more about Next.js, take a look at the following resources:
+## Features Implemented
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### ✅ Inventory Management
+- **Receive Stock**: Enter delivery orders with multiple bikes
+- **View Inventory**: Filter bikes by availability status
+- **DO Tracking**: Track bikes by delivery order number
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### ✅ Sales Management
+- **New Sale**: Select available bike and enter customer details
+- **Customer Data**: CNIC, name, address, phone number
+- **Receipt Generation**: Print-ready receipts matching your format
+- **Sales History**: View all completed sales
 
-## Deploy on Vercel
+### ✅ Reporting & Analytics
+- **Daily Reports**: Sales and revenue for today
+- **All-Time Stats**: Total sales, revenue, inventory
+- **DO Status**: Track remaining bikes per delivery order
+- **Progress Bars**: Visual representation of DO completion
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### ✅ Premium UI/UX
+- **Dark Theme**: Modern glassmorphism design
+- **Animations**: Smooth transitions and hover effects
+- **Responsive**: Works on desktop and mobile
+- **Print-Ready**: Receipts and reports optimized for printing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Database Schema
+
+- **DeliveryOrder**: DO number, date, dealer info
+- **Bike**: Model, color, engine/chassis numbers, status
+- **Customer**: CNIC, name, contact details
+- **Sale**: Links bike to customer with pricing
+
+## Notes
+
+### CNIC Scanning
+Currently a placeholder - manual entry required. OCR integration can be added using libraries like Tesseract.js.
+
+### Sticker Printing
+Use browser print (Ctrl/Cmd+P) on the receive stock page to print bike stickers with DO information.
+
+## Troubleshooting
+
+### Database Connection Issues
+If you see "Can't reach database server":
+1. Ensure Docker Desktop is running
+2. Run `docker compose up -d`
+3. Check connection with `docker ps`
+
+### Port Already in Use
+If port 5432 is in use:
+1. Stop other PostgreSQL instances
+2. Or modify `docker-compose.yml` to use a different port
+
+## Next Steps
+
+1. **Start Docker** and run migrations
+2. **Test the flow**: Receive stock → Make a sale → View reports
+3. **Customize** colors, branding, or add features as needed

@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model DeliveryOrder {
+  id            Int      @id @default(autoincrement())
+  doNumber      String   @unique
+  date          DateTime @default(now())
+  dealerName    String
+  dealerAddress String
+  bikes         Bike[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Bike {
+  id              Int           @id @default(autoincrement())
+  model           String
+  color           String
+  engineNumber    String        @unique
+  chassisNumber   String        @unique
+  status          BikeStatus    @default(AVAILABLE)
+  deliveryOrderId Int
+  deliveryOrder   DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
+  sale            Sale?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+enum BikeStatus {
+  AVAILABLE
+  SOLD
+}
+
+model Customer {
+  id         Int      @id @default(autoincrement())
+  cnic       String   @unique
+  name       String
+  fatherName String?
+  address    String?
+  mobile     String?
+  sales      Sale[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Sale {
+  id               Int      @id @default(autoincrement())
+  bikeId           Int      @unique
+  bike             Bike     @relation(fields: [bikeId], references: [id])
+  customerId       Int
+  customer         Customer @relation(fields: [customerId], references: [id])
+  saleDate         DateTime @default(now())
+  price            Decimal
+  registrationCost Decimal?
+  paymentMode      String   @default("CASH") // CASH, CREDIT, LEASE
+  receiptNumber    String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
