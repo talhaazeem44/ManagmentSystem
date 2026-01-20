@@ -5,13 +5,13 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { useRouter } from 'next/navigation';
 
 interface Bike {
-    id: number;
+    id: string;
     model: string;
     color: string;
     engineNumber: string;
     chassisNumber: string;
     status: string;
-    deliveryOrder: {
+    deliveryOrder?: {
         doNumber: string;
     };
 }
@@ -46,7 +46,7 @@ export default function NewSalePage() {
 
     useEffect(() => {
         if (selectedBikeId) {
-            const bike = bikes.find(b => b.id === parseInt(selectedBikeId));
+            const bike = bikes.find(b => b.id === selectedBikeId);
             setSelectedBike(bike || null);
         } else {
             setSelectedBike(null);
@@ -133,7 +133,7 @@ export default function NewSalePage() {
                                 <option value="">Select a bike</option>
                                 {bikes.map((bike) => (
                                     <option key={bike.id} value={bike.id}>
-                                        {bike.model} - {bike.color} | Engine: {bike.engineNumber} | DO: {bike.deliveryOrder.doNumber}
+                                        {bike.model} - {bike.color} | Engine: {bike.engineNumber} | DO: {bike.deliveryOrder?.doNumber || 'N/A'}
                                     </option>
                                 ))}
                             </select>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { Sale, Bike, DeliveryOrder } from '@/models';
+import { Sale, Bike, DeliveryOrder, ServiceSale } from '@/models';
 
 export async function GET(request: NextRequest) {
     try {
@@ -33,11 +33,20 @@ export async function GET(request: NextRequest) {
             }
         }).populate('bikeId').lean();
 
+        // Get workshop services within range
+        const filteredServices = await ServiceSale.find({
+            date: {
+                $gte: filterStartDate,
+                $lt: filterEndDate
+            }
+        }).lean();
+
         // Get all-time stats
         const totalSalesCount = await Sale.countDocuments();
         const totalBikesCount = await Bike.countDocuments();
         const availableBikesCount = await Bike.countDocuments({ status: 'AVAILABLE' });
         const soldBikesCount = await Bike.countDocuments({ status: 'SOLD' });
+        const totalServicesCount = await ServiceSale.countDocuments();
 
         // Get delivery order stats
         const deliveryOrders = await DeliveryOrder.find().sort({ date: -1 }).lean();
@@ -61,8 +70,11 @@ export async function GET(request: NextRequest) {
 
         // Calculate revenue and profit
         const allSales = await Sale.find().populate('bikeId').lean();
+        const allServices = await ServiceSale.find().lean();
 
         const totalRevenue = allSales.reduce((sum: number, sale: any) => sum + Number(sale.price), 0);
+        const totalWorkshopRevenue = allServices.reduce((sum: number, service: any) => sum + Number(service.amount), 0);
+
         const totalProfit = allSales.reduce((sum: number, sale: any) => {
             const soldPrice = Number(sale.price);
             const purchasePrice = Number(sale.bikeId?.purchasePrice || 0);
@@ -70,6 +82,8 @@ export async function GET(request: NextRequest) {
         }, 0);
 
         const rangeRevenue = filteredSales.reduce((sum: number, sale: any) => sum + Number(sale.price), 0);
+        const rangeWorkshopRevenue = filteredServices.reduce((sum: number, service: any) => sum + Number(service.amount), 0);
+
         const rangeProfit = filteredSales.reduce((sum: number, sale: any) => {
             const soldPrice = Number(sale.price);
             const purchasePrice = Number(sale.bikeId?.purchasePrice || 0);
@@ -80,6 +94,7 @@ export async function GET(request: NextRequest) {
             range: {
                 sales: filteredSales.length,
                 revenue: rangeRevenue,
+                workshopRevenue: rangeWorkshopRevenue,
                 profit: rangeProfit,
                 startDate: filterStartDate,
                 endDate: filterEndDate
@@ -87,10 +102,12 @@ export async function GET(request: NextRequest) {
             allTime: {
                 totalSales: totalSalesCount,
                 totalRevenue: totalRevenue,
+                totalWorkshopRevenue: totalWorkshopRevenue,
                 totalProfit: totalProfit,
                 totalBikes: totalBikesCount,
                 availableBikes: availableBikesCount,
-                soldBikes: soldBikesCount
+                soldBikes: soldBikesCount,
+                totalServices: totalServicesCount
             },
             deliveryOrders: doStats
         });

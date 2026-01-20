@@ -27,7 +27,7 @@ interface SaleRecord {
 }
 
 interface Stats {
-    range: { sales: number; revenue: number; profit: number };
+    range: { sales: number; revenue: number; profit: number; workshopRevenue: number };
     allTime: { totalBikes: number; availableBikes: number; soldBikes: number };
 }
 
@@ -120,9 +120,15 @@ export default function DashboardPage() {
                         </p>
                     </div>
                     <div className="card">
-                        <h3 style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '1rem' }}>Profit Today</h3>
+                        <h3 style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '1rem' }}>PFT</h3>
                         <p style={{ fontSize: '2rem', fontWeight: 700, color: '#059669' }}>
                             {stats?.range?.profit ? `Rs. ${stats.range.profit.toLocaleString()}` : '-'}
+                        </p>
+                    </div>
+                    <div className="card">
+                        <h3 style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '1rem' }}>Workshop Today</h3>
+                        <p style={{ fontSize: '2rem', fontWeight: 700, color: '#f59e0b' }}>
+                            {stats?.range?.workshopRevenue ? `Rs. ${stats.range.workshopRevenue.toLocaleString()}` : '-'}
                         </p>
                     </div>
                 </div>

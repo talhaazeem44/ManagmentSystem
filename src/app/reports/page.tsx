@@ -7,6 +7,7 @@ interface ReportData {
     range: {
         sales: number;
         revenue: number;
+        workshopRevenue: number;
         profit: number;
         startDate: string;
         endDate: string;
@@ -14,6 +15,7 @@ interface ReportData {
     allTime: {
         totalSales: number;
         totalRevenue: number;
+        totalWorkshopRevenue: number;
         totalProfit: number;
         totalBikes: number;
         availableBikes: number;
@@ -183,7 +185,18 @@ export default function ReportsPage() {
 
                     <div className="card">
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <h3 style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Estimated Profit</h3>
+                            <h3 style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Workshop Revenue</h3>
+                            <span style={{ fontSize: '1.5rem' }}>🛠️</span>
+                        </div>
+                        <p style={{ fontSize: '2.5rem', fontWeight: 700, color: '#f59e0b' }}>
+                            {(data?.range?.workshopRevenue ?? 0).toLocaleString()}
+                        </p>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-subtle)', marginTop: '0.5rem' }}>PKR</p>
+                    </div>
+
+                    <div className="card">
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                            <h3 style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Estimated Profit (Bike Sales)</h3>
                             <span style={{ fontSize: '1.5rem' }}>🎯</span>
                         </div>
                         <p style={{ fontSize: '2.5rem', fontWeight: 700, color: '#059669' }}>
@@ -196,8 +209,14 @@ export default function ReportsPage() {
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem', marginTop: '2rem' }}>All-Time Statistics</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--spacing-lg)', marginBottom: '2rem' }}>
                     <div className="card" style={{ padding: 'var(--spacing-lg)' }}>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Sales</p>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Sales (Bikes)</p>
                         <p style={{ fontSize: '2rem', fontWeight: 700 }}>{data.allTime.totalSales}</p>
+                    </div>
+                    <div className="card" style={{ padding: 'var(--spacing-lg)' }}>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Workshop Total Revenue</p>
+                        <p style={{ fontSize: '2rem', fontWeight: 700, color: '#f59e0b' }}>
+                            {data.allTime.totalWorkshopRevenue.toLocaleString()} PKR
+                        </p>
                     </div>
                     <div className="card" style={{ padding: 'var(--spacing-lg)' }}>
                         <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Revenue</p>
