@@ -1,16 +1,16 @@
 version: '3.8'
 services:
-  db:
-    image: postgres:15-alpine
-    container_name: honda_dms_db
+  mongodb:
+    image: mongo:7-jammy
+    container_name: honda_dms_mongodb
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: honda_dms
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: honda_dms
     ports:
-      - "5432:5432"
+      - "27017:27017"
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - mongodb_data:/data/db
 
 volumes:
-  db_data:
+  mongodb_data:

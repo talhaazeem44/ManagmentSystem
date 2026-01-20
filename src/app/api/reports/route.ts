@@ -1,59 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import dbConnect from '@/lib/mongodb';
+import { Sale, Bike, DeliveryOrder } from '@/models';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        await dbConnect();
 
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        const { searchParams } = new URL(request.url);
+        const startDateStr = searchParams.get('startDate');
+        const endDateStr = searchParams.get('endDate');
 
-        // Get today's sales
-        const todaySales = await prisma.sale.findMany({
-            where: {
-                saleDate: {
-                    gte: today,
-                    lt: tomorrow
-                }
-            },
-            include: {
-                bike: {
-                    include: {
-                        deliveryOrder: true
-                    }
-                },
-                customer: true
+        let filterStartDate: Date;
+        let filterEndDate: Date;
+
+        if (startDateStr && endDateStr) {
+            filterStartDate = new Date(startDateStr);
+            filterEndDate = new Date(endDateStr);
+        } else {
+            // Default to today
+            filterStartDate = new Date();
+            filterStartDate.setHours(0, 0, 0, 0);
+
+            filterEndDate = new Date(filterStartDate);
+            filterEndDate.setDate(filterEndDate.getDate() + 1);
+        }
+
+        // Get sales within range with bike details for profit calculation
+        const filteredSales = await Sale.find({
+            saleDate: {
+                $gte: filterStartDate,
+                $lt: filterEndDate
             }
-        });
+        }).populate('bikeId').lean();
 
         // Get all-time stats
-        const totalSales = await prisma.sale.count();
-        const totalBikes = await prisma.bike.count();
-        const availableBikes = await prisma.bike.count({
-            where: { status: 'AVAILABLE' }
-        });
-        const soldBikes = await prisma.bike.count({
-            where: { status: 'SOLD' }
-        });
+        const totalSalesCount = await Sale.countDocuments();
+        const totalBikesCount = await Bike.countDocuments();
+        const availableBikesCount = await Bike.countDocuments({ status: 'AVAILABLE' });
+        const soldBikesCount = await Bike.countDocuments({ status: 'SOLD' });
 
         // Get delivery order stats
-        const deliveryOrders = await prisma.deliveryOrder.findMany({
-            include: {
-                bikes: {
-                    include: {
-                        sale: true
-                    }
-                }
-            },
-            orderBy: {
-                date: 'desc'
-            }
-        });
+        const deliveryOrders = await DeliveryOrder.find().sort({ date: -1 }).lean();
+        const bikes = await Bike.find().lean();
 
         const doStats = deliveryOrders.map(dorder => {
-            const totalBikes = dorder.bikes.length;
-            const soldBikes = dorder.bikes.filter(bike => bike.status === 'SOLD').length;
+            const orderBikes = bikes.filter(bike => bike.deliveryOrderId.toString() === dorder._id.toString());
+            const totalBikes = orderBikes.length;
+            const soldBikes = orderBikes.filter(bike => bike.status === 'SOLD').length;
             const remainingBikes = totalBikes - soldBikes;
 
             return {
@@ -66,22 +59,38 @@ export async function GET() {
             };
         });
 
-        // Calculate revenue
-        const allSales = await prisma.sale.findMany();
-        const totalRevenue = allSales.reduce((sum, sale) => sum + Number(sale.price), 0);
-        const todayRevenue = todaySales.reduce((sum, sale) => sum + Number(sale.price), 0);
+        // Calculate revenue and profit
+        const allSales = await Sale.find().populate('bikeId').lean();
+
+        const totalRevenue = allSales.reduce((sum: number, sale: any) => sum + Number(sale.price), 0);
+        const totalProfit = allSales.reduce((sum: number, sale: any) => {
+            const soldPrice = Number(sale.price);
+            const purchasePrice = Number(sale.bikeId?.purchasePrice || 0);
+            return sum + (soldPrice - purchasePrice);
+        }, 0);
+
+        const rangeRevenue = filteredSales.reduce((sum: number, sale: any) => sum + Number(sale.price), 0);
+        const rangeProfit = filteredSales.reduce((sum: number, sale: any) => {
+            const soldPrice = Number(sale.price);
+            const purchasePrice = Number(sale.bikeId?.purchasePrice || 0);
+            return sum + (soldPrice - purchasePrice);
+        }, 0);
 
         return NextResponse.json({
-            today: {
-                sales: todaySales.length,
-                revenue: todayRevenue
+            range: {
+                sales: filteredSales.length,
+                revenue: rangeRevenue,
+                profit: rangeProfit,
+                startDate: filterStartDate,
+                endDate: filterEndDate
             },
             allTime: {
-                totalSales,
-                totalRevenue,
-                totalBikes,
-                availableBikes,
-                soldBikes
+                totalSales: totalSalesCount,
+                totalRevenue: totalRevenue,
+                totalProfit: totalProfit,
+                totalBikes: totalBikesCount,
+                availableBikes: availableBikesCount,
+                soldBikes: soldBikesCount
             },
             deliveryOrders: doStats
         });

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
+import { HONDA_BIKE_MODELS, BIKE_COLORS } from '@/lib/constants';
 
 interface BikeEntry {
     id: string;
@@ -10,15 +11,16 @@ interface BikeEntry {
     color: string;
     engineNumber: string;
     chassisNumber: string;
+    purchasePrice: string;
 }
 
 export default function ReceiveInventoryPage() {
     const [doNumber, setDoNumber] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [dealerName, setDealerName] = useState('Messers NAEEM AUTOS (SBL)');
+    const [dealerName, setDealerName] = useState('NAEEM AUTOS (SBL)');
     const [dealerAddress, setDealerAddress] = useState('1-5 KM DASKA ROAD, SAMBRIAL, Pakistan');
     const [bikes, setBikes] = useState<BikeEntry[]>([
-        { id: '1', orderNumber: '', model: '', color: '', engineNumber: '', chassisNumber: '' }
+        { id: '1', orderNumber: '', model: '', color: '', engineNumber: '', chassisNumber: '', purchasePrice: '' }
     ]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,7 +31,8 @@ export default function ReceiveInventoryPage() {
             model: '',
             color: '',
             engineNumber: '',
-            chassisNumber: ''
+            chassisNumber: '',
+            purchasePrice: ''
         }]);
     };
 
@@ -67,7 +70,7 @@ export default function ReceiveInventoryPage() {
                 // Reset form
                 setDoNumber('');
                 setDate(new Date().toISOString().split('T')[0]);
-                setBikes([{ id: '1', orderNumber: '', model: '', color: '', engineNumber: '', chassisNumber: '' }]);
+                setBikes([{ id: '1', orderNumber: '', model: '', color: '', engineNumber: '', chassisNumber: '', purchasePrice: '' }]);
             } else {
                 const error = await response.json();
                 alert(`Error: ${error.message || 'Failed to save delivery order'}`);
@@ -161,6 +164,7 @@ export default function ReceiveInventoryPage() {
                                         <th>Color</th>
                                         <th>Engine Number</th>
                                         <th>Chassis Number</th>
+                                        <th>Booking Amount</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -183,28 +187,27 @@ export default function ReceiveInventoryPage() {
                                                     value={bike.model}
                                                     onChange={(e) => updateBike(bike.id, 'model', e.target.value)}
                                                     required
-                                                    style={{ minWidth: '120px' }}
+                                                    style={{ minWidth: '150px' }}
                                                 >
-                                                    <option value="">Select</option>
-                                                    <option value="CD70">CD70</option>
-                                                    <option value="CD70 DREAM">CD70 DREAM</option>
-                                                    <option value="PRIDOR">PRIDOR</option>
-                                                    <option value="CG 125">CG 125</option>
-                                                    <option value="CG125S.SE">CG125S.SE</option>
-                                                    <option value="CB125F.SE">CB125F.SE</option>
-                                                    <option value="CB150F">CB150F</option>
+                                                    <option value="">Select Model</option>
+                                                    {HONDA_BIKE_MODELS.map(model => (
+                                                        <option key={model} value={model}>{model}</option>
+                                                    ))}
                                                 </select>
                                             </td>
                                             <td>
-                                                <input
-                                                    type="text"
-                                                    className="input"
+                                                <select
+                                                    className="select"
                                                     value={bike.color}
                                                     onChange={(e) => updateBike(bike.id, 'color', e.target.value)}
-                                                    placeholder="BLK"
                                                     required
                                                     style={{ minWidth: '100px' }}
-                                                />
+                                                >
+                                                    <option value="">Select Color</option>
+                                                    {BIKE_COLORS.map(color => (
+                                                        <option key={color} value={color}>{color}</option>
+                                                    ))}
+                                                </select>
                                             </td>
                                             <td>
                                                 <input
@@ -224,6 +227,17 @@ export default function ReceiveInventoryPage() {
                                                     value={bike.chassisNumber}
                                                     onChange={(e) => updateBike(bike.id, 'chassisNumber', e.target.value)}
                                                     placeholder="047"
+                                                    required
+                                                    style={{ minWidth: '120px' }}
+                                                />
+                                            </td>
+                                            <td>
+                                                <input
+                                                    type="number"
+                                                    className="input"
+                                                    value={bike.purchasePrice}
+                                                    onChange={(e) => updateBike(bike.id, 'purchasePrice', e.target.value)}
+                                                    placeholder="Purchase Price"
                                                     required
                                                     style={{ minWidth: '120px' }}
                                                 />

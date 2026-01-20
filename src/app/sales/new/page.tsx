@@ -31,6 +31,9 @@ export default function NewSalePage() {
 
     // Sale fields
     const [price, setPrice] = useState('');
+    const [advanceAmount, setAdvanceAmount] = useState('');
+    const [receivedCash, setReceivedCash] = useState('');
+    const [balance, setBalance] = useState('');
     const [registrationCost, setRegistrationCost] = useState('');
     const [paymentMode, setPaymentMode] = useState('CASH');
     const [receiptNumber, setReceiptNumber] = useState('');
@@ -80,6 +83,9 @@ export default function NewSalePage() {
                         mobile
                     },
                     price,
+                    advanceAmount: advanceAmount || 0,
+                    receivedCash: receivedCash || 0,
+                    balance: balance || 0,
                     registrationCost: registrationCost || null,
                     paymentMode,
                     receiptNumber
@@ -253,7 +259,7 @@ export default function NewSalePage() {
                             </div>
 
                             <div className="form-group">
-                                <label className="label">Registration Cost (PKR)</label>
+                                <label className="label">Registration Fees (PKR)</label>
                                 <input
                                     type="number"
                                     className="input"
@@ -268,6 +274,41 @@ export default function NewSalePage() {
 
                         <div className="form-row">
                             <div className="form-group">
+                                <label className="label">Advance Amount / Date</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={advanceAmount}
+                                    onChange={(e) => setAdvanceAmount(e.target.value)}
+                                    placeholder="06-12-25"
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="label">Received Cash</label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    value={receivedCash}
+                                    onChange={(e) => setReceivedCash(e.target.value)}
+                                    placeholder="238500"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label className="label">Balance</label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    value={balance}
+                                    onChange={(e) => setBalance(e.target.value)}
+                                    placeholder="9000"
+                                />
+                            </div>
+
+                            <div className="form-group">
                                 <label className="label">Payment Mode *</label>
                                 <select
                                     className="select"
@@ -280,17 +321,17 @@ export default function NewSalePage() {
                                     <option value="LEASE">Lease</option>
                                 </select>
                             </div>
+                        </div>
 
-                            <div className="form-group">
-                                <label className="label">Receipt Number</label>
-                                <input
-                                    type="text"
-                                    className="input"
-                                    value={receiptNumber}
-                                    onChange={(e) => setReceiptNumber(e.target.value)}
-                                    placeholder="7476"
-                                />
-                            </div>
+                        <div className="form-group">
+                            <label className="label">Receipt Number</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={receiptNumber}
+                                onChange={(e) => setReceiptNumber(e.target.value)}
+                                placeholder="7476"
+                            />
                         </div>
                     </div>
 

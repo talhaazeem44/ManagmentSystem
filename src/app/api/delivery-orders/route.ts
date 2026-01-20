@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import dbConnect from '@/lib/mongodb';
+import { DeliveryOrder, Bike } from '@/models';
 
 export async function POST(request: NextRequest) {
     try {
+        await dbConnect();
         const body = await request.json();
         const { doNumber, date, dealerName, dealerAddress, bikes } = body;
 
@@ -14,33 +16,35 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Create delivery order with bikes
-        const deliveryOrder = await prisma.deliveryOrder.create({
-            data: {
-                doNumber,
-                date: new Date(date),
-                dealerName,
-                dealerAddress,
-                bikes: {
-                    create: bikes.map((bike: any) => ({
-                        model: bike.model,
-                        color: bike.color,
-                        engineNumber: bike.engineNumber,
-                        chassisNumber: bike.chassisNumber,
-                        status: 'AVAILABLE'
-                    }))
-                }
-            },
-            include: {
-                bikes: true
-            }
+        // Create delivery order
+        const deliveryOrder = await DeliveryOrder.create({
+            doNumber,
+            date: new Date(date),
+            dealerName,
+            dealerAddress,
         });
 
-        return NextResponse.json(deliveryOrder, { status: 201 });
+        // Create bikes
+        const createdBikes = await Bike.insertMany(
+            bikes.map((bike: any) => ({
+                model: bike.model,
+                color: bike.color,
+                engineNumber: bike.engineNumber,
+                chassisNumber: bike.chassisNumber,
+                purchasePrice: Number(bike.purchasePrice) || 0,
+                status: 'AVAILABLE',
+                deliveryOrderId: deliveryOrder._id,
+            }))
+        );
+
+        return NextResponse.json({
+            ...deliveryOrder.toObject(),
+            bikes: createdBikes
+        }, { status: 201 });
     } catch (error: any) {
         console.error('Error creating delivery order:', error);
 
-        if (error.code === 'P2002') {
+        if (error.code === 11000) {
             return NextResponse.json(
                 { message: 'Duplicate entry: DO number, engine number, or chassis number already exists' },
                 { status: 409 }
@@ -56,16 +60,18 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
     try {
-        const deliveryOrders = await prisma.deliveryOrder.findMany({
-            include: {
-                bikes: true
-            },
-            orderBy: {
-                createdAt: 'desc'
-            }
-        });
+        await dbConnect();
 
-        return NextResponse.json(deliveryOrders);
+        const deliveryOrders = await DeliveryOrder.find().sort({ createdAt: -1 }).lean();
+        const bikes = await Bike.find().lean();
+
+        // Group bikes by delivery order
+        const ordersWithBikes = deliveryOrders.map(order => ({
+            ...order,
+            bikes: bikes.filter(bike => bike.deliveryOrderId.toString() === order._id.toString())
+        }));
+
+        return NextResponse.json(ordersWithBikes);
     } catch (error: any) {
         console.error('Error fetching delivery orders:', error);
         return NextResponse.json(

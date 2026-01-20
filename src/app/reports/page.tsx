@@ -4,13 +4,17 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 
 interface ReportData {
-    today: {
+    range: {
         sales: number;
         revenue: number;
+        profit: number;
+        startDate: string;
+        endDate: string;
     };
     allTime: {
         totalSales: number;
         totalRevenue: number;
+        totalProfit: number;
         totalBikes: number;
         availableBikes: number;
         soldBikes: number;
@@ -29,13 +33,37 @@ export default function ReportsPage() {
     const [data, setData] = useState<ReportData | null>(null);
     const [loading, setLoading] = useState(true);
 
+    // Helper to get local ISO string (YYYY-MM-DDTHH:mm)
+    const getLocalISOString = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
+    const [startDate, setStartDate] = useState(() => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        return getLocalISOString(d);
+    });
+
+    const [endDate, setEndDate] = useState(() => getLocalISOString(new Date()));
+
     useEffect(() => {
         fetchReports();
     }, []);
 
     const fetchReports = async () => {
+        setLoading(true);
         try {
-            const response = await fetch('/api/reports');
+            const query = new URLSearchParams({
+                startDate: new Date(startDate).toISOString(),
+                endDate: new Date(endDate).toISOString()
+            });
+
+            const response = await fetch(`/api/reports?${query.toString()}`);
             if (response.ok) {
                 const reportData = await response.json();
                 setData(reportData);
@@ -47,7 +75,12 @@ export default function ReportsPage() {
         }
     };
 
-    if (loading) {
+    const handleFilterSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        fetchReports();
+    };
+
+    if (loading && !data) {
         return (
             <DashboardLayout>
                 <div style={{ textAlign: 'center', padding: '3rem' }}>
@@ -76,24 +109,85 @@ export default function ReportsPage() {
                     Daily and overall performance metrics
                 </p>
 
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>Today's Performance</h2>
+                {/* Filtration Section */}
+                <div className="card" style={{ marginBottom: '2rem' }}>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        📅 Date & Time Filter
+                    </h2>
+                    <form onSubmit={handleFilterSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                        <div className="form-group">
+                            <label>Start (Date & Time)</label>
+                            <input
+                                type="datetime-local"
+                                className="form-control"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>End (Date & Time)</label>
+                            <input
+                                type="datetime-local"
+                                className="form-control"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem' }}>
+                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                                {loading ? 'Filtering...' : 'Apply Filter'}
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={() => {
+                                    const today = new Date();
+                                    const todayStr = today.toISOString().split('T')[0];
+                                    setStartDate(`${todayStr}T00:00`);
+                                    setEndDate(`${todayStr}T23:59`);
+                                    // fetchReports will be called by useEffect if we wanted but let's just trigger it
+                                    setTimeout(() => fetchReports(), 0);
+                                }}
+                            >
+                                Reset to Today
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>
+                    {new Date(startDate).toLocaleDateString() === new Date(endDate).toLocaleDateString()
+                        ? `Performance for ${new Date(startDate).toLocaleDateString()}`
+                        : 'Custom Range Performance'}
+                </h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--spacing-lg)', marginBottom: '2rem' }}>
                     <div className="card">
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <h3 style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sales Today</h3>
+                            <h3 style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sales in Range</h3>
                             <span style={{ fontSize: '1.5rem' }}>💰</span>
                         </div>
-                        <p style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--color-success)' }}>{data.today.sales}</p>
+                        <p style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--color-success)' }}>{data?.range?.sales ?? 0}</p>
                         <p style={{ fontSize: '0.875rem', color: 'var(--color-text-subtle)', marginTop: '0.5rem' }}>Bikes sold</p>
                     </div>
 
                     <div className="card">
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <h3 style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Revenue Today</h3>
+                            <h3 style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Revenue in Range</h3>
                             <span style={{ fontSize: '1.5rem' }}>📈</span>
                         </div>
                         <p style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-                            {data.today.revenue.toLocaleString()}
+                            {(data?.range?.revenue ?? 0).toLocaleString()}
+                        </p>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-subtle)', marginTop: '0.5rem' }}>PKR</p>
+                    </div>
+
+                    <div className="card">
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                            <h3 style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Estimated Profit</h3>
+                            <span style={{ fontSize: '1.5rem' }}>🎯</span>
+                        </div>
+                        <p style={{ fontSize: '2.5rem', fontWeight: 700, color: '#059669' }}>
+                            {(data?.range?.profit ?? 0).toLocaleString()}
                         </p>
                         <p style={{ fontSize: '0.875rem', color: 'var(--color-text-subtle)', marginTop: '0.5rem' }}>PKR</p>
                     </div>
@@ -107,8 +201,14 @@ export default function ReportsPage() {
                     </div>
                     <div className="card" style={{ padding: 'var(--spacing-lg)' }}>
                         <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Revenue</p>
-                        <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-success)' }}>
+                        <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-primary)' }}>
                             {data.allTime.totalRevenue.toLocaleString()} PKR
+                        </p>
+                    </div>
+                    <div className="card" style={{ padding: 'var(--spacing-lg)' }}>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Profit</p>
+                        <p style={{ fontSize: '2rem', fontWeight: 700, color: '#059669' }}>
+                            {data.allTime.totalProfit.toLocaleString()} PKR
                         </p>
                     </div>
                     <div className="card" style={{ padding: 'var(--spacing-lg)' }}>
@@ -121,7 +221,7 @@ export default function ReportsPage() {
                     </div>
                     <div className="card" style={{ padding: 'var(--spacing-lg)' }}>
                         <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Sold</p>
-                        <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-error)' }}>{data.allTime.soldBikes}</p>
+                        <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-warning)' }}>{data.allTime.soldBikes}</p>
                     </div>
                 </div>
 
@@ -178,9 +278,6 @@ export default function ReportsPage() {
                 <div style={{ marginTop: '2rem', display: 'flex', gap: 'var(--spacing-md)' }}>
                     <button onClick={() => window.print()} className="btn btn-primary">
                         🖨️ Print Report
-                    </button>
-                    <button onClick={fetchReports} className="btn btn-secondary">
-                        🔄 Refresh Data
                     </button>
                 </div>
             </div>

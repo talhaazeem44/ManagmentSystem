@@ -3,162 +3,209 @@
     margin: 0 auto;
     background: white;
     color: black;
-    padding: 2rem;
-    border: 2px solid #000;
-    font-family: 'Courier New', monospace;
+    padding: 3rem;
+    border: 3px solid #000;
+    font-family: 'Inter', sans-serif;
+    position: relative;
 }
 
 .header {
-    text-align: center;
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    align-items: center;
     border-bottom: 2px solid #000;
-    padding-bottom: 1rem;
-    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .logo {
-    font-size: 2rem;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 900;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
 }
 
 .receiptTitle {
-    font-size: 1.5rem;
-    font-weight: bold;
-    letter-spacing: 0.2em;
-    margin-bottom: 0.5rem;
+    text-align: center;
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    border: 2px solid #000;
+    padding: 0.5rem 1rem;
+    justify-self: center;
 }
 
 .receiptNumber {
+    text-align: right;
     font-size: 1.25rem;
     font-weight: bold;
 }
 
 .section {
     margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #ccc;
-}
-
-.section:last-of-type {
-    border-bottom: none;
 }
 
 .field {
     display: flex;
-    margin-bottom: 0.75rem;
-    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
 }
 
 .label {
     font-weight: bold;
-    min-width: 180px;
+    min-width: 200px;
     flex-shrink: 0;
 }
 
 .value {
     flex: 1;
-    border-bottom: 1px solid #000;
+    border-bottom: 1px dotted #000;
     padding-left: 0.5rem;
+    font-weight: 600;
 }
 
 .row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 0.75rem;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 2rem;
+    margin-bottom: 1rem;
 }
 
 .bikeModels {
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .modelLabel {
     font-weight: bold;
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
 }
 
 .models {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 0.5rem;
+    gap: 1rem;
+    border: 1px solid #000;
+    padding: 1rem;
 }
 
 .models label {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    font-size: 0.85rem;
+    gap: 0.5rem;
+    font-size: 1rem;
 }
 
 .models input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
+    width: 24px;
+    height: 24px;
+    border: 2px solid #000;
 }
 
 .checked {
-    font-weight: bold;
+    font-weight: 800;
 }
 
 .paymentModes {
     display: flex;
-    gap: 2rem;
-    margin-bottom: 1rem;
+    gap: 3rem;
+    margin-bottom: 1.5rem;
+    justify-content: flex-end;
 }
 
 .paymentModes label {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.95rem;
+    gap: 1rem;
+    font-size: 1.1rem;
+    font-weight: bold;
 }
 
 .paymentModes input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
+    width: 28px;
+    height: 28px;
+    border: 2px solid #000;
+}
+
+.paymentDetails {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.paymentCol .label {
+    min-width: 150px;
+}
+
+.urduSection {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.urduBox {
+    border: 2px solid #000;
+    border-radius: 40px;
+    padding: 1.5rem;
+    text-align: right;
+    direction: rtl;
+    background: #f9f9f9;
+}
+
+.urduText {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+    font-weight: 600;
 }
 
 .footer {
-    margin-top: 2rem;
-    display: flex;
-    justify-content: space-between;
+    margin-top: 3rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     align-items: flex-end;
 }
 
 .dealerInfo {
-    font-size: 0.85rem;
-    line-height: 1.6;
+    font-size: 1rem;
+    line-height: 1.8;
 }
 
 .dealerInfo strong {
-    font-size: 1.1rem;
+    font-size: 1.5rem;
     display: block;
     margin-bottom: 0.5rem;
+    letter-spacing: 0.05em;
 }
 
 .signature {
     text-align: center;
-    min-width: 200px;
 }
 
 .signatureLine {
     border-bottom: 2px solid #000;
-    margin-bottom: 0.5rem;
-    height: 60px;
+    margin-bottom: 1rem;
+    height: 80px;
 }
 
 .signature p {
-    font-size: 0.85rem;
-    font-weight: bold;
+    font-size: 1.1rem;
+    font-weight: 800;
 }
 
 @media print {
     .receipt {
         border: none;
-        padding: 1rem;
+        padding: 0;
     }
 
     body {
         background: white;
+    }
+
+    .no-print {
+        display: none !important;
     }
 }

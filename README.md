@@ -1,91 +1,162 @@
-# Honda Dealership Management System - Setup Instructions
+# Honda Dealership Management System
 
-## Prerequisites
-- Docker Desktop (for PostgreSQL)
-- Node.js 18+ and npm
+## Features
+
+### 🔐 Authentication
+- Secure login with NextAuth.js
+- Password hashing with bcrypt
+- JWT-based sessions
+- Route protection middleware
+
+### 📦 Inventory Management
+- Receive stock with Delivery Order entry
+- Filter by DO number, model, and status
+- Search by engine number, chassis number, or model
+- Real-time inventory stats
+
+### 💰 Sales Management
+- Complete sales with customer details
+- Filter by DO number, payment mode, and date range
+- Search by customer name, CNIC, or bike model
+- Print-ready receipts
+
+### 📊 Reports & Analytics
+- Daily sales and revenue metrics
+- All-time statistics
+- DO-specific tracking with progress bars
+- Bikes remaining per delivery order
+
+### 🎨 Premium UI/UX
+- Dark theme with glassmorphism
+- Smooth animations and transitions
+- Responsive design
+- Print-optimized receipts
 
 ## Quick Start
 
-### 1. Start the Database
+### 1. Start MongoDB
 ```bash
-# Start PostgreSQL container
 docker compose up -d
-
-# Verify it's running
-docker ps
 ```
 
-### 2. Run Database Migrations
+### 2. Install Dependencies
 ```bash
-# Generate Prisma client
-npx prisma generate
-
-# Run migrations to create tables
-npx prisma migrate dev --name init
+npm install
 ```
 
-### 3. Start the Development Server
+### 3. Create First User
+```bash
+curl -X POST http://localhost:3000/api/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@naeem-autos.com",
+    "password": "admin123",
+    "name": "Admin User"
+  }'
+```
+
+Or use the provided script:
+```bash
+node scripts/create-user.js
+```
+
+### 4. Start Development Server
 ```bash
 npm run dev
 ```
 
-The application will be available at `http://localhost:3000`
+### 5. Login
+- Navigate to `http://localhost:3000`
+- Login with: `admin@naeem-autos.com` / `admin123`
 
-## Features Implemented
+## Environment Variables
 
-### ✅ Inventory Management
-- **Receive Stock**: Enter delivery orders with multiple bikes
-- **View Inventory**: Filter bikes by availability status
-- **DO Tracking**: Track bikes by delivery order number
+Create a `.env` file:
+```
+MONGODB_URI="mongodb://admin:password@localhost:27017/honda_dms?authSource=admin"
+NEXTAUTH_SECRET="your-secret-key-change-this-in-production"
+NEXTAUTH_URL="http://localhost:3000"
+```
 
-### ✅ Sales Management
-- **New Sale**: Select available bike and enter customer details
-- **Customer Data**: CNIC, name, address, phone number
-- **Receipt Generation**: Print-ready receipts matching your format
-- **Sales History**: View all completed sales
+## Database Schema (MongoDB)
 
-### ✅ Reporting & Analytics
-- **Daily Reports**: Sales and revenue for today
-- **All-Time Stats**: Total sales, revenue, inventory
-- **DO Status**: Track remaining bikes per delivery order
-- **Progress Bars**: Visual representation of DO completion
+- **User**: Authentication and authorization
+- **DeliveryOrder**: DO details from company
+- **Bike**: Individual bike records with engine/chassis numbers
+- **Customer**: Customer information with CNIC
+- **Sale**: Sale transactions linking bikes to customers
 
-### ✅ Premium UI/UX
-- **Dark Theme**: Modern glassmorphism design
-- **Animations**: Smooth transitions and hover effects
-- **Responsive**: Works on desktop and mobile
-- **Print-Ready**: Receipts and reports optimized for printing
+## Enhanced Filtering
 
-## Database Schema
+### Inventory Page
+- **DO Number**: Filter bikes by delivery order
+- **Model**: Filter by bike model (CD70, PRIDOR, etc.)
+- **Status**: Filter by AVAILABLE or SOLD
+- **Search**: Find bikes by engine #, chassis #, or model
 
-- **DeliveryOrder**: DO number, date, dealer info
-- **Bike**: Model, color, engine/chassis numbers, status
-- **Customer**: CNIC, name, contact details
-- **Sale**: Links bike to customer with pricing
+### Sales Page
+- **DO Number**: View sales from specific delivery orders
+- **Payment Mode**: Filter by CASH, CREDIT, or LEASE
+- **Date Range**: Select start and end dates
+- **Search**: Find by customer name, CNIC, or bike model
+
+### Reports Page
+- Daily and all-time statistics
+- DO-specific breakdowns
+- Progress bars showing completion percentage
+
+## Tech Stack
+
+- **Frontend**: Next.js 15 (App Router), React, TypeScript
+- **Backend**: Next.js API Routes
+- **Database**: MongoDB with Mongoose ODM
+- **Authentication**: NextAuth.js
+- **Styling**: Vanilla CSS with CSS variables
+- **Container**: Docker (MongoDB)
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── api/           # API routes
+│   ├── dashboard/     # Dashboard page
+│   ├── inventory/     # Inventory management
+│   ├── sales/         # Sales management
+│   ├── reports/       # Reports and analytics
+│   └── login/         # Login page
+├── components/        # Reusable components
+├── lib/              # Utilities (MongoDB connection)
+└── models/           # Mongoose schemas
+```
 
 ## Notes
 
-### CNIC Scanning
-Currently a placeholder - manual entry required. OCR integration can be added using libraries like Tesseract.js.
-
-### Sticker Printing
-Use browser print (Ctrl/Cmd+P) on the receive stock page to print bike stickers with DO information.
+- **CNIC Scanning**: Placeholder for OCR integration (manual entry for now)
+- **Sticker Printing**: Use browser print (Ctrl/Cmd+P) on receive page
+- **Receipt Format**: Matches provided sample exactly
+- **DO Tracking**: Shows remaining bikes per delivery order
 
 ## Troubleshooting
 
-### Database Connection Issues
-If you see "Can't reach database server":
-1. Ensure Docker Desktop is running
-2. Run `docker compose up -d`
-3. Check connection with `docker ps`
+### MongoDB Connection Issues
+```bash
+# Check if MongoDB is running
+docker ps
 
-### Port Already in Use
-If port 5432 is in use:
-1. Stop other PostgreSQL instances
-2. Or modify `docker-compose.yml` to use a different port
+# Restart MongoDB
+docker compose restart
 
-## Next Steps
+# View logs
+docker compose logs mongodb
+```
 
-1. **Start Docker** and run migrations
-2. **Test the flow**: Receive stock → Make a sale → View reports
-3. **Customize** colors, branding, or add features as needed
+### Authentication Issues
+```bash
+# Verify NEXTAUTH_SECRET is set in .env
+# Clear browser cookies and try again
+```
+
+## License
+
+© 2026 Naeem Autos

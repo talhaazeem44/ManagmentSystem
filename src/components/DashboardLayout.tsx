@@ -18,6 +18,7 @@ export default function DashboardLayout({
         { href: '/sales', label: 'Sales', icon: '💰' },
         { href: '/sales/new', label: 'New Sale', icon: '➕' },
         { href: '/reports', label: 'Reports', icon: '📈' },
+        { href: '/workshop', label: 'Workshop', icon: '🛠️' },
     ];
 
     return (

@@ -9,6 +9,9 @@ interface Sale {
     id: number;
     saleDate: string;
     price: number;
+    advanceAmount?: number | string;
+    receivedCash?: number;
+    balance?: number;
     registrationCost: number | null;
     paymentMode: string;
     receiptNumber: string | null;
@@ -192,21 +195,45 @@ export default function ReceiptPage() {
                             </label>
                         </div>
 
-                        <div className={styles.field}>
-                            <span className={styles.label}>Cash Price:</span>
-                            <span className={styles.value}>{Number(sale.price).toLocaleString()} PKR</span>
-                        </div>
+                        <div className={styles.paymentDetails}>
+                            <div className={styles.paymentCol}>
+                                <div className={styles.field}>
+                                    <span className={styles.label}>Cash Price:</span>
+                                    <span className={styles.value}>{Number(sale.price).toLocaleString()}</span>
+                                </div>
+                                <div className={styles.field}>
+                                    <span className={styles.label}>Advance Amount:</span>
+                                    <span className={styles.value}>{sale.advanceAmount || '-'}</span>
+                                </div>
+                                <div className={styles.field}>
+                                    <span className={styles.label}>Received Cash:</span>
+                                    <span className={styles.value}>
+                                        {sale.receivedCash ? Number(sale.receivedCash).toLocaleString() : '-'}
+                                    </span>
+                                </div>
+                                <div className={styles.field}>
+                                    <span className={styles.label}>Balance:</span>
+                                    <span className={styles.value}>
+                                        {sale.balance ? Number(sale.balance).toLocaleString() : '-'}
+                                    </span>
+                                </div>
+                                <div className={styles.field}>
+                                    <span className={styles.label}>Registration Fees:</span>
+                                    <span className={styles.value}>
+                                        {sale.registrationCost ? Number(sale.registrationCost).toLocaleString() : '-'}
+                                    </span>
+                                </div>
+                            </div>
 
-                        <div className={styles.field}>
-                            <span className={styles.label}>Registration Fees:</span>
-                            <span className={styles.value}>
-                                {sale.registrationCost ? `${Number(sale.registrationCost).toLocaleString()} PKR` : '-'}
-                            </span>
-                        </div>
-
-                        <div className={styles.field}>
-                            <span className={styles.label}>DO Number:</span>
-                            <span className={styles.value}>{sale.bike.deliveryOrder.doNumber}</span>
+                            <div className={styles.urduSection}>
+                                <div className={styles.urduBox}>
+                                    <p className={styles.urduText}>نوٹ:</p>
+                                    <p className={styles.urduText}>یہ رسید رجسٹریشن کیلئے استعمال نہیں ہو سکتی۔</p>
+                                    <p className={styles.urduText}>اصل کاغذات کے حصول کیلئے سیل رسید اور</p>
+                                    <p className={styles.urduText}>اصل شناختی کارڈ ضرور لائیں۔ نیز موٹر سائیکل</p>
+                                    <p className={styles.urduText}>کی تاریخ خرید اور گاہک کا نام تبدیل نہ ہوگا۔</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

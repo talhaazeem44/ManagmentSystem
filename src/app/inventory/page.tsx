@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 
 interface Bike {
-    id: number;
+    id: string;
+    _id: string;
     model: string;
     color: string;
     engineNumber: string;
@@ -20,6 +21,9 @@ export default function InventoryPage() {
     const [bikes, setBikes] = useState<Bike[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'ALL' | 'AVAILABLE' | 'SOLD'>('ALL');
+    const [doFilter, setDoFilter] = useState<string>('ALL');
+    const [modelFilter, setModelFilter] = useState<string>('ALL');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         fetchBikes();
@@ -39,9 +43,30 @@ export default function InventoryPage() {
         }
     };
 
+    // Get unique DO numbers and models for filters
+    const uniqueDOs = Array.from(new Set(bikes.map(bike => bike.deliveryOrder?.doNumber).filter(Boolean)));
+    const uniqueModels = Array.from(new Set(bikes.map(bike => bike.model)));
+
     const filteredBikes = bikes.filter(bike => {
-        if (filter === 'ALL') return true;
-        return bike.status === filter;
+        // Status filter
+        if (filter !== 'ALL' && bike.status !== filter) return false;
+
+        // DO number filter
+        if (doFilter !== 'ALL' && bike.deliveryOrder?.doNumber !== doFilter) return false;
+
+        // Model filter
+        if (modelFilter !== 'ALL' && bike.model !== modelFilter) return false;
+
+        // Search query (engine number, chassis number, or model)
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            const matchesEngine = bike.engineNumber?.toLowerCase().includes(query);
+            const matchesChassis = bike.chassisNumber?.toLowerCase().includes(query);
+            const matchesModel = bike.model?.toLowerCase().includes(query);
+            if (!matchesEngine && !matchesChassis && !matchesModel) return false;
+        }
+
+        return true;
     });
 
     const stats = {
@@ -74,30 +99,79 @@ export default function InventoryPage() {
                 </div>
 
                 <div className="card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-lg)' }}>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>All Bikes</h2>
-                        <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+                    <div style={{ marginBottom: 'var(--spacing-lg)' }}>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: 'var(--spacing-lg)' }}>Filters</h2>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-lg)' }}>
+                            <div>
+                                <label className="label">Search</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    placeholder="Engine #, Chassis #, Model..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="label">DO Number</label>
+                                <select
+                                    className="select"
+                                    value={doFilter}
+                                    onChange={(e) => setDoFilter(e.target.value)}
+                                >
+                                    <option value="ALL">All DOs</option>
+                                    {uniqueDOs.map(doNum => (
+                                        <option key={doNum} value={doNum}>{doNum}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="label">Model</label>
+                                <select
+                                    className="select"
+                                    value={modelFilter}
+                                    onChange={(e) => setModelFilter(e.target.value)}
+                                >
+                                    <option value="ALL">All Models</option>
+                                    {uniqueModels.map(model => (
+                                        <option key={model} value={model}>{model}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="label">Status</label>
+                                <select
+                                    className="select"
+                                    value={filter}
+                                    onChange={(e) => setFilter(e.target.value as any)}
+                                >
+                                    <option value="ALL">All Status</option>
+                                    <option value="AVAILABLE">Available</option>
+                                    <option value="SOLD">Sold</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 'var(--spacing-sm)', alignItems: 'center' }}>
                             <button
-                                onClick={() => setFilter('ALL')}
-                                className={`btn ${filter === 'ALL' ? 'btn-primary' : 'btn-secondary'}`}
-                                style={{ padding: 'var(--spacing-sm) var(--spacing-md)' }}
+                                onClick={() => {
+                                    setFilter('ALL');
+                                    setDoFilter('ALL');
+                                    setModelFilter('ALL');
+                                    setSearchQuery('');
+                                }}
+                                className="btn btn-secondary"
+                                style={{ padding: 'var(--spacing-sm) var(--spacing-md)', fontSize: '0.875rem' }}
                             >
-                                All
+                                🔄 Clear Filters
                             </button>
-                            <button
-                                onClick={() => setFilter('AVAILABLE')}
-                                className={`btn ${filter === 'AVAILABLE' ? 'btn-success' : 'btn-secondary'}`}
-                                style={{ padding: 'var(--spacing-sm) var(--spacing-md)' }}
-                            >
-                                Available
-                            </button>
-                            <button
-                                onClick={() => setFilter('SOLD')}
-                                className={`btn ${filter === 'SOLD' ? 'btn-secondary' : 'btn-secondary'}`}
-                                style={{ padding: 'var(--spacing-sm) var(--spacing-md)' }}
-                            >
-                                Sold
-                            </button>
+                            <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                                Showing {filteredBikes.length} of {bikes.length} bikes
+                            </span>
                         </div>
                     </div>
 
@@ -109,7 +183,7 @@ export default function InventoryPage() {
                     ) : filteredBikes.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>
                             <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>📦</p>
-                            <p>No bikes found. Start by receiving stock.</p>
+                            <p>No bikes found matching your filters.</p>
                         </div>
                     ) : (
                         <div style={{ overflowX: 'auto' }}>
@@ -127,8 +201,8 @@ export default function InventoryPage() {
                                 </thead>
                                 <tbody>
                                     {filteredBikes.map((bike) => (
-                                        <tr key={bike.id}>
-                                            <td>{bike.deliveryOrder.doNumber}</td>
+                                        <tr key={bike._id}>
+                                            <td>{bike.deliveryOrder?.doNumber || 'N/A'}</td>
                                             <td><strong>{bike.model}</strong></td>
                                             <td>{bike.color}</td>
                                             <td><code style={{ fontSize: '0.75rem' }}>{bike.engineNumber}</code></td>
@@ -138,7 +212,7 @@ export default function InventoryPage() {
                                                     {bike.status}
                                                 </span>
                                             </td>
-                                            <td>{new Date(bike.deliveryOrder.date).toLocaleDateString()}</td>
+                                            <td>{bike.deliveryOrder?.date ? new Date(bike.deliveryOrder.date).toLocaleDateString() : 'N/A'}</td>
                                         </tr>
                                     ))}
                                 </tbody>

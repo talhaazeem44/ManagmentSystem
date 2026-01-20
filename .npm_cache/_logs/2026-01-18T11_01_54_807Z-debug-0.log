@@ -1,0 +1,608 @@
+0 verbose cli /usr/local/bin/node /usr/local/bin/npm
+1 info using npm@11.4.2
+2 info using node@v22.15.1
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/talhaazeem/Documents/managementSystem/.npmrc
+5 silly config load:file:/Users/talhaazeem/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm uninstall prisma @prisma/client pg
+8 verbose argv "uninstall" "prisma" "@prisma/client" "pg"
+9 verbose logfile logs-max:10 dir:/Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-01-18T11_01_54_807Z-
+10 verbose logfile /Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-01-18T11_01_54_807Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly packumentCache heap:2197815296 maxSize:549453824 maxEntrySize:274726912
+13 silly logfile done cleaning log files
+14 silly idealTree buildDeps
+15 silly reify mark retired [
+15 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/client'
+15 silly reify ]
+16 silly reify mark retired [
+16 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/config'
+16 silly reify ]
+17 silly reify mark retired [
+17 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/debug'
+17 silly reify ]
+18 silly reify mark retired [
+18 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/engines'
+18 silly reify ]
+19 silly reify mark retired [
+19 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/engines-version'
+19 silly reify ]
+20 silly reify mark retired [
+20 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/fetch-engine'
+20 silly reify ]
+21 silly reify mark retired [
+21 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/get-platform'
+21 silly reify ]
+22 silly reify mark retired [
+22 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@standard-schema/spec'
+22 silly reify ]
+23 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/c12' ]
+24 silly reify mark retired [
+24 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/chokidar'
+24 silly reify ]
+25 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/citty' ]
+26 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/confbox' ]
+27 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/consola' ]
+28 silly reify mark retired [
+28 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/deepmerge-ts'
+28 silly reify ]
+29 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/defu' ]
+30 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/destr' ]
+31 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/dotenv' ]
+32 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/effect' ]
+33 silly reify mark retired [
+33 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/empathic'
+33 silly reify ]
+34 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/exsolve' ]
+35 silly reify mark retired [
+35 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/fast-check'
+35 silly reify ]
+36 silly reify mark retired [
+36 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/giget',
+36 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/.bin/giget'
+36 silly reify ]
+37 silly reify mark retired [
+37 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/node-fetch-native'
+37 silly reify ]
+38 silly reify mark retired [
+38 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/nypm',
+38 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/.bin/nypm'
+38 silly reify ]
+39 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/ohash' ]
+40 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/pathe' ]
+41 silly reify mark retired [
+41 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/perfect-debounce'
+41 silly reify ]
+42 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/pg' ]
+43 silly reify mark retired [
+43 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pg-cloudflare'
+43 silly reify ]
+44 silly reify mark retired [
+44 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pg-connection-string'
+44 silly reify ]
+45 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/pg-int8' ]
+46 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/pg-pool' ]
+47 silly reify mark retired [
+47 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pg-protocol'
+47 silly reify ]
+48 silly reify mark retired [
+48 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pg-types'
+48 silly reify ]
+49 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/pgpass' ]
+50 silly reify mark retired [
+50 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pkg-types'
+50 silly reify ]
+51 silly reify mark retired [
+51 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/postgres-array'
+51 silly reify ]
+52 silly reify mark retired [
+52 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/postgres-bytea'
+52 silly reify ]
+53 silly reify mark retired [
+53 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/postgres-date'
+53 silly reify ]
+54 silly reify mark retired [
+54 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/postgres-interval'
+54 silly reify ]
+55 silly reify mark retired [
+55 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/prisma',
+55 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/.bin/prisma'
+55 silly reify ]
+56 silly reify mark retired [
+56 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pure-rand'
+56 silly reify ]
+57 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/rc9' ]
+58 silly reify mark retired [
+58 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/readdirp'
+58 silly reify ]
+59 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/split2' ]
+60 silly reify mark retired [
+60 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/tinyexec'
+60 silly reify ]
+61 silly reify mark retired [ '/Users/talhaazeem/Documents/managementSystem/node_modules/xtend' ]
+62 silly reify moves {
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/client': '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/.client-rFsasloY',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/config': '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/.config-uHXKkWcQ',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/debug': '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/.debug-EmkLcuEO',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/engines': '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/.engines-VRptlR3L',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/engines-version': '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/.engines-version-pJiXH64N',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/fetch-engine': '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/.fetch-engine-Ems6l2Kw',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/get-platform': '/Users/talhaazeem/Documents/managementSystem/node_modules/@prisma/.get-platform-faCMiDhW',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@standard-schema/spec': '/Users/talhaazeem/Documents/managementSystem/node_modules/@standard-schema/.spec-hcs92JjE',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/c12': '/Users/talhaazeem/Documents/managementSystem/node_modules/.c12-3yKXxNDh',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/chokidar': '/Users/talhaazeem/Documents/managementSystem/node_modules/.chokidar-gQCQHzbi',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/citty': '/Users/talhaazeem/Documents/managementSystem/node_modules/.citty-a3ktWLGP',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/confbox': '/Users/talhaazeem/Documents/managementSystem/node_modules/.confbox-ye7Q72e8',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/consola': '/Users/talhaazeem/Documents/managementSystem/node_modules/.consola-rYxhQQTZ',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/deepmerge-ts': '/Users/talhaazeem/Documents/managementSystem/node_modules/.deepmerge-ts-IkQggBPW',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/defu': '/Users/talhaazeem/Documents/managementSystem/node_modules/.defu-Gk6qZulJ',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/destr': '/Users/talhaazeem/Documents/managementSystem/node_modules/.destr-GHqcq6vh',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/dotenv': '/Users/talhaazeem/Documents/managementSystem/node_modules/.dotenv-VUAza92T',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/effect': '/Users/talhaazeem/Documents/managementSystem/node_modules/.effect-0WfnFqlK',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/empathic': '/Users/talhaazeem/Documents/managementSystem/node_modules/.empathic-jfF9d2Uk',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/exsolve': '/Users/talhaazeem/Documents/managementSystem/node_modules/.exsolve-yh1cRy5o',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/fast-check': '/Users/talhaazeem/Documents/managementSystem/node_modules/.fast-check-Y0TZIvC9',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/giget': '/Users/talhaazeem/Documents/managementSystem/node_modules/.giget-UoBZ3CyH',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/.bin/giget': '/Users/talhaazeem/Documents/managementSystem/node_modules/.bin/.giget-cbZHA07F',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/node-fetch-native': '/Users/talhaazeem/Documents/managementSystem/node_modules/.node-fetch-native-HLBG6u1m',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/nypm': '/Users/talhaazeem/Documents/managementSystem/node_modules/.nypm-12MpJQ8h',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/.bin/nypm': '/Users/talhaazeem/Documents/managementSystem/node_modules/.bin/.nypm-koQivNDg',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/ohash': '/Users/talhaazeem/Documents/managementSystem/node_modules/.ohash-P4a3ZeYM',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pathe': '/Users/talhaazeem/Documents/managementSystem/node_modules/.pathe-puIRGO7x',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/perfect-debounce': '/Users/talhaazeem/Documents/managementSystem/node_modules/.perfect-debounce-2u439qNX',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pg': '/Users/talhaazeem/Documents/managementSystem/node_modules/.pg-n0GAL20f',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pg-cloudflare': '/Users/talhaazeem/Documents/managementSystem/node_modules/.pg-cloudflare-06r7lgDD',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pg-connection-string': '/Users/talhaazeem/Documents/managementSystem/node_modules/.pg-connection-string-NkNNkUzc',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pg-int8': '/Users/talhaazeem/Documents/managementSystem/node_modules/.pg-int8-Uik6ewuq',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pg-pool': '/Users/talhaazeem/Documents/managementSystem/node_modules/.pg-pool-qW5EBDDP',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pg-protocol': '/Users/talhaazeem/Documents/managementSystem/node_modules/.pg-protocol-mISagsiT',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pg-types': '/Users/talhaazeem/Documents/managementSystem/node_modules/.pg-types-HSM2EtXl',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pgpass': '/Users/talhaazeem/Documents/managementSystem/node_modules/.pgpass-O33aq9KY',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pkg-types': '/Users/talhaazeem/Documents/managementSystem/node_modules/.pkg-types-0lZxKFOe',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/postgres-array': '/Users/talhaazeem/Documents/managementSystem/node_modules/.postgres-array-toJSAAfh',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/postgres-bytea': '/Users/talhaazeem/Documents/managementSystem/node_modules/.postgres-bytea-2HKzupP5',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/postgres-date': '/Users/talhaazeem/Documents/managementSystem/node_modules/.postgres-date-eMfS7bW0',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/postgres-interval': '/Users/talhaazeem/Documents/managementSystem/node_modules/.postgres-interval-NmL1PV2S',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/prisma': '/Users/talhaazeem/Documents/managementSystem/node_modules/.prisma-uj8tpuct',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/.bin/prisma': '/Users/talhaazeem/Documents/managementSystem/node_modules/.bin/.prisma-D65rPl4S',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/pure-rand': '/Users/talhaazeem/Documents/managementSystem/node_modules/.pure-rand-WCn0E2dr',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/rc9': '/Users/talhaazeem/Documents/managementSystem/node_modules/.rc9-16Mxjv0M',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/readdirp': '/Users/talhaazeem/Documents/managementSystem/node_modules/.readdirp-YO502nL0',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/split2': '/Users/talhaazeem/Documents/managementSystem/node_modules/.split2-4kG2hbT0',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/tinyexec': '/Users/talhaazeem/Documents/managementSystem/node_modules/.tinyexec-oU1FO8GG',
+62 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/xtend': '/Users/talhaazeem/Documents/managementSystem/node_modules/.xtend-pbZV2xmg'
+62 silly reify }
+63 silly audit bulk request {
+63 silly audit   '@babel/code-frame': [ '7.28.6' ],
+63 silly audit   '@babel/compat-data': [ '7.28.6' ],
+63 silly audit   '@babel/core': [ '7.28.6' ],
+63 silly audit   '@babel/generator': [ '7.28.6' ],
+63 silly audit   '@babel/helper-compilation-targets': [ '7.28.6' ],
+63 silly audit   '@babel/helper-globals': [ '7.28.0' ],
+63 silly audit   '@babel/helper-module-imports': [ '7.28.6' ],
+63 silly audit   '@babel/helper-module-transforms': [ '7.28.6' ],
+63 silly audit   '@babel/helper-string-parser': [ '7.27.1' ],
+63 silly audit   '@babel/helper-validator-identifier': [ '7.28.5' ],
+63 silly audit   '@babel/helper-validator-option': [ '7.27.1' ],
+63 silly audit   '@babel/helpers': [ '7.28.6' ],
+63 silly audit   '@babel/parser': [ '7.28.6' ],
+63 silly audit   '@babel/template': [ '7.28.6' ],
+63 silly audit   '@babel/traverse': [ '7.28.6' ],
+63 silly audit   '@babel/types': [ '7.28.6' ],
+63 silly audit   '@emnapi/core': [ '1.8.1' ],
+63 silly audit   '@emnapi/runtime': [ '1.8.1' ],
+63 silly audit   '@emnapi/wasi-threads': [ '1.1.0' ],
+63 silly audit   '@eslint-community/eslint-utils': [ '4.9.1' ],
+63 silly audit   'eslint-visitor-keys': [ '3.4.3', '4.2.1' ],
+63 silly audit   '@eslint-community/regexpp': [ '4.12.2' ],
+63 silly audit   '@eslint/config-array': [ '0.21.1' ],
+63 silly audit   '@eslint/config-helpers': [ '0.4.2' ],
+63 silly audit   '@eslint/core': [ '0.17.0' ],
+63 silly audit   '@eslint/eslintrc': [ '3.3.3' ],
+63 silly audit   '@eslint/js': [ '9.39.2' ],
+63 silly audit   '@eslint/object-schema': [ '2.1.7' ],
+63 silly audit   '@eslint/plugin-kit': [ '0.4.1' ],
+63 silly audit   '@humanfs/core': [ '0.19.1' ],
+63 silly audit   '@humanfs/node': [ '0.16.7' ],
+63 silly audit   '@humanwhocodes/module-importer': [ '1.0.1' ],
+63 silly audit   '@humanwhocodes/retry': [ '0.4.3' ],
+63 silly audit   '@img/colour': [ '1.0.0' ],
+63 silly audit   '@img/sharp-darwin-arm64': [ '0.34.5' ],
+63 silly audit   '@img/sharp-darwin-x64': [ '0.34.5' ],
+63 silly audit   '@img/sharp-libvips-darwin-arm64': [ '1.2.4' ],
+63 silly audit   '@img/sharp-libvips-darwin-x64': [ '1.2.4' ],
+63 silly audit   '@img/sharp-libvips-linux-arm': [ '1.2.4' ],
+63 silly audit   '@img/sharp-libvips-linux-arm64': [ '1.2.4' ],
+63 silly audit   '@img/sharp-libvips-linux-ppc64': [ '1.2.4' ],
+63 silly audit   '@img/sharp-libvips-linux-riscv64': [ '1.2.4' ],
+63 silly audit   '@img/sharp-libvips-linux-s390x': [ '1.2.4' ],
+63 silly audit   '@img/sharp-libvips-linux-x64': [ '1.2.4' ],
+63 silly audit   '@img/sharp-libvips-linuxmusl-arm64': [ '1.2.4' ],
+63 silly audit   '@img/sharp-libvips-linuxmusl-x64': [ '1.2.4' ],
+63 silly audit   '@img/sharp-linux-arm': [ '0.34.5' ],
+63 silly audit   '@img/sharp-linux-arm64': [ '0.34.5' ],
+63 silly audit   '@img/sharp-linux-ppc64': [ '0.34.5' ],
+63 silly audit   '@img/sharp-linux-riscv64': [ '0.34.5' ],
+63 silly audit   '@img/sharp-linux-s390x': [ '0.34.5' ],
+63 silly audit   '@img/sharp-linux-x64': [ '0.34.5' ],
+63 silly audit   '@img/sharp-linuxmusl-arm64': [ '0.34.5' ],
+63 silly audit   '@img/sharp-linuxmusl-x64': [ '0.34.5' ],
+63 silly audit   '@img/sharp-wasm32': [ '0.34.5' ],
+63 silly audit   '@img/sharp-win32-arm64': [ '0.34.5' ],
+63 silly audit   '@img/sharp-win32-ia32': [ '0.34.5' ],
+63 silly audit   '@img/sharp-win32-x64': [ '0.34.5' ],
+63 silly audit   '@jridgewell/gen-mapping': [ '0.3.13' ],
+63 silly audit   '@jridgewell/remapping': [ '2.3.5' ],
+63 silly audit   '@jridgewell/resolve-uri': [ '3.1.2' ],
+63 silly audit   '@jridgewell/sourcemap-codec': [ '1.5.5' ],
+63 silly audit   '@jridgewell/trace-mapping': [ '0.3.31' ],
+63 silly audit   '@napi-rs/wasm-runtime': [ '0.2.12' ],
+63 silly audit   '@next/env': [ '16.1.3' ],
+63 silly audit   '@next/eslint-plugin-next': [ '16.1.3' ],
+63 silly audit   '@next/swc-darwin-arm64': [ '16.1.3' ],
+63 silly audit   '@next/swc-darwin-x64': [ '16.1.3' ],
+63 silly audit   '@next/swc-linux-arm64-gnu': [ '16.1.3' ],
+63 silly audit   '@next/swc-linux-arm64-musl': [ '16.1.3' ],
+63 silly audit   '@next/swc-linux-x64-gnu': [ '16.1.3' ],
+63 silly audit   '@next/swc-linux-x64-musl': [ '16.1.3' ],
+63 silly audit   '@next/swc-win32-arm64-msvc': [ '16.1.3' ],
+63 silly audit   '@next/swc-win32-x64-msvc': [ '16.1.3' ],
+63 silly audit   '@nodelib/fs.scandir': [ '2.1.5' ],
+63 silly audit   '@nodelib/fs.stat': [ '2.0.5' ],
+63 silly audit   '@nodelib/fs.walk': [ '1.2.8' ],
+63 silly audit   '@nolyfill/is-core-module': [ '1.0.39' ],
+63 silly audit   '@rtsao/scc': [ '1.1.0' ],
+63 silly audit   '@swc/helpers': [ '0.5.15' ],
+63 silly audit   '@tybys/wasm-util': [ '0.10.1' ],
+63 silly audit   '@types/estree': [ '1.0.8' ],
+63 silly audit   '@types/json-schema': [ '7.0.15' ],
+63 silly audit   '@types/json5': [ '0.0.29' ],
+63 silly audit   '@types/node': [ '20.19.30' ],
+63 silly audit   '@types/react': [ '19.2.8' ],
+63 silly audit   '@types/react-dom': [ '19.2.3' ],
+63 silly audit   '@typescript-eslint/eslint-plugin': [ '8.53.0' ],
+63 silly audit   ignore: [ '7.0.5', '5.3.2' ],
+63 silly audit   '@typescript-eslint/parser': [ '8.53.0' ],
+63 silly audit   '@typescript-eslint/project-service': [ '8.53.0' ],
+63 silly audit   '@typescript-eslint/scope-manager': [ '8.53.0' ],
+63 silly audit   '@typescript-eslint/tsconfig-utils': [ '8.53.0' ],
+63 silly audit   '@typescript-eslint/type-utils': [ '8.53.0' ],
+63 silly audit   '@typescript-eslint/types': [ '8.53.0' ],
+63 silly audit   '@typescript-eslint/typescript-estree': [ '8.53.0' ],
+63 silly audit   'brace-expansion': [ '2.0.2', '1.1.12' ],
+63 silly audit   minimatch: [ '9.0.5', '3.1.2' ],
+63 silly audit   semver: [ '7.7.3', '6.3.1' ],
+63 silly audit   '@typescript-eslint/utils': [ '8.53.0' ],
+63 silly audit   '@typescript-eslint/visitor-keys': [ '8.53.0' ],
+63 silly audit   '@unrs/resolver-binding-android-arm-eabi': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-android-arm64': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-darwin-arm64': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-darwin-x64': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-freebsd-x64': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-linux-arm-gnueabihf': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-linux-arm-musleabihf': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-linux-arm64-gnu': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-linux-arm64-musl': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-linux-ppc64-gnu': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-linux-riscv64-gnu': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-linux-riscv64-musl': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-linux-s390x-gnu': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-linux-x64-gnu': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-linux-x64-musl': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-wasm32-wasi': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-win32-arm64-msvc': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-win32-ia32-msvc': [ '1.11.1' ],
+63 silly audit   '@unrs/resolver-binding-win32-x64-msvc': [ '1.11.1' ],
+63 silly audit   acorn: [ '8.15.0' ],
+63 silly audit   'acorn-jsx': [ '5.3.2' ],
+63 silly audit   ajv: [ '6.12.6' ],
+63 silly audit   'ansi-styles': [ '4.3.0' ],
+63 silly audit   argparse: [ '2.0.1' ],
+63 silly audit   'aria-query': [ '5.3.2' ],
+63 silly audit   'array-buffer-byte-length': [ '1.0.2' ],
+63 silly audit   'array-includes': [ '3.1.9' ],
+63 silly audit   'array.prototype.findlast': [ '1.2.5' ],
+63 silly audit   'array.prototype.findlastindex': [ '1.2.6' ],
+63 silly audit   'array.prototype.flat': [ '1.3.3' ],
+63 silly audit   'array.prototype.flatmap': [ '1.3.3' ],
+63 silly audit   'array.prototype.tosorted': [ '1.1.4' ],
+63 silly audit   'arraybuffer.prototype.slice': [ '1.0.4' ],
+63 silly audit   'ast-types-flow': [ '0.0.8' ],
+63 silly audit   'async-function': [ '1.0.0' ],
+63 silly audit   'available-typed-arrays': [ '1.0.7' ],
+63 silly audit   'axe-core': [ '4.11.1' ],
+63 silly audit   'axobject-query': [ '4.1.0' ],
+63 silly audit   'balanced-match': [ '1.0.2' ],
+63 silly audit   'baseline-browser-mapping': [ '2.9.15' ],
+63 silly audit   braces: [ '3.0.3' ],
+63 silly audit   browserslist: [ '4.28.1' ],
+63 silly audit   'call-bind': [ '1.0.8' ],
+63 silly audit   'call-bind-apply-helpers': [ '1.0.2' ],
+63 silly audit   'call-bound': [ '1.0.4' ],
+63 silly audit   callsites: [ '3.1.0' ],
+63 silly audit   'caniuse-lite': [ '1.0.30001764' ],
+63 silly audit   chalk: [ '4.1.2' ],
+63 silly audit   'client-only': [ '0.0.1' ],
+63 silly audit   'color-convert': [ '2.0.1' ],
+63 silly audit   'color-name': [ '1.1.4' ],
+63 silly audit   'concat-map': [ '0.0.1' ],
+63 silly audit   'convert-source-map': [ '2.0.0' ],
+63 silly audit   'cross-spawn': [ '7.0.6' ],
+63 silly audit   csstype: [ '3.2.3' ],
+63 silly audit   'damerau-levenshtein': [ '1.0.8' ],
+63 silly audit   'data-view-buffer': [ '1.0.2' ],
+63 silly audit   'data-view-byte-length': [ '1.0.2' ],
+63 silly audit   'data-view-byte-offset': [ '1.0.1' ],
+63 silly audit   debug: [ '4.4.3', '3.2.7' ],
+63 silly audit   'deep-is': [ '0.1.4' ],
+63 silly audit   'define-data-property': [ '1.1.4' ],
+63 silly audit   'define-properties': [ '1.2.1' ],
+63 silly audit   'detect-libc': [ '2.1.2' ],
+63 silly audit   doctrine: [ '2.1.0' ],
+63 silly audit   'dunder-proto': [ '1.0.1' ],
+63 silly audit   'electron-to-chromium': [ '1.5.267' ],
+63 silly audit   'emoji-regex': [ '9.2.2' ],
+63 silly audit   'es-abstract': [ '1.24.1' ],
+63 silly audit   'es-define-property': [ '1.0.1' ],
+63 silly audit   'es-errors': [ '1.3.0' ],
+63 silly audit   'es-iterator-helpers': [ '1.2.2' ],
+63 silly audit   'es-object-atoms': [ '1.1.1' ],
+63 silly audit   'es-set-tostringtag': [ '2.1.0' ],
+63 silly audit   'es-shim-unscopables': [ '1.1.0' ],
+63 silly audit   'es-to-primitive': [ '1.3.0' ],
+63 silly audit   escalade: [ '3.2.0' ],
+63 silly audit   'escape-string-regexp': [ '4.0.0' ],
+63 silly audit   eslint: [ '9.39.2' ],
+63 silly audit   'eslint-config-next': [ '16.1.3' ],
+63 silly audit   globals: [ '16.4.0', '14.0.0' ],
+63 silly audit   'eslint-import-resolver-node': [ '0.3.9' ],
+63 silly audit   'eslint-import-resolver-typescript': [ '3.10.1' ],
+63 silly audit   'eslint-module-utils': [ '2.12.1' ],
+63 silly audit   'eslint-plugin-import': [ '2.32.0' ],
+63 silly audit   'eslint-plugin-jsx-a11y': [ '6.10.2' ],
+63 silly audit   'eslint-plugin-react': [ '7.37.5' ],
+63 silly audit   'eslint-plugin-react-hooks': [ '7.0.1' ],
+63 silly audit   resolve: [ '2.0.0-next.5', '1.22.11' ],
+63 silly audit   'eslint-scope': [ '8.4.0' ],
+63 silly audit   espree: [ '10.4.0' ],
+63 silly audit   esquery: [ '1.7.0' ],
+63 silly audit   esrecurse: [ '4.3.0' ],
+63 silly audit   estraverse: [ '5.3.0' ],
+63 silly audit   esutils: [ '2.0.3' ],
+63 silly audit   'fast-deep-equal': [ '3.1.3' ],
+63 silly audit   'fast-glob': [ '3.3.1' ],
+63 silly audit   'glob-parent': [ '5.1.2', '6.0.2' ],
+63 silly audit   'fast-json-stable-stringify': [ '2.1.0' ],
+63 silly audit   'fast-levenshtein': [ '2.0.6' ],
+63 silly audit   fastq: [ '1.20.1' ],
+63 silly audit   'file-entry-cache': [ '8.0.0' ],
+63 silly audit   'fill-range': [ '7.1.1' ],
+63 silly audit   'find-up': [ '5.0.0' ],
+63 silly audit   'flat-cache': [ '4.0.1' ],
+63 silly audit   flatted: [ '3.3.3' ],
+63 silly audit   'for-each': [ '0.3.5' ],
+63 silly audit   'function-bind': [ '1.1.2' ],
+63 silly audit   'function.prototype.name': [ '1.1.8' ],
+63 silly audit   'functions-have-names': [ '1.2.3' ],
+63 silly audit   'generator-function': [ '2.0.1' ],
+63 silly audit   gensync: [ '1.0.0-beta.2' ],
+63 silly audit   'get-intrinsic': [ '1.3.0' ],
+63 silly audit   'get-proto': [ '1.0.1' ],
+63 silly audit   'get-symbol-description': [ '1.1.0' ],
+63 silly audit   'get-tsconfig': [ '4.13.0' ],
+63 silly audit   globalthis: [ '1.0.4' ],
+63 silly audit   gopd: [ '1.2.0' ],
+63 silly audit   'has-bigints': [ '1.1.0' ],
+63 silly audit   'has-flag': [ '4.0.0' ],
+63 silly audit   'has-property-descriptors': [ '1.0.2' ],
+63 silly audit   'has-proto': [ '1.2.0' ],
+63 silly audit   'has-symbols': [ '1.1.0' ],
+63 silly audit   'has-tostringtag': [ '1.0.2' ],
+63 silly audit   hasown: [ '2.0.2' ],
+63 silly audit   'hermes-estree': [ '0.25.1' ],
+63 silly audit   'hermes-parser': [ '0.25.1' ],
+63 silly audit   'import-fresh': [ '3.3.1' ],
+63 silly audit   imurmurhash: [ '0.1.4' ],
+63 silly audit   'internal-slot': [ '1.1.0' ],
+63 silly audit   'is-array-buffer': [ '3.0.5' ],
+63 silly audit   'is-async-function': [ '2.1.1' ],
+63 silly audit   'is-bigint': [ '1.1.0' ],
+63 silly audit   'is-boolean-object': [ '1.2.2' ],
+63 silly audit   'is-bun-module': [ '2.0.0' ],
+63 silly audit   'is-callable': [ '1.2.7' ],
+63 silly audit   'is-core-module': [ '2.16.1' ],
+63 silly audit   'is-data-view': [ '1.0.2' ],
+63 silly audit   'is-date-object': [ '1.1.0' ],
+63 silly audit   'is-extglob': [ '2.1.1' ],
+63 silly audit   'is-finalizationregistry': [ '1.1.1' ],
+63 silly audit   'is-generator-function': [ '1.1.2' ],
+63 silly audit   'is-glob': [ '4.0.3' ],
+63 silly audit   'is-map': [ '2.0.3' ],
+63 silly audit   'is-negative-zero': [ '2.0.3' ],
+63 silly audit   'is-number': [ '7.0.0' ],
+63 silly audit   'is-number-object': [ '1.1.1' ],
+63 silly audit   'is-regex': [ '1.2.1' ],
+63 silly audit   'is-set': [ '2.0.3' ],
+63 silly audit   'is-shared-array-buffer': [ '1.0.4' ],
+63 silly audit   'is-string': [ '1.1.1' ],
+63 silly audit   'is-symbol': [ '1.1.1' ],
+63 silly audit   'is-typed-array': [ '1.1.15' ],
+63 silly audit   'is-weakmap': [ '2.0.2' ],
+63 silly audit   'is-weakref': [ '1.1.1' ],
+63 silly audit   'is-weakset': [ '2.0.4' ],
+63 silly audit   isarray: [ '2.0.5' ],
+63 silly audit   isexe: [ '2.0.0' ],
+63 silly audit   'iterator.prototype': [ '1.1.5' ],
+63 silly audit   jiti: [ '2.6.1' ],
+63 silly audit   'js-tokens': [ '4.0.0' ],
+63 silly audit   'js-yaml': [ '4.1.1' ],
+63 silly audit   jsesc: [ '3.1.0' ],
+63 silly audit   'json-buffer': [ '3.0.1' ],
+63 silly audit   'json-schema-traverse': [ '0.4.1' ],
+63 silly audit   'json-stable-stringify-without-jsonify': [ '1.0.1' ],
+63 silly audit   json5: [ '2.2.3', '1.0.2' ],
+63 silly audit   'jsx-ast-utils': [ '3.3.5' ],
+63 silly audit   keyv: [ '4.5.4' ],
+63 silly audit   'language-subtag-registry': [ '0.3.23' ],
+63 silly audit   'language-tags': [ '1.0.9' ],
+63 silly audit   levn: [ '0.4.1' ],
+63 silly audit   'locate-path': [ '6.0.0' ],
+63 silly audit   'lodash.merge': [ '4.6.2' ],
+63 silly audit   'loose-envify': [ '1.4.0' ],
+63 silly audit   'lru-cache': [ '5.1.1' ],
+63 silly audit   'math-intrinsics': [ '1.1.0' ],
+63 silly audit   merge2: [ '1.4.1' ],
+63 silly audit   micromatch: [ '4.0.8' ],
+63 silly audit   minimist: [ '1.2.8' ],
+63 silly audit   ms: [ '2.1.3' ],
+63 silly audit   nanoid: [ '3.3.11' ],
+63 silly audit   'napi-postinstall': [ '0.3.4' ],
+63 silly audit   'natural-compare': [ '1.4.0' ],
+63 silly audit   next: [ '16.1.3' ],
+63 silly audit   'node-releases': [ '2.0.27' ],
+63 silly audit   'object-assign': [ '4.1.1' ],
+63 silly audit   'object-inspect': [ '1.13.4' ],
+63 silly audit   'object-keys': [ '1.1.1' ],
+63 silly audit   'object.assign': [ '4.1.7' ],
+63 silly audit   'object.entries': [ '1.1.9' ],
+63 silly audit   'object.fromentries': [ '2.0.8' ],
+63 silly audit   'object.groupby': [ '1.0.3' ],
+63 silly audit   'object.values': [ '1.2.1' ],
+63 silly audit   optionator: [ '0.9.4' ],
+63 silly audit   'own-keys': [ '1.0.1' ],
+63 silly audit   'p-limit': [ '3.1.0' ],
+63 silly audit   'p-locate': [ '5.0.0' ],
+63 silly audit   'parent-module': [ '1.0.1' ],
+63 silly audit   'path-exists': [ '4.0.0' ],
+63 silly audit   'path-key': [ '3.1.1' ],
+63 silly audit   'path-parse': [ '1.0.7' ],
+63 silly audit   picocolors: [ '1.1.1' ],
+63 silly audit   picomatch: [ '2.3.1', '4.0.3' ],
+63 silly audit   'possible-typed-array-names': [ '1.1.0' ],
+63 silly audit   postcss: [ '8.4.31' ],
+63 silly audit   'prelude-ls': [ '1.2.1' ],
+63 silly audit   'prop-types': [ '15.8.1' ],
+63 silly audit   punycode: [ '2.3.1' ],
+63 silly audit   'queue-microtask': [ '1.2.3' ],
+63 silly audit   react: [ '19.2.3' ],
+63 silly audit   'react-dom': [ '19.2.3' ],
+63 silly audit   'react-is': [ '16.13.1' ],
+63 silly audit   'reflect.getprototypeof': [ '1.0.10' ],
+63 silly audit   'regexp.prototype.flags': [ '1.5.4' ],
+63 silly audit   'resolve-from': [ '4.0.0' ],
+63 silly audit   'resolve-pkg-maps': [ '1.0.0' ],
+63 silly audit   reusify: [ '1.1.0' ],
+63 silly audit   'run-parallel': [ '1.2.0' ],
+63 silly audit   'safe-array-concat': [ '1.1.3' ],
+63 silly audit   'safe-push-apply': [ '1.0.0' ],
+63 silly audit   'safe-regex-test': [ '1.1.0' ],
+63 silly audit   scheduler: [ '0.27.0' ],
+63 silly audit   'set-function-length': [ '1.2.2' ],
+63 silly audit   'set-function-name': [ '2.0.2' ],
+63 silly audit   'set-proto': [ '1.0.0' ],
+63 silly audit   sharp: [ '0.34.5' ],
+63 silly audit   'shebang-command': [ '2.0.0' ],
+63 silly audit   'shebang-regex': [ '3.0.0' ],
+63 silly audit   'side-channel': [ '1.1.0' ],
+63 silly audit   'side-channel-list': [ '1.0.0' ],
+63 silly audit   'side-channel-map': [ '1.0.1' ],
+63 silly audit   'side-channel-weakmap': [ '1.0.2' ],
+63 silly audit   'source-map-js': [ '1.2.1' ],
+63 silly audit   'stable-hash': [ '0.0.5' ],
+63 silly audit   'stop-iteration-iterator': [ '1.1.0' ],
+63 silly audit   'string.prototype.includes': [ '2.0.1' ],
+63 silly audit   'string.prototype.matchall': [ '4.0.12' ],
+63 silly audit   'string.prototype.repeat': [ '1.0.0' ],
+63 silly audit   'string.prototype.trim': [ '1.2.10' ],
+63 silly audit   'string.prototype.trimend': [ '1.0.9' ],
+63 silly audit   'string.prototype.trimstart': [ '1.0.8' ],
+63 silly audit   'strip-bom': [ '3.0.0' ],
+63 silly audit   'strip-json-comments': [ '3.1.1' ],
+63 silly audit   'styled-jsx': [ '5.1.6' ],
+63 silly audit   'supports-color': [ '7.2.0' ],
+63 silly audit   'supports-preserve-symlinks-flag': [ '1.0.0' ],
+63 silly audit   tinyglobby: [ '0.2.15' ],
+63 silly audit   fdir: [ '6.5.0' ],
+63 silly audit   'to-regex-range': [ '5.0.1' ],
+63 silly audit   'ts-api-utils': [ '2.4.0' ],
+63 silly audit   'tsconfig-paths': [ '3.15.0' ],
+63 silly audit   tslib: [ '2.8.1' ],
+63 silly audit   'type-check': [ '0.4.0' ],
+63 silly audit   'typed-array-buffer': [ '1.0.3' ],
+63 silly audit   'typed-array-byte-length': [ '1.0.3' ],
+63 silly audit   'typed-array-byte-offset': [ '1.0.4' ],
+63 silly audit   'typed-array-length': [ '1.0.7' ],
+63 silly audit   typescript: [ '5.9.3' ],
+63 silly audit   'typescript-eslint': [ '8.53.0' ],
+63 silly audit   'unbox-primitive': [ '1.1.0' ],
+63 silly audit   'undici-types': [ '6.21.0' ],
+63 silly audit   'unrs-resolver': [ '1.11.1' ],
+63 silly audit   'update-browserslist-db': [ '1.2.3' ],
+63 silly audit   'uri-js': [ '4.4.1' ],
+63 silly audit   which: [ '2.0.2' ],
+63 silly audit   'which-boxed-primitive': [ '1.1.1' ],
+63 silly audit   'which-builtin-type': [ '1.2.1' ],
+63 silly audit   'which-collection': [ '1.0.2' ],
+63 silly audit   'which-typed-array': [ '1.1.20' ],
+63 silly audit   'word-wrap': [ '1.2.5' ],
+63 silly audit   yallist: [ '3.1.1' ],
+63 silly audit   'yocto-queue': [ '0.1.0' ],
+63 silly audit   zod: [ '4.3.5' ],
+63 silly audit   'zod-validation-error': [ '4.0.2' ]
+63 silly audit }
+64 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 671ms
+65 silly audit report {}
+66 silly REMOVE node_modules/xtend
+67 silly REMOVE node_modules/tinyexec
+68 silly REMOVE node_modules/split2
+69 silly REMOVE node_modules/readdirp
+70 silly REMOVE node_modules/rc9
+71 silly REMOVE node_modules/pure-rand
+72 silly REMOVE node_modules/prisma
+73 silly REMOVE node_modules/postgres-interval
+74 silly REMOVE node_modules/postgres-date
+75 silly REMOVE node_modules/postgres-bytea
+76 silly REMOVE node_modules/postgres-array
+77 silly REMOVE node_modules/pkg-types
+78 silly REMOVE node_modules/pgpass
+79 silly REMOVE node_modules/pg-types
+80 silly REMOVE node_modules/pg-protocol
+81 silly REMOVE node_modules/pg-pool
+82 silly REMOVE node_modules/pg-int8
+83 silly REMOVE node_modules/pg-connection-string
+84 silly REMOVE node_modules/pg-cloudflare
+85 silly REMOVE node_modules/pg
+86 silly REMOVE node_modules/perfect-debounce
+87 silly REMOVE node_modules/pathe
+88 silly REMOVE node_modules/ohash
+89 silly REMOVE node_modules/nypm
+90 silly REMOVE node_modules/node-fetch-native
+91 silly REMOVE node_modules/giget
+92 silly REMOVE node_modules/fast-check
+93 silly REMOVE node_modules/exsolve
+94 silly REMOVE node_modules/empathic
+95 silly REMOVE node_modules/effect
+96 silly REMOVE node_modules/dotenv
+97 silly REMOVE node_modules/destr
+98 silly REMOVE node_modules/defu
+99 silly REMOVE node_modules/deepmerge-ts
+100 silly REMOVE node_modules/consola
+101 silly REMOVE node_modules/confbox
+102 silly REMOVE node_modules/citty
+103 silly REMOVE node_modules/chokidar
+104 silly REMOVE node_modules/c12
+105 silly REMOVE node_modules/@standard-schema/spec
+106 silly REMOVE node_modules/@prisma/get-platform
+107 silly REMOVE node_modules/@prisma/fetch-engine
+108 silly REMOVE node_modules/@prisma/engines-version
+109 silly REMOVE node_modules/@prisma/engines
+110 silly REMOVE node_modules/@prisma/debug
+111 silly REMOVE node_modules/@prisma/config
+112 silly REMOVE node_modules/@prisma/client
+113 verbose cwd /Users/talhaazeem/Documents/managementSystem
+114 verbose os Darwin 24.5.0
+115 verbose node v22.15.1
+116 verbose npm  v11.4.2
+117 verbose exit 0
+118 info ok
