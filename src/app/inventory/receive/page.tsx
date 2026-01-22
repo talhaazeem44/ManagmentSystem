@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { HONDA_BIKE_MODELS, BIKE_COLORS } from '@/lib/constants';
+import { HONDA_BIKE_MODELS, BIKE_COLORS, BIKE_BOOK_PRICES } from '@/lib/constants';
 
 interface BikeEntry {
     id: string;
@@ -43,9 +43,17 @@ export default function ReceiveInventoryPage() {
     };
 
     const updateBike = (id: string, field: keyof BikeEntry, value: string) => {
-        setBikes(bikes.map(bike =>
-            bike.id === id ? { ...bike, [field]: value } : bike
-        ));
+        setBikes(bikes.map(bike => {
+            if (bike.id === id) {
+                const updatedBike = { ...bike, [field]: value };
+                // Auto-fill purchasePrice if model is changed
+                if (field === 'model' && value && BIKE_BOOK_PRICES[value]) {
+                    updatedBike.purchasePrice = BIKE_BOOK_PRICES[value].toString();
+                }
+                return updatedBike;
+            }
+            return bike;
+        }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {

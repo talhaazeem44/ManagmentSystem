@@ -36,6 +36,7 @@ export default function NewSalePage() {
     const [balance, setBalance] = useState('');
     const [registrationCost, setRegistrationCost] = useState('');
     const [paymentMode, setPaymentMode] = useState('CASH');
+    const [taxAmount, setTaxAmount] = useState('1000');
     const [receiptNumber, setReceiptNumber] = useState('');
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -87,6 +88,7 @@ export default function NewSalePage() {
                     receivedCash: receivedCash || 0,
                     balance: balance || 0,
                     registrationCost: registrationCost || null,
+                    taxAmount: taxAmount || 0,
                     paymentMode,
                     receiptNumber
                 })
@@ -323,15 +325,29 @@ export default function NewSalePage() {
                             </div>
                         </div>
 
-                        <div className="form-group">
-                            <label className="label">Receipt Number</label>
-                            <input
-                                type="text"
-                                className="input"
-                                value={receiptNumber}
-                                onChange={(e) => setReceiptNumber(e.target.value)}
-                                placeholder="7476"
-                            />
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label className="label">Tax Amount (PKR) *</label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    value={taxAmount}
+                                    onChange={(e) => setTaxAmount(e.target.value)}
+                                    placeholder="1000"
+                                    required
+                                    min="0"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Receipt Number</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={receiptNumber}
+                                    onChange={(e) => setReceiptNumber(e.target.value)}
+                                    placeholder="7476"
+                                />
+                            </div>
                         </div>
                     </div>
 

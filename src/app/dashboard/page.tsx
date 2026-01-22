@@ -27,7 +27,7 @@ interface SaleRecord {
 }
 
 interface Stats {
-    range: { sales: number; revenue: number; profit: number; workshopRevenue: number };
+    range: { sales: number; revenue: number; netRevenue: number; grossProfit: number; profit: number; workshopRevenue: number; tax: number };
     allTime: { totalBikes: number; availableBikes: number; soldBikes: number };
 }
 
@@ -114,13 +114,13 @@ export default function DashboardPage() {
                         <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-success)' }}>{stats?.range?.sales ?? '-'}</p>
                     </div>
                     <div className="card">
-                        <h3 style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '1rem' }}>Revenue Today</h3>
+                        <h3 style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '1rem' }}>Revenue</h3>
                         <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-primary)' }}>
                             {stats?.range?.revenue ? `Rs. ${stats.range.revenue.toLocaleString()}` : '-'}
                         </p>
                     </div>
                     <div className="card">
-                        <h3 style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '1rem' }}>PFT</h3>
+                        <h3 style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '1rem' }}>Profit</h3>
                         <p style={{ fontSize: '2rem', fontWeight: 700, color: '#059669' }}>
                             {stats?.range?.profit ? `Rs. ${stats.range.profit.toLocaleString()}` : '-'}
                         </p>
@@ -129,6 +129,12 @@ export default function DashboardPage() {
                         <h3 style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '1rem' }}>Workshop Today</h3>
                         <p style={{ fontSize: '2rem', fontWeight: 700, color: '#f59e0b' }}>
                             {stats?.range?.workshopRevenue ? `Rs. ${stats.range.workshopRevenue.toLocaleString()}` : '-'}
+                        </p>
+                    </div>
+                    <div className="card">
+                        <h3 style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '1rem' }}>Tax Today</h3>
+                        <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-text-subtle)' }}>
+                            {stats?.range?.tax ? `Rs. ${stats.range.tax.toLocaleString()}` : '-'}
                         </p>
                     </div>
                 </div>

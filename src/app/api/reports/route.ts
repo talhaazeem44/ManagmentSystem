@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Sale, Bike, DeliveryOrder, ServiceSale } from '@/models';
+import { BIKE_BOOK_PRICES } from '@/lib/constants';
 
 export async function GET(request: NextRequest) {
     try {
@@ -74,27 +75,50 @@ export async function GET(request: NextRequest) {
 
         const totalRevenue = allSales.reduce((sum: number, sale: any) => sum + Number(sale.price), 0);
         const totalWorkshopRevenue = allServices.reduce((sum: number, service: any) => sum + Number(service.amount), 0);
+        const totalTax = allSales.reduce((sum: number, sale: any) => sum + Number(sale.taxAmount || 0), 0);
+
+        const totalGrossProfit = allSales.reduce((sum: number, sale: any) => {
+            const soldPrice = Number(sale.price);
+            const bike = sale.bikeId;
+            const purchasePrice = Number(bike?.purchasePrice || BIKE_BOOK_PRICES[bike?.model] || 0);
+            return sum + (soldPrice - purchasePrice);
+        }, 0);
 
         const totalProfit = allSales.reduce((sum: number, sale: any) => {
             const soldPrice = Number(sale.price);
-            const purchasePrice = Number(sale.bikeId?.purchasePrice || 0);
-            return sum + (soldPrice - purchasePrice);
+            const bike = sale.bikeId;
+            const purchasePrice = Number(bike?.purchasePrice || BIKE_BOOK_PRICES[bike?.model] || 0);
+            const taxAmount = Number(sale.taxAmount || 0);
+            return sum + (soldPrice - purchasePrice - taxAmount);
         }, 0);
 
         const rangeRevenue = filteredSales.reduce((sum: number, sale: any) => sum + Number(sale.price), 0);
         const rangeWorkshopRevenue = filteredServices.reduce((sum: number, service: any) => sum + Number(service.amount), 0);
+        const rangeTax = filteredSales.reduce((sum: number, sale: any) => sum + Number(sale.taxAmount || 0), 0);
+
+        const rangeGrossProfit = filteredSales.reduce((sum: number, sale: any) => {
+            const soldPrice = Number(sale.price);
+            const bike = sale.bikeId;
+            const purchasePrice = Number(bike?.purchasePrice || BIKE_BOOK_PRICES[bike?.model] || 0);
+            return sum + (soldPrice - purchasePrice);
+        }, 0);
 
         const rangeProfit = filteredSales.reduce((sum: number, sale: any) => {
             const soldPrice = Number(sale.price);
-            const purchasePrice = Number(sale.bikeId?.purchasePrice || 0);
-            return sum + (soldPrice - purchasePrice);
+            const bike = sale.bikeId;
+            const purchasePrice = Number(bike?.purchasePrice || BIKE_BOOK_PRICES[bike?.model] || 0);
+            const taxAmount = Number(sale.taxAmount || 0);
+            return sum + (soldPrice - purchasePrice - taxAmount);
         }, 0);
 
         return NextResponse.json({
             range: {
                 sales: filteredSales.length,
                 revenue: rangeRevenue,
+                netRevenue: rangeRevenue - rangeTax,
                 workshopRevenue: rangeWorkshopRevenue,
+                tax: rangeTax,
+                grossProfit: rangeGrossProfit,
                 profit: rangeProfit,
                 startDate: filterStartDate,
                 endDate: filterEndDate
@@ -102,7 +126,10 @@ export async function GET(request: NextRequest) {
             allTime: {
                 totalSales: totalSalesCount,
                 totalRevenue: totalRevenue,
+                totalNetRevenue: totalRevenue - totalTax,
                 totalWorkshopRevenue: totalWorkshopRevenue,
+                totalTax: totalTax,
+                totalGrossProfit: totalGrossProfit,
                 totalProfit: totalProfit,
                 totalBikes: totalBikesCount,
                 availableBikes: availableBikesCount,

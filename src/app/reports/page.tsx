@@ -7,7 +7,10 @@ interface ReportData {
     range: {
         sales: number;
         revenue: number;
+        netRevenue: number;
         workshopRevenue: number;
+        tax: number;
+        grossProfit: number;
         profit: number;
         startDate: string;
         endDate: string;
@@ -15,7 +18,10 @@ interface ReportData {
     allTime: {
         totalSales: number;
         totalRevenue: number;
+        totalNetRevenue: number;
         totalWorkshopRevenue: number;
+        totalTax: number;
+        totalGrossProfit: number;
         totalProfit: number;
         totalBikes: number;
         availableBikes: number;
@@ -174,11 +180,22 @@ export default function ReportsPage() {
 
                     <div className="card">
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <h3 style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Revenue in Range</h3>
+                            <h3 style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Revenue</h3>
                             <span style={{ fontSize: '1.5rem' }}>📈</span>
                         </div>
                         <p style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--color-primary)' }}>
                             {(data?.range?.revenue ?? 0).toLocaleString()}
+                        </p>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-subtle)', marginTop: '0.5rem' }}>PKR</p>
+                    </div>
+
+                    <div className="card">
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                            <h3 style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Net Revenue (Excl. Tax)</h3>
+                            <span style={{ fontSize: '1.5rem' }}>🏦</span>
+                        </div>
+                        <p style={{ fontSize: '2.5rem', fontWeight: 700, color: '#4f46e5' }}>
+                            {(data?.range?.netRevenue ?? 0).toLocaleString()}
                         </p>
                         <p style={{ fontSize: '0.875rem', color: 'var(--color-text-subtle)', marginTop: '0.5rem' }}>PKR</p>
                     </div>
@@ -196,7 +213,18 @@ export default function ReportsPage() {
 
                     <div className="card">
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <h3 style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Estimated Profit (Bike Sales)</h3>
+                            <h3 style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tax Revenue</h3>
+                            <span style={{ fontSize: '1.5rem' }}>⚖️</span>
+                        </div>
+                        <p style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                            {(data?.range?.tax ?? 0).toLocaleString()}
+                        </p>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-subtle)', marginTop: '0.5rem' }}>PKR</p>
+                    </div>
+
+                    <div className="card">
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                            <h3 style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Profit</h3>
                             <span style={{ fontSize: '1.5rem' }}>🎯</span>
                         </div>
                         <p style={{ fontSize: '2.5rem', fontWeight: 700, color: '#059669' }}>
@@ -216,6 +244,12 @@ export default function ReportsPage() {
                         <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Workshop Total Revenue</p>
                         <p style={{ fontSize: '2rem', fontWeight: 700, color: '#f59e0b' }}>
                             {data.allTime.totalWorkshopRevenue.toLocaleString()} PKR
+                        </p>
+                    </div>
+                    <div className="card" style={{ padding: 'var(--spacing-lg)' }}>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Tax Collected</p>
+                        <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-text-subtle)' }}>
+                            {data.allTime.totalTax.toLocaleString()} PKR
                         </p>
                     </div>
                     <div className="card" style={{ padding: 'var(--spacing-lg)' }}>
