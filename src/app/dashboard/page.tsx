@@ -20,9 +20,11 @@ interface SaleRecord {
         }
     };
     customer: {
+        _id: string;
         name: string;
         cnic: string;
         mobile: string;
+        address?: string;
     };
 }
 
@@ -37,6 +39,8 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [printingRecord, setPrintingRecord] = useState<SaleRecord | null>(null);
     const [printingSticker, setPrintingSticker] = useState<SaleRecord | null>(null);
+    const [editingRecord, setEditingRecord] = useState<SaleRecord | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [filters, setFilters] = useState({
         cnic: '',
         engineNumber: '',
@@ -86,6 +90,30 @@ export default function DashboardPage() {
         const resetFilters = { cnic: '', engineNumber: '', chassisNumber: '', doNumber: '' };
         setFilters(resetFilters);
         fetchDashboardData(resetFilters);
+    };
+
+    const handleDeleteSale = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this sale record? This will also mark the bike as AVAILABLE again.')) return;
+
+        setIsDeleting(true);
+        try {
+            const response = await fetch(`/api/sales/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                alert('Sale deleted successfully');
+                fetchDashboardData();
+            } else {
+                const error = await response.json();
+                alert(`Failed to delete: ${error.message}`);
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert('An error occurred while deleting');
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     return (
@@ -235,7 +263,7 @@ export default function DashboardPage() {
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                 <button
                                                     className="btn btn-secondary"
-                                                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem' }}
+                                                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
                                                     onClick={() => {
                                                         setPrintingRecord(record);
                                                         setTimeout(() => {
@@ -243,12 +271,13 @@ export default function DashboardPage() {
                                                             setPrintingRecord(null);
                                                         }, 100);
                                                     }}
+                                                    title="Print Receipt"
                                                 >
-                                                    Print
+                                                    🖨️
                                                 </button>
                                                 <button
-                                                    className="btn btn-primary"
-                                                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem' }}
+                                                    className="btn btn-secondary"
+                                                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
                                                     onClick={() => {
                                                         setPrintingSticker(record);
                                                         setTimeout(() => {
@@ -256,8 +285,26 @@ export default function DashboardPage() {
                                                             setPrintingSticker(null);
                                                         }, 100);
                                                     }}
+                                                    title="Print Sticker"
                                                 >
-                                                    🏷️ Sticker
+                                                    🏷️
+                                                </button>
+                                                <button
+                                                    className="btn btn-primary"
+                                                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', backgroundColor: '#3b82f6' }}
+                                                    onClick={() => setEditingRecord(record)}
+                                                    title="Edit Record"
+                                                >
+                                                    ✏️
+                                                </button>
+                                                <button
+                                                    className="btn btn-primary"
+                                                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', backgroundColor: '#ef4444' }}
+                                                    onClick={() => handleDeleteSale(record.id)}
+                                                    disabled={isDeleting}
+                                                    title="Delete Record"
+                                                >
+                                                    🗑️
                                                 </button>
                                             </div>
                                         </td>
@@ -279,7 +326,179 @@ export default function DashboardPage() {
                         <BikeSticker bike={printingSticker.bike as any} />
                     </div>
                 )}
+
+                {/* Edit Modal */}
+                {editingRecord && (
+                    <EditRecordModal
+                        record={editingRecord}
+                        onClose={() => setEditingRecord(null)}
+                        onSuccess={() => {
+                            setEditingRecord(null);
+                            fetchDashboardData();
+                        }}
+                    />
+                )}
             </div>
         </DashboardLayout>
+    );
+}
+
+function EditRecordModal({ record, onClose, onSuccess }: { record: SaleRecord; onClose: () => void; onSuccess: () => void }) {
+    const [formData, setFormData] = useState({
+        customerName: record.customer.name,
+        customerMobile: record.customer.mobile,
+        customerAddress: record.customer.address || '',
+        engineNumber: record.bike.engineNumber,
+        chassisNumber: record.bike.chassisNumber,
+        price: record.price.toString()
+    });
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSubmitting(true);
+
+        try {
+            // 1. Update Sale Price
+            const saleRes = await fetch(`/api/sales/${record.id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ price: parseFloat(formData.price) })
+            });
+
+            // 2. Update Customer Details
+            const customerRes = await fetch(`/api/customers/${record.customer._id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({
+                    name: formData.customerName,
+                    mobile: formData.customerMobile,
+                    address: formData.customerAddress
+                })
+            });
+
+            // 3. Update Bike Details
+            // Find bike ID first (it's not directly in SaleRecord interface but we can get it from the record object at runtime)
+            const bikeId = (record as any).bikeId || (record as any).bike?._id;
+            const bikeRes = await fetch(`/api/bikes/${bikeId}`, {
+                method: 'PATCH',
+                body: JSON.stringify({
+                    engineNumber: formData.engineNumber,
+                    chassisNumber: formData.chassisNumber
+                })
+            });
+
+            if (saleRes.ok && customerRes.ok && bikeRes.ok) {
+                alert('Record updated successfully');
+                onSuccess();
+            } else {
+                alert('Failed to update some fields. Please check console.');
+            }
+        } catch (error) {
+            console.error('Update error:', error);
+            alert('An error occurred during update');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+        }}>
+            <div className="card" style={{ maxWidth: '600px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Edit Record</h2>
+                    <button onClick={onClose} className="btn-close" style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+                </div>
+
+                <form onSubmit={handleSubmit}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                        <div className="form-group col-span-2" style={{ gridColumn: 'span 2' }}>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 600, borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>👤 Customer Information</h3>
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Full Name</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={formData.customerName}
+                                onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Mobile Number</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={formData.customerMobile}
+                                onChange={(e) => setFormData({ ...formData, customerMobile: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                            <label className="label">Address</label>
+                            <textarea
+                                className="input"
+                                style={{ minHeight: '80px' }}
+                                value={formData.customerAddress}
+                                onChange={(e) => setFormData({ ...formData, customerAddress: e.target.value })}
+                                required
+                            />
+                        </div>
+
+                        <div className="form-group col-span-2" style={{ gridColumn: 'span 2', marginTop: '1rem' }}>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 600, borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>🚲 Bike & Sale Details</h3>
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Engine Number</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={formData.engineNumber}
+                                onChange={(e) => setFormData({ ...formData, engineNumber: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Chassis Number</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={formData.chassisNumber}
+                                onChange={(e) => setFormData({ ...formData, chassisNumber: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Sale Price (PKR)</label>
+                            <input
+                                type="number"
+                                className="input"
+                                value={formData.price}
+                                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem' }}>
+                        <button type="button" className="btn btn-secondary" onClick={onClose} disabled={submitting}>Cancel</button>
+                        <button type="submit" className="btn btn-primary" disabled={submitting}>
+                            {submitting ? 'Updating...' : 'Save Changes'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     );
 }

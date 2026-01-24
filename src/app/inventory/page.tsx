@@ -24,6 +24,8 @@ export default function InventoryPage() {
     const [doFilter, setDoFilter] = useState<string>('ALL');
     const [modelFilter, setModelFilter] = useState<string>('ALL');
     const [searchQuery, setSearchQuery] = useState('');
+    const [editingBike, setEditingBike] = useState<Bike | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         fetchBikes();
@@ -40,6 +42,30 @@ export default function InventoryPage() {
             console.error('Failed to fetch bikes:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteBike = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this bike from inventory?')) return;
+
+        setIsDeleting(true);
+        try {
+            const response = await fetch(`/api/bikes/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                alert('Bike deleted successfully');
+                fetchBikes();
+            } else {
+                const error = await response.json();
+                alert(`Failed to delete: ${error.message}`);
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert('An error occurred while deleting');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -197,6 +223,7 @@ export default function InventoryPage() {
                                         <th>Chassis Number</th>
                                         <th>Status</th>
                                         <th>Received Date</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -213,6 +240,29 @@ export default function InventoryPage() {
                                                 </span>
                                             </td>
                                             <td>{bike.deliveryOrder?.date ? new Date(bike.deliveryOrder.date).toLocaleDateString() : 'N/A'}</td>
+                                            <td>
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <button
+                                                        className="btn btn-primary"
+                                                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', backgroundColor: '#3b82f6' }}
+                                                        onClick={() => setEditingBike(bike)}
+                                                        title="Edit Bike"
+                                                    >
+                                                        ✏️
+                                                    </button>
+                                                    {bike.status === 'AVAILABLE' && (
+                                                        <button
+                                                            className="btn btn-primary"
+                                                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', backgroundColor: '#ef4444' }}
+                                                            onClick={() => handleDeleteBike(bike._id)}
+                                                            disabled={isDeleting}
+                                                            title="Delete Bike"
+                                                        >
+                                                            🗑️
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -220,7 +270,129 @@ export default function InventoryPage() {
                         </div>
                     )}
                 </div>
+
+                {/* Edit Bike Modal */}
+                {editingBike && (
+                    <EditBikeModal
+                        bike={editingBike}
+                        onClose={() => setEditingBike(null)}
+                        onSuccess={() => {
+                            setEditingBike(null);
+                            fetchBikes();
+                        }}
+                    />
+                )}
             </div>
         </DashboardLayout>
+    );
+}
+
+function EditBikeModal({ bike, onClose, onSuccess }: { bike: Bike; onClose: () => void; onSuccess: () => void }) {
+    const [formData, setFormData] = useState({
+        model: bike.model,
+        color: bike.color,
+        engineNumber: bike.engineNumber,
+        chassisNumber: bike.chassisNumber
+    });
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSubmitting(true);
+
+        try {
+            const response = await fetch(`/api/bikes/${bike._id}`, {
+                method: 'PATCH',
+                body: JSON.stringify(formData)
+            });
+
+            if (response.ok) {
+                alert('Bike updated successfully');
+                onSuccess();
+            } else {
+                const error = await response.json();
+                alert(`Failed to update: ${error.message}`);
+            }
+        } catch (error) {
+            console.error('Update error:', error);
+            alert('An error occurred during update');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+        }}>
+            <div className="card" style={{ maxWidth: '500px', width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Edit Bike Details</h2>
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+                </div>
+
+                <form onSubmit={handleSubmit}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+                        <div className="form-group">
+                            <label className="label">Model</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={formData.model}
+                                onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Color</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={formData.color}
+                                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Engine Number</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={formData.engineNumber}
+                                onChange={(e) => setFormData({ ...formData, engineNumber: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Chassis Number</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={formData.chassisNumber}
+                                onChange={(e) => setFormData({ ...formData, chassisNumber: e.target.value })}
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem' }}>
+                        <button type="button" className="btn btn-secondary" onClick={onClose} disabled={submitting}>Cancel</button>
+                        <button type="submit" className="btn btn-primary" disabled={submitting}>
+                            {submitting ? 'Updating...' : 'Save Changes'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     );
 }
