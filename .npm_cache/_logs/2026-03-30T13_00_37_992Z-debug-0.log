@@ -7,13 +7,7 @@
 6 silly config load:file:/usr/local/etc/npmrc
 7 verbose title npm run dev
 8 verbose argv "run" "dev"
-9 verbose logfile logs-max:10 dir:/Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-02-18T08_32_56_413Z-
-10 verbose logfile /Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-02-18T08_32_56_413Z-debug-0.log
+9 verbose logfile logs-max:10 dir:/Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-03-30T13_00_37_992Z-
+10 verbose logfile /Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-03-30T13_00_37_992Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
-13 verbose cwd /Users/talhaazeem/Documents/managementSystem
-14 verbose os Darwin 24.5.0
-15 verbose node v22.15.1
-16 verbose npm  v11.4.2
-17 verbose exit 1
-18 verbose code 1

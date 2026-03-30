@@ -127,6 +127,39 @@ const SaleSchema = new Schema<ISale>({
 
 export const Sale: Model<ISale> = models.Sale || mongoose.model<ISale>('Sale', SaleSchema);
 
+// ── Workshop Stock ────────────────────────────────────────────────────────────
+export interface IWorkshopStock {
+    _id?: string;
+    name: string;
+    category: string;
+    retailPrice: number;
+    customerPrice: number;
+    quantity: number;
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+const WorkshopStockSchema = new Schema<IWorkshopStock>({
+    name: { type: String, required: true },
+    category: { type: String, default: 'Other' },
+    retailPrice: { type: Number, required: true },
+    customerPrice: { type: Number, required: true },
+    quantity: { type: Number, required: true, default: 0 },
+}, {
+    timestamps: true
+});
+
+export const WorkshopStock: Model<IWorkshopStock> = models.WorkshopStock || mongoose.model<IWorkshopStock>('WorkshopStock', WorkshopStockSchema);
+
+// ── Service Sale ──────────────────────────────────────────────────────────────
+export interface IServiceSaleItem {
+    stockId: mongoose.Types.ObjectId | string;
+    name: string;
+    quantity: number;
+    retailPrice: number;
+    customerPrice: number;
+}
+
 export interface IServiceSale {
     _id?: string;
     customerName: string;
@@ -134,19 +167,35 @@ export interface IServiceSale {
     bikeNumber?: string;
     serviceType: string;
     description?: string;
-    amount: number;
+    serviceCharges: number;
+    items: IServiceSaleItem[];
+    totalAmount: number;
+    totalCost: number;
+    margin: number;
     date: Date;
     createdAt?: Date;
     updatedAt?: Date;
 }
 
+const ServiceSaleItemSchema = new Schema<IServiceSaleItem>({
+    stockId: { type: Schema.Types.ObjectId, ref: 'WorkshopStock' },
+    name: { type: String, required: true },
+    quantity: { type: Number, required: true },
+    retailPrice: { type: Number, required: true },
+    customerPrice: { type: Number, required: true },
+}, { _id: false });
+
 const ServiceSaleSchema = new Schema<IServiceSale>({
     customerName: { type: String, required: true },
     customerMobile: { type: String },
     bikeNumber: { type: String },
-    serviceType: { type: String, required: true }, // e.g., Tuning, Oil Change
+    serviceType: { type: String, required: true },
     description: { type: String },
-    amount: { type: Number, required: true },
+    serviceCharges: { type: Number, default: 0 },
+    items: { type: [ServiceSaleItemSchema], default: [] },
+    totalAmount: { type: Number, default: 0 },
+    totalCost: { type: Number, default: 0 },
+    margin: { type: Number, default: 0 },
     date: { type: Date, default: Date.now },
 }, {
     timestamps: true
