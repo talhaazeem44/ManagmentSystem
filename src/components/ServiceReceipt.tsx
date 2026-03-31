@@ -32,19 +32,6 @@ const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service }) => {
     return (
         <div className="print-only">
             <style>{`
-                @media print {
-                    @page {
-                        size: 80mm auto;
-                        margin: 0;
-                    }
-                    body * { visibility: hidden; }
-                    .print-only, .print-only * { visibility: visible !important; }
-                    .print-only {
-                        position: fixed !important;
-                        top: 0; left: 0;
-                        width: 72mm !important;
-                    }
-                }
                 .thermal-receipt {
                     width: 72mm;
                     font-family: 'Courier New', Courier, monospace;
@@ -175,7 +162,7 @@ const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service }) => {
                 </div>
 
                 {/* Feed space for cutter */}
-                <div style={{ marginTop: '8mm' }}></div>
+                <div style={{ marginTop: '20mm' }}></div>
             </div>
         </div>
     );

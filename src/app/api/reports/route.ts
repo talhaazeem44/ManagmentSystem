@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Sale, Bike, DeliveryOrder, ServiceSale } from '@/models';
-import { BIKE_BOOK_PRICES } from '@/lib/constants';
+import {
+    BIKE_BOOK_PRICES,
+    BIKE_STANDARD_PRICES,
+    BIKE_UNIT_MARGINS,
+    BIKE_REGISTRATION_CHARGED,
+    REGISTRATION_ACTUAL_COST
+} from '@/lib/constants';
 
 export async function GET(request: NextRequest) {
     try {
@@ -18,131 +24,112 @@ export async function GET(request: NextRequest) {
             filterStartDate = new Date(startDateStr);
             filterEndDate = new Date(endDateStr);
         } else {
-            // Default to today
             filterStartDate = new Date();
             filterStartDate.setHours(0, 0, 0, 0);
-
             filterEndDate = new Date(filterStartDate);
             filterEndDate.setDate(filterEndDate.getDate() + 1);
         }
 
-        // Get sales within range with bike details for profit calculation
+        // ── Range sales ────────────────────────────────────────────────────────
         const filteredSales = await Sale.find({
-            saleDate: {
-                $gte: filterStartDate,
-                $lt: filterEndDate
-            }
+            saleDate: { $gte: filterStartDate, $lt: filterEndDate }
         }).populate('bikeId').lean();
 
-        // Get workshop services within range
+        // ── Range workshop ─────────────────────────────────────────────────────
         const filteredServices = await ServiceSale.find({
-            date: {
-                $gte: filterStartDate,
-                $lt: filterEndDate
-            }
+            date: { $gte: filterStartDate, $lt: filterEndDate }
         }).lean();
 
-        // Get all-time stats
-        const totalSalesCount = await Sale.countDocuments();
+        // ── All-time counts ────────────────────────────────────────────────────
         const totalBikesCount = await Bike.countDocuments();
         const availableBikesCount = await Bike.countDocuments({ status: 'AVAILABLE' });
         const soldBikesCount = await Bike.countDocuments({ status: 'SOLD' });
-        const totalServicesCount = await ServiceSale.countDocuments();
 
-        // Get delivery order stats
+        // ── Delivery order stats ───────────────────────────────────────────────
         const deliveryOrders = await DeliveryOrder.find().sort({ date: -1 }).lean();
         const bikes = await Bike.find().lean();
 
         const doStats = deliveryOrders.map(dorder => {
-            const orderBikes = bikes.filter(bike => bike.deliveryOrderId.toString() === dorder._id.toString());
+            const orderBikes = bikes.filter(b => b.deliveryOrderId.toString() === dorder._id.toString());
             const totalBikes = orderBikes.length;
-            const soldBikes = orderBikes.filter(bike => bike.status === 'SOLD').length;
-            const remainingBikes = totalBikes - soldBikes;
-
+            const soldBikes = orderBikes.filter(b => b.status === 'SOLD').length;
             return {
                 doNumber: dorder.doNumber,
                 date: dorder.date,
                 totalBikes,
                 soldBikes,
-                remainingBikes,
-                dealerName: dorder.dealerName
+                remainingBikes: totalBikes - soldBikes,
+                dealerName: dorder.dealerName,
             };
         });
 
-        // Calculate revenue and profit
-        const allSales = await Sale.find().populate('bikeId').lean();
-        const allServices = await ServiceSale.find().lean();
-
-        const totalRevenue = allSales.reduce((sum: number, sale: any) => sum + Number(sale.price), 0);
-        const totalWorkshopRevenue = allServices.reduce((sum: number, service: any) => sum + Number(service.amount), 0);
-        const totalTax = allSales.reduce((sum: number, sale: any) => sum + Number(sale.taxAmount || 0), 0);
-
-        const totalGrossProfit = allSales.reduce((sum: number, sale: any) => {
-            const soldPrice = Number(sale.price);
+        // ── Margin calculation helper ─────────────────────────────────────────
+        const calcSaleMargin = (sale: any) => {
             const bike = sale.bikeId;
-            const purchasePrice = Number(bike?.purchasePrice || BIKE_BOOK_PRICES[bike?.model] || 0);
-            return sum + (soldPrice - purchasePrice);
-        }, 0);
+            const model = bike?.model || '';
+            const actualSoldPrice = Number(sale.price || 0);
+            const purchasePrice = Number(bike?.purchasePrice || BIKE_BOOK_PRICES[model] || 0);
+            const standardPrice = BIKE_STANDARD_PRICES[model] || actualSoldPrice;
+            const unitMargin = BIKE_UNIT_MARGINS[model] || (standardPrice - purchasePrice);
+            const blackMargin = actualSoldPrice - standardPrice; // extra above standard price
+            const regCharged = Number(sale.registrationCost || BIKE_REGISTRATION_CHARGED[model] || 0);
+            const regMargin = regCharged > 0 ? regCharged - REGISTRATION_ACTUAL_COST : 0;
+            const totalMargin = unitMargin + blackMargin + regMargin;
+            return { unitMargin, blackMargin, regMargin, totalMargin, purchasePrice };
+        };
 
-        const totalProfit = allSales.reduce((sum: number, sale: any) => {
-            const soldPrice = Number(sale.price);
-            const bike = sale.bikeId;
-            const purchasePrice = Number(bike?.purchasePrice || BIKE_BOOK_PRICES[bike?.model] || 0);
-            const taxAmount = Number(sale.taxAmount || 0);
-            return sum + (soldPrice - purchasePrice - taxAmount);
+        // ── Range calculations ─────────────────────────────────────────────────
+        const rangeRevenue = filteredSales.reduce((s, sale: any) => s + Number(sale.price || 0), 0);
+        const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || sale.price || 0), 0);
+        const rangeRegistrationCollected = filteredSales.reduce((s, sale: any) => s + Number(sale.registrationCost || 0), 0);
+        const rangeTotalCashIn = rangeCashReceived + rangeRegistrationCollected;
+        const rangePurchaseCost = filteredSales.reduce((s, sale: any) => {
+            const bike = (sale as any).bikeId;
+            return s + Number(bike?.purchasePrice || BIKE_BOOK_PRICES[bike?.model] || 0);
         }, 0);
+        const rangeCashToDeposit = rangePurchaseCost;
+        const rangeCashInHand = rangeTotalCashIn - rangeCashToDeposit;
 
-        const rangeRevenue = filteredSales.reduce((sum: number, sale: any) => sum + Number(sale.price), 0);
-        const rangeWorkshopRevenue = filteredServices.reduce((sum: number, service: any) => sum + Number(service.amount), 0);
-        const rangeTax = filteredSales.reduce((sum: number, sale: any) => sum + Number(sale.taxAmount || 0), 0);
+        const rangeUnitMargin = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).unitMargin, 0);
+        const rangeBlackMargin = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).blackMargin, 0);
+        const rangeRegMargin = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).regMargin, 0);
+        const rangeBikeMargin = rangeUnitMargin + rangeBlackMargin + rangeRegMargin;
 
-        const rangeGrossProfit = filteredSales.reduce((sum: number, sale: any) => {
-            const soldPrice = Number(sale.price);
-            const bike = sale.bikeId;
-            const purchasePrice = Number(bike?.purchasePrice || BIKE_BOOK_PRICES[bike?.model] || 0);
-            return sum + (soldPrice - purchasePrice);
-        }, 0);
+        const rangeWorkshopRevenue = filteredServices.reduce((s, svc: any) => s + Number(svc.totalAmount || svc.amount || 0), 0);
+        const rangeWorkshopProfit = filteredServices.reduce((s, svc: any) => s + Number(svc.margin || svc.totalAmount || svc.amount || 0), 0);
 
-        const rangeProfit = filteredSales.reduce((sum: number, sale: any) => {
-            const soldPrice = Number(sale.price);
-            const bike = sale.bikeId;
-            const purchasePrice = Number(bike?.purchasePrice || BIKE_BOOK_PRICES[bike?.model] || 0);
-            const taxAmount = Number(sale.taxAmount || 0);
-            return sum + (soldPrice - purchasePrice - taxAmount);
-        }, 0);
+        const rangeTotalProfit = rangeBikeMargin + rangeWorkshopProfit;
 
         return NextResponse.json({
             range: {
                 sales: filteredSales.length,
                 revenue: rangeRevenue,
-                netRevenue: rangeRevenue - rangeTax,
                 workshopRevenue: rangeWorkshopRevenue,
-                tax: rangeTax,
-                grossProfit: rangeGrossProfit,
-                profit: rangeProfit,
+                workshopProfit: rangeWorkshopProfit,
+                // Margin breakdown
+                unitMargin: rangeUnitMargin,
+                blackMargin: rangeBlackMargin,
+                regMargin: rangeRegMargin,
+                bikeMargin: rangeBikeMargin,
+                totalProfit: rangeTotalProfit,
+                // Cash tracking
+                cashReceived: rangeCashReceived,
+                registrationCollected: rangeRegistrationCollected,
+                totalCashIn: rangeTotalCashIn,
+                cashToDeposit: rangeCashToDeposit,
+                cashInHand: rangeCashInHand,
                 startDate: filterStartDate,
-                endDate: filterEndDate
+                endDate: filterEndDate,
             },
             allTime: {
-                totalSales: totalSalesCount,
-                totalRevenue: totalRevenue,
-                totalNetRevenue: totalRevenue - totalTax,
-                totalWorkshopRevenue: totalWorkshopRevenue,
-                totalTax: totalTax,
-                totalGrossProfit: totalGrossProfit,
-                totalProfit: totalProfit,
                 totalBikes: totalBikesCount,
                 availableBikes: availableBikesCount,
                 soldBikes: soldBikesCount,
-                totalServices: totalServicesCount
             },
-            deliveryOrders: doStats
+            deliveryOrders: doStats,
         });
     } catch (error: any) {
         console.error('Error fetching reports:', error);
-        return NextResponse.json(
-            { message: 'Failed to fetch reports', error: error.message },
-            { status: 500 }
-        );
+        return NextResponse.json({ message: error.message }, { status: 500 });
     }
 }

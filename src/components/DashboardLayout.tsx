@@ -13,11 +13,10 @@ export default function DashboardLayout({
 
     const navItems = [
         { href: '/dashboard', label: 'Dashboard', icon: '📊' },
+        { href: '/sales/new', label: 'New Sale', icon: '➕' },
         { href: '/inventory', label: 'Inventory', icon: '🏍️' },
         { href: '/inventory/receive', label: 'Receive Stock', icon: '📦' },
-        { href: '/sales', label: 'Sales', icon: '💰' },
-        { href: '/sales/new', label: 'New Sale', icon: '➕' },
-        { href: '/reports', label: 'Reports', icon: '📈' },
+        { href: '/sales', label: 'Sales History', icon: '💰' },
         { href: '/workshop', label: 'Workshop', icon: '🛠️' },
         { href: '/workshop/stock', label: 'Workshop Stock', icon: '🔩' },
     ];
