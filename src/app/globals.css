@@ -387,12 +387,9 @@ a {
     visibility: hidden !important;
   }
 
-  .print-only,
-  .print-only * {
-    visibility: visible !important;
-  }
-
   .print-only {
+    display: block !important;
+    visibility: visible !important;
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
@@ -400,6 +397,10 @@ a {
     margin: 0 !important;
     padding: 0 !important;
     z-index: 99999 !important;
+  }
+
+  .print-only * {
+    visibility: visible !important;
   }
 
   .no-print {

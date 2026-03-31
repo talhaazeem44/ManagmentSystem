@@ -6,9 +6,10 @@ export async function middleware(request: NextRequest) {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     const isLoginPage = request.nextUrl.pathname === '/login';
     const isApiAuth = request.nextUrl.pathname.startsWith('/api/auth');
+    const isScratchPage = request.nextUrl.pathname.startsWith('/scratch');
 
-    // Allow API auth routes
-    if (isApiAuth) {
+    // Allow public routes
+    if (isApiAuth || isScratchPage) {
         return NextResponse.next();
     }
 

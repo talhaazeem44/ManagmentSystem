@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 
 interface BillItem {
     name: string;
@@ -19,7 +19,6 @@ interface ServiceReceiptProps {
         serviceCharges?: number;
         items?: BillItem[];
         totalAmount?: number;
-        // legacy support
         amount?: number;
     };
 }
@@ -29,11 +28,29 @@ const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service }) => {
     const serviceCharges = service.serviceCharges ?? service.amount ?? 0;
     const items = service.items ?? [];
 
-    return (
-        <div className="print-only">
-            <style>{`
-                .thermal-receipt {
-                    width: 72mm;
+    // Randomly pick a prize code (weighted)
+    const prizes = [
+        { code: 'T', weight: 20 }, // Free Tuning
+        { code: 'W', weight: 15 }, // Free Wash
+        { code: 'O', weight: 10 }, // Free Oil
+        { code: 'D', weight: 10 }, // 10% Discount
+        { code: 'R', weight: 45 }, // Try Again
+    ];
+    const total_weight = prizes.reduce((s, p) => s + p.weight, 0);
+    let rand = Math.floor(Math.random() * total_weight);
+    let prizeCode = 'R';
+    for (const p of prizes) { if (rand < p.weight) { prizeCode = p.code; break; } rand -= p.weight; }
+    const scratchUrl = `http://192.168.100.14:3000/scratch?p=${prizeCode}`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(scratchUrl)}`;
+
+    const receiptHTML = `
+        <html>
+        <head>
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                @page { size: 80mm auto; margin: 0; }
+                body {
+                    width: 76mm;
                     font-family: 'Courier New', Courier, monospace;
                     font-size: 10pt;
                     color: #000;
@@ -41,131 +58,105 @@ const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service }) => {
                     padding: 3mm 2mm;
                     line-height: 1.4;
                 }
-                .t-center { text-align: center; }
-                .t-right { text-align: right; }
-                .t-bold { font-weight: 900; }
-                .t-divider { border-top: 1px dashed #000; margin: 2mm 0; }
-                .t-row {
-                    display: flex;
-                    justify-content: space-between;
-                    font-size: 9.5pt;
-                    margin-bottom: 1mm;
+                .center { text-align: center; }
+                .bold { font-weight: 900; }
+                .divider { border-top: 1px dashed #000; margin: 2mm 0; }
+                .row { display: flex; justify-content: space-between; font-size: 9.5pt; margin-bottom: 1mm; }
+                .title { font-size: 15pt; font-weight: 900; letter-spacing: 1px; }
+                .subtitle { font-size: 9pt; font-weight: 700; }
+                .total-row { display: flex; justify-content: space-between; font-size: 13pt; font-weight: 900; margin: 2mm 0; }
+                table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+                th { border-bottom: 1px solid #000; font-weight: 700; padding: 0.5mm 0; text-align: left; }
+                td { padding: 0.5mm 0; }
+                .r { text-align: right; }
+                .c { text-align: center; }
+                .footer { text-align: center; font-size: 8pt; margin-top: 2mm; }
+                .scratch-section {
+                    margin-top: 4mm;
+                    border: 2px dashed #000;
+                    border-radius: 4px;
+                    padding: 2mm;
+                    text-align: center;
                 }
-                .t-title { font-size: 15pt; font-weight: 900; letter-spacing: 1px; }
-                .t-subtitle { font-size: 9pt; font-weight: 700; }
-                .t-total {
-                    display: flex;
-                    justify-content: space-between;
-                    font-size: 13pt;
+                .scratch-title { font-size: 9pt; font-weight: 900; letter-spacing: 1px; margin-bottom: 1mm; }
+                .scratch-box {
+                    background: #000;
+                    color: #000;
+                    border-radius: 3px;
+                    padding: 2mm 3mm;
+                    margin: 1.5mm auto;
+                    font-size: 10pt;
                     font-weight: 900;
-                    margin: 2mm 0;
+                    letter-spacing: 2px;
+                    width: 90%;
+                    position: relative;
                 }
-                .t-items td, .t-items th {
-                    font-size: 8.5pt;
-                    padding: 0.5mm 0;
-                    vertical-align: top;
-                }
-                .t-items { width: 100%; border-collapse: collapse; }
-                .t-items th { border-bottom: 1px solid #000; font-weight: 700; }
-                .t-items .col-name { width: 55%; }
-                .t-items .col-qty  { width: 10%; text-align: center; }
-                .t-items .col-rate { width: 15%; text-align: right; }
-                .t-items .col-amt  { width: 20%; text-align: right; }
-            `}</style>
-
-            <div className="thermal-receipt">
-                {/* Header */}
-                <div className="t-center">
-                    <div className="t-title">NAEEM AUTOS</div>
-                    <div className="t-subtitle">WORKSHOP SERVICE BILL</div>
-                    <div style={{ fontSize: '8pt', marginTop: '1mm' }}>
-                        {new Date(service.date).toLocaleString('en-PK')}
-                    </div>
-                </div>
-
-                <div className="t-divider" />
-
-                {/* Customer Info */}
-                <div className="t-row">
-                    <span>Customer:</span>
-                    <span className="t-bold">{service.customerName}</span>
-                </div>
-                {service.customerMobile && (
-                    <div className="t-row">
-                        <span>Mobile:</span>
-                        <span>{service.customerMobile}</span>
-                    </div>
-                )}
-                {service.bikeNumber && (
-                    <div className="t-row">
-                        <span>Bike No:</span>
-                        <span className="t-bold">{service.bikeNumber}</span>
-                    </div>
-                )}
-
-                <div className="t-divider" />
-
-                {/* Service */}
-                <div className="t-row">
-                    <span className="t-bold">{service.serviceType}</span>
-                    <span>Rs. {serviceCharges.toLocaleString()}</span>
-                </div>
-                {service.description && (
-                    <div style={{ fontSize: '8pt', fontStyle: 'italic', marginBottom: '1mm' }}>
-                        Note: {service.description}
-                    </div>
-                )}
-
-                {/* Parts */}
-                {items.length > 0 && (
-                    <>
-                        <div className="t-divider" />
-                        <div style={{ fontWeight: 700, fontSize: '9pt', marginBottom: '1mm' }}>PARTS & ITEMS</div>
-                        <table className="t-items">
-                            <thead>
-                                <tr>
-                                    <th className="col-name">Item</th>
-                                    <th className="col-qty">Qty</th>
-                                    <th className="col-rate">Rate</th>
-                                    <th className="col-amt">Amt</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {items.map((item, idx) => (
-                                    <tr key={idx}>
-                                        <td className="col-name">{item.name}</td>
-                                        <td className="col-qty">{item.quantity}</td>
-                                        <td className="col-rate">{item.customerPrice.toLocaleString()}</td>
-                                        <td className="col-amt">{(item.customerPrice * item.quantity).toLocaleString()}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </>
-                )}
-
-                <div className="t-divider" />
-
-                {/* Total */}
-                <div className="t-total">
-                    <span>TOTAL:</span>
-                    <span>Rs. {total.toLocaleString()}</span>
-                </div>
-
-                <div className="t-divider" />
-
-                {/* Footer */}
-                <div className="t-center" style={{ fontSize: '8pt', marginTop: '2mm' }}>
-                    <div>Thank you for choosing Naeem Autos!</div>
-                    <div>Honda Authorized Dealer</div>
-                    <div style={{ marginTop: '1mm' }}>★★★★★</div>
-                </div>
-
-                {/* Feed space for cutter */}
-                <div style={{ marginTop: '20mm' }}></div>
+                .scratch-hint { font-size: 7.5pt; color: #444; margin-top: 1mm; }
+                .scratch-footer { font-size: 7pt; margin-top: 1mm; }
+            </style>
+        </head>
+        <body>
+            <div class="center">
+                <div class="title">NAEEM AUTOS</div>
+                <div class="subtitle">WORKSHOP SERVICE BILL</div>
+                <div style="font-size:8pt;margin-top:1mm">${new Date(service.date).toLocaleString('en-PK')}</div>
             </div>
-        </div>
-    );
+            <div class="divider"></div>
+            <div class="row"><span>Customer:</span><span class="bold">${service.customerName}</span></div>
+            ${service.customerMobile ? `<div class="row"><span>Mobile:</span><span>${service.customerMobile}</span></div>` : ''}
+            ${service.bikeNumber ? `<div class="row"><span>Bike No:</span><span class="bold">${service.bikeNumber}</span></div>` : ''}
+            <div class="divider"></div>
+            <div class="row"><span class="bold">${service.serviceType}</span><span>Rs. ${serviceCharges.toLocaleString()}</span></div>
+            ${service.description ? `<div style="font-size:8pt;font-style:italic">Note: ${service.description}</div>` : ''}
+            ${items.length > 0 ? `
+            <div class="divider"></div>
+            <div class="bold" style="font-size:9pt;margin-bottom:1mm">PARTS & ITEMS</div>
+            <table>
+                <thead><tr><th style="width:55%">Item</th><th class="c" style="width:10%">Qty</th><th class="r" style="width:15%">Rate</th><th class="r" style="width:20%">Amt</th></tr></thead>
+                <tbody>
+                    ${items.map(item => `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td class="c">${item.quantity}</td>
+                        <td class="r">${item.customerPrice.toLocaleString()}</td>
+                        <td class="r">${(item.customerPrice * item.quantity).toLocaleString()}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>` : ''}
+            <div class="divider"></div>
+            <div class="total-row"><span>TOTAL:</span><span>Rs. ${total.toLocaleString()}</span></div>
+            <div class="divider"></div>
+            <div class="footer">
+                <div>Thank you for choosing Naeem Autos!</div>
+                <div>Honda Authorized Dealer</div>
+            </div>
+
+            <div class="scratch-section">
+                <div class="scratch-title">★ LUCKY SCRATCH CARD ★</div>
+                <div class="scratch-hint">Scan QR with your phone to reveal prize!</div>
+                <div style="text-align:center;margin:2mm 0">
+                    <img src="${qrUrl}" width="110" height="110" style="display:block;margin:0 auto" />
+                </div>
+                <div class="scratch-hint">Scratch on your screen to reveal your reward</div>
+                <div class="scratch-footer">Valid 30 days | One per customer</div>
+            </div>
+        </body>
+        </html>
+    `;
+
+    useEffect(() => {
+        const win = window.open('', '_blank', 'width=400,height=600');
+        if (!win) return;
+        win.document.write(receiptHTML);
+        win.document.close();
+        win.onload = () => {
+            win.focus();
+            win.print();
+            win.close();
+        };
+    }, []);
+
+    return null;
 };
 
 export default ServiceReceipt;

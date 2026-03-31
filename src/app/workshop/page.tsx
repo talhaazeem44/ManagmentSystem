@@ -44,6 +44,8 @@ export default function WorkshopPage() {
     const [selectedStockId, setSelectedStockId] = useState('');
     const [selectedQty, setSelectedQty] = useState(1);
     const [billItems, setBillItems] = useState<BillItem[]>([]);
+    const [itemTab, setItemTab] = useState<'stock' | 'manual'>('stock');
+    const [manualItem, setManualItem] = useState({ name: '', price: '', qty: '1' });
     const [formData, setFormData] = useState({
         customerName: '',
         customerMobile: '',
@@ -182,23 +184,62 @@ export default function WorkshopPage() {
 
                             {/* Stock Items Picker */}
                             <div style={{ marginBottom: '1rem', padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                                <label className="label" style={{ marginBottom: '0.5rem', display: 'block' }}>Add Parts / Stock Items</label>
-                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                    <select className="select" style={{ flex: 2 }} value={selectedStockId}
-                                        onChange={e => setSelectedStockId(e.target.value)}>
-                                        <option value="">Select item...</option>
-                                        {stockList.filter(s => s.quantity > 0).map(s => (
-                                            <option key={s._id} value={s._id}>
-                                                {s.name} (Rs.{s.customerPrice} | Qty:{s.quantity})
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <input type="number" className="input" style={{ flex: 1, width: '60px' }}
-                                        min="1" value={selectedQty}
-                                        onChange={e => setSelectedQty(Number(e.target.value))} />
-                                    <button type="button" className="btn btn-secondary" onClick={addItem}
-                                        disabled={!selectedStockId}>Add</button>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                    <button type="button"
+                                        onClick={() => setItemTab('stock')}
+                                        style={{ flex: 1, padding: '0.3rem', fontSize: '0.8rem', borderRadius: '6px', border: 'none', cursor: 'pointer', background: itemTab === 'stock' ? 'var(--color-primary)' : 'rgba(255,255,255,0.1)', color: 'white', fontWeight: itemTab === 'stock' ? 700 : 400 }}>
+                                        From Stock
+                                    </button>
+                                    <button type="button"
+                                        onClick={() => setItemTab('manual')}
+                                        style={{ flex: 1, padding: '0.3rem', fontSize: '0.8rem', borderRadius: '6px', border: 'none', cursor: 'pointer', background: itemTab === 'manual' ? 'var(--color-primary)' : 'rgba(255,255,255,0.1)', color: 'white', fontWeight: itemTab === 'manual' ? 700 : 400 }}>
+                                        Manual Entry
+                                    </button>
                                 </div>
+
+                                {itemTab === 'stock' ? (
+                                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                        <select className="select" style={{ flex: 2 }} value={selectedStockId}
+                                            onChange={e => setSelectedStockId(e.target.value)}>
+                                            <option value="">Select item...</option>
+                                            {stockList.filter(s => s.quantity > 0).map(s => (
+                                                <option key={s._id} value={s._id}>
+                                                    {s.name} — Rs.{s.customerPrice} (Qty:{s.quantity})
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <input type="number" className="input" style={{ width: '60px' }}
+                                            min="1" value={selectedQty}
+                                            onChange={e => setSelectedQty(Number(e.target.value))} />
+                                        <button type="button" className="btn btn-secondary" onClick={addItem}
+                                            disabled={!selectedStockId}>Add</button>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                        <input className="input" style={{ flex: 2 }} placeholder="Item name (e.g. CD70 Oil)"
+                                            value={manualItem.name}
+                                            onChange={e => setManualItem({ ...manualItem, name: e.target.value })} />
+                                        <input type="number" className="input" style={{ flex: 1 }} placeholder="Price"
+                                            value={manualItem.price}
+                                            onChange={e => setManualItem({ ...manualItem, price: e.target.value })} />
+                                        <input type="number" className="input" style={{ width: '60px' }} placeholder="Qty"
+                                            min="1" value={manualItem.qty}
+                                            onChange={e => setManualItem({ ...manualItem, qty: e.target.value })} />
+                                        <button type="button" className="btn btn-secondary"
+                                            onClick={() => {
+                                                if (!manualItem.name || !manualItem.price) return;
+                                                setBillItems([...billItems, {
+                                                    stockId: '',
+                                                    name: manualItem.name,
+                                                    quantity: Number(manualItem.qty) || 1,
+                                                    retailPrice: Number(manualItem.price),
+                                                    customerPrice: Number(manualItem.price),
+                                                }]);
+                                                setManualItem({ name: '', price: '', qty: '1' });
+                                            }}
+                                            disabled={!manualItem.name || !manualItem.price}>Add</button>
+                                    </div>
+                                )}
 
                                 {/* Bill Items List */}
                                 {billItems.length > 0 && (
