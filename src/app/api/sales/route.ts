@@ -146,9 +146,9 @@ export async function GET(request: NextRequest) {
         const sales = await Sale.find(saleFilter).sort({ saleDate: -1 }).lean();
 
         // Fetch remaining details for response
-        const allBikes = await Bike.find({ _id: { $in: sales.map(s => s.bikeId) } }).lean();
-        const allCustomers = await Customer.find({ _id: { $in: sales.map(s => s.customerId) } }).lean();
-        const doIds = allBikes.map(b => b.deliveryOrderId);
+        const allBikes = await Bike.find({ _id: { $in: sales.map(s => s.bikeId.toString()) } }).lean();
+        const allCustomers = await Customer.find({ _id: { $in: sales.map(s => s.customerId.toString()) } }).lean();
+        const doIds = allBikes.map(b => b.deliveryOrderId.toString());
         const allDOs = await DeliveryOrder.find({ _id: { $in: doIds } }).lean();
 
         const salesWithRelations = sales.map(sale => {

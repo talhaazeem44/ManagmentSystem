@@ -41,8 +41,6 @@ export default function WorkshopPage() {
     const [stockList, setStockList] = useState<StockItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [printingService, setPrintingService] = useState<ServiceRecord | null>(null);
-    const [selectedStockId, setSelectedStockId] = useState('');
-    const [selectedQty, setSelectedQty] = useState(1);
     const [billItems, setBillItems] = useState<BillItem[]>([]);
     const [itemTab, setItemTab] = useState<'stock' | 'manual'>('stock');
     const [manualItem, setManualItem] = useState({ name: '', price: '', qty: '1' });
@@ -74,30 +72,6 @@ export default function WorkshopPage() {
         } catch { }
     };
 
-    const addItem = () => {
-        const stock = stockList.find(s => s._id === selectedStockId);
-        if (!stock) return;
-        if (selectedQty > stock.quantity) {
-            alert(`Only ${stock.quantity} units available in stock`);
-            return;
-        }
-        const existing = billItems.findIndex(i => i.stockId === selectedStockId);
-        if (existing >= 0) {
-            const updated = [...billItems];
-            updated[existing].quantity += selectedQty;
-            setBillItems(updated);
-        } else {
-            setBillItems([...billItems, {
-                stockId: stock._id,
-                name: stock.name,
-                quantity: selectedQty,
-                retailPrice: stock.retailPrice,
-                customerPrice: stock.customerPrice,
-            }]);
-        }
-        setSelectedStockId('');
-        setSelectedQty(1);
-    };
 
     const removeItem = (idx: number) => {
         setBillItems(billItems.filter((_, i) => i !== idx));
@@ -185,34 +159,62 @@ export default function WorkshopPage() {
                             {/* Stock Items Picker */}
                             <div style={{ marginBottom: '1rem', padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
                                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                                    <button type="button"
-                                        onClick={() => setItemTab('stock')}
+                                    <button type="button" onClick={() => setItemTab('stock')}
                                         style={{ flex: 1, padding: '0.3rem', fontSize: '0.8rem', borderRadius: '6px', border: 'none', cursor: 'pointer', background: itemTab === 'stock' ? 'var(--color-primary)' : 'rgba(255,255,255,0.1)', color: 'white', fontWeight: itemTab === 'stock' ? 700 : 400 }}>
                                         From Stock
                                     </button>
-                                    <button type="button"
-                                        onClick={() => setItemTab('manual')}
+                                    <button type="button" onClick={() => setItemTab('manual')}
                                         style={{ flex: 1, padding: '0.3rem', fontSize: '0.8rem', borderRadius: '6px', border: 'none', cursor: 'pointer', background: itemTab === 'manual' ? 'var(--color-primary)' : 'rgba(255,255,255,0.1)', color: 'white', fontWeight: itemTab === 'manual' ? 700 : 400 }}>
                                         Manual Entry
                                     </button>
                                 </div>
 
                                 {itemTab === 'stock' ? (
-                                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                        <select className="select" style={{ flex: 2 }} value={selectedStockId}
-                                            onChange={e => setSelectedStockId(e.target.value)}>
-                                            <option value="">Select item...</option>
-                                            {stockList.filter(s => s.quantity > 0).map(s => (
-                                                <option key={s._id} value={s._id}>
-                                                    {s.name} — Rs.{s.customerPrice} (Qty:{s.quantity})
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <input type="number" className="input" style={{ width: '60px' }}
-                                            min="1" value={selectedQty}
-                                            onChange={e => setSelectedQty(Number(e.target.value))} />
-                                        <button type="button" className="btn btn-secondary" onClick={addItem}
-                                            disabled={!selectedStockId}>Add</button>
+                                    <div>
+                                        {/* Quick-add grid — all stock items visible at once */}
+                                        {stockList.filter(s => s.quantity > 0).length === 0 ? (
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>No stock items. Add from Workshop Stock page.</div>
+                                        ) : (
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                                                {stockList.filter(s => s.quantity > 0).map(s => {
+                                                    const inBill = billItems.find(i => i.stockId === s._id);
+                                                    return (
+                                                        <div key={s._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.4rem 0.5rem', background: inBill ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)', borderRadius: '6px', border: inBill ? '1px solid rgba(16,185,129,0.4)' : '1px solid transparent' }}>
+                                                            <div style={{ fontSize: '0.75rem' }}>
+                                                                <div style={{ fontWeight: 600 }}>{s.name}</div>
+                                                                <div style={{ color: 'var(--color-success)' }}>Rs.{s.customerPrice}</div>
+                                                            </div>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                                {inBill && (
+                                                                    <>
+                                                                        <button type="button"
+                                                                            style={{ width: '22px', height: '22px', borderRadius: '4px', border: 'none', background: 'rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer', fontSize: '0.9rem' }}
+                                                                            onClick={() => {
+                                                                                if (inBill.quantity <= 1) {
+                                                                                    setBillItems(billItems.filter(i => i.stockId !== s._id));
+                                                                                } else {
+                                                                                    setBillItems(billItems.map(i => i.stockId === s._id ? { ...i, quantity: i.quantity - 1 } : i));
+                                                                                }
+                                                                            }}>−</button>
+                                                                        <span style={{ fontSize: '0.8rem', minWidth: '16px', textAlign: 'center' }}>{inBill.quantity}</span>
+                                                                    </>
+                                                                )}
+                                                                <button type="button"
+                                                                    style={{ width: '22px', height: '22px', borderRadius: '4px', border: 'none', background: 'var(--color-primary)', color: 'white', cursor: 'pointer', fontSize: '0.9rem' }}
+                                                                    onClick={() => {
+                                                                        if (inBill) {
+                                                                            if (inBill.quantity >= s.quantity) { alert(`Only ${s.quantity} in stock`); return; }
+                                                                            setBillItems(billItems.map(i => i.stockId === s._id ? { ...i, quantity: i.quantity + 1 } : i));
+                                                                        } else {
+                                                                            setBillItems([...billItems, { stockId: s._id, name: s.name, quantity: 1, retailPrice: s.retailPrice, customerPrice: s.customerPrice }]);
+                                                                        }
+                                                                    }}>+</button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -222,19 +224,13 @@ export default function WorkshopPage() {
                                         <input type="number" className="input" style={{ flex: 1 }} placeholder="Price"
                                             value={manualItem.price}
                                             onChange={e => setManualItem({ ...manualItem, price: e.target.value })} />
-                                        <input type="number" className="input" style={{ width: '60px' }} placeholder="Qty"
+                                        <input type="number" className="input" style={{ width: '55px' }} placeholder="Qty"
                                             min="1" value={manualItem.qty}
                                             onChange={e => setManualItem({ ...manualItem, qty: e.target.value })} />
                                         <button type="button" className="btn btn-secondary"
                                             onClick={() => {
                                                 if (!manualItem.name || !manualItem.price) return;
-                                                setBillItems([...billItems, {
-                                                    stockId: '',
-                                                    name: manualItem.name,
-                                                    quantity: Number(manualItem.qty) || 1,
-                                                    retailPrice: Number(manualItem.price),
-                                                    customerPrice: Number(manualItem.price),
-                                                }]);
+                                                setBillItems([...billItems, { stockId: '', name: manualItem.name, quantity: Number(manualItem.qty) || 1, retailPrice: Number(manualItem.price), customerPrice: Number(manualItem.price) }]);
                                                 setManualItem({ name: '', price: '', qty: '1' });
                                             }}
                                             disabled={!manualItem.name || !manualItem.price}>Add</button>

@@ -31,16 +31,15 @@ const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service }) => {
     // Randomly pick a prize code (weighted)
     const prizes = [
         { code: 'T', weight: 20 }, // Free Tuning
-        { code: 'W', weight: 15 }, // Free Wash
-        { code: 'O', weight: 10 }, // Free Oil
-        { code: 'D', weight: 10 }, // 10% Discount
+
         { code: 'R', weight: 45 }, // Try Again
     ];
     const total_weight = prizes.reduce((s, p) => s + p.weight, 0);
     let rand = Math.floor(Math.random() * total_weight);
     let prizeCode = 'R';
     for (const p of prizes) { if (rand < p.weight) { prizeCode = p.code; break; } rand -= p.weight; }
-    const scratchUrl = `http://192.168.100.14:3000/scratch?p=${prizeCode}`;
+    const scratchUrl = `http://94.72.122.32:3000/scratch?p=${prizeCode}`;
+
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(scratchUrl)}`;
 
     const receiptHTML = `
@@ -98,7 +97,7 @@ const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service }) => {
         <body>
             <div class="center">
                 <div class="title">NAEEM AUTOS</div>
-                <div class="subtitle">WORKSHOP SERVICE BILL</div>
+                <div class="subtitle">JOB CARD</div>
                 <div style="font-size:8pt;margin-top:1mm">${new Date(service.date).toLocaleString('en-PK')}</div>
             </div>
             <div class="divider"></div>
