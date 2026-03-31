@@ -148,9 +148,18 @@
 }
 
 @media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+        justify-content: flex-start;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+
     .demoCredentials {
         position: static;
         margin-top: var(--spacing-lg);
         text-align: center;
+        width: 100%;
+        max-width: 420px;
     }
 }

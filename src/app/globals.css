@@ -417,3 +417,23 @@ a {
 .print-only {
   display: none;
 }
+
+/* Responsive grid utilities */
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+.grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; }
+
+@media (max-width: 768px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid-5 { grid-template-columns: repeat(2, 1fr); }
+  .grid-2 { grid-template-columns: 1fr; }
+
+  .mobile-stack { flex-direction: column !important; }
+  .mobile-full { width: 100% !important; }
+  .mobile-hide { display: none !important; }
+
+  h1 { font-size: 1.4rem !important; }
+  .card { padding: 1rem !important; }
+}

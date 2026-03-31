@@ -15,14 +15,15 @@ export default function DashboardLayout({
         { href: '/dashboard', label: 'Dashboard', icon: '📊' },
         { href: '/sales/new', label: 'New Sale', icon: '➕' },
         { href: '/inventory', label: 'Inventory', icon: '🏍️' },
-        { href: '/inventory/receive', label: 'Receive Stock', icon: '📦' },
-        { href: '/sales', label: 'Sales History', icon: '💰' },
+        { href: '/inventory/receive', label: 'Receive', icon: '📦' },
+        { href: '/sales', label: 'Sales', icon: '💰' },
         { href: '/workshop', label: 'Workshop', icon: '🛠️' },
-        { href: '/workshop/stock', label: 'Workshop Stock', icon: '🔩' },
+        { href: '/workshop/stock', label: 'W. Stock', icon: '🔩' },
     ];
 
     return (
         <div className={styles.layout}>
+            {/* Desktop sidebar */}
             <aside className={styles.sidebar}>
                 <div className={styles.logo}>
                     <div className={styles.logoIcon}>🏍️</div>
@@ -52,6 +53,20 @@ export default function DashboardLayout({
                     {children}
                 </div>
             </main>
+
+            {/* Mobile bottom navigation */}
+            <nav className={styles.bottomNav}>
+                {navItems.map((item) => (
+                    <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`${styles.bottomNavItem} ${pathname === item.href ? styles.bottomNavItemActive : ''}`}
+                    >
+                        <span className={styles.bottomNavIcon}>{item.icon}</span>
+                        <span>{item.label}</span>
+                    </Link>
+                ))}
+            </nav>
         </div>
     );
 }

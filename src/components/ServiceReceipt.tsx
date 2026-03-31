@@ -21,9 +21,10 @@ interface ServiceReceiptProps {
         totalAmount?: number;
         amount?: number;
     };
+    onDone?: () => void;
 }
 
-const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service }) => {
+const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service, onDone }) => {
     const total = service.totalAmount ?? service.amount ?? 0;
     const serviceCharges = service.serviceCharges ?? service.amount ?? 0;
     const items = service.items ?? [];
@@ -153,6 +154,7 @@ const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service }) => {
             win.print();
             win.close();
         };
+        onDone?.();
     }, []);
 
     return null;

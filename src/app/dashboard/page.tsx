@@ -126,37 +126,34 @@ export default function DashboardPage() {
     return (
         <DashboardLayout>
             <div className="animate-fade-in">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', gap: '1rem', flexWrap: 'wrap' }}>
                     <div>
                         <h1 style={{ fontSize: '2rem', fontWeight: 700 }}>Dashboard</h1>
-                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>Today's overview — {new Date().toLocaleDateString('en-PK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>Today — {new Date().toLocaleDateString('en-PK', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <a href="/inventory/receive" className="btn btn-primary" style={{ padding: '0.5rem 1rem' }}>📦 Receive Stock</a>
-                        <a href="/sales/new" className="btn btn-success" style={{ padding: '0.5rem 1rem' }}>➕ New Sale</a>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <a href="/inventory/receive" className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>📦 Receive</a>
+                        <a href="/sales/new" className="btn btn-success" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>➕ New Sale</a>
                     </div>
                 </div>
 
                 {/* ── Section 1: Inventory & Sales ── */}
                 <div style={{ marginBottom: '0.4rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Sales & Inventory</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div className="grid-3" style={{ marginBottom: '1.5rem' }}>
                     <StatCard label="Available Bikes" value={String(stats?.allTime?.availableBikes ?? '-')} />
                     <StatCard label="Bikes Sold Today" value={String(rs?.sales ?? '-')} color="var(--color-success)" />
-                    <StatCard label="Bike Revenue Today" value={rs ? `Rs. ${rs.revenue.toLocaleString()}` : '-'} color="var(--color-primary)" />
                     <StatCard label="Registration Collected" value={rs ? `Rs. ${rs.registrationCollected.toLocaleString()}` : '-'} />
                 </div>
 
                 {/* ── Section 2: Workshop ── */}
                 <div style={{ marginBottom: '0.4rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Workshop Today</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
-                    <StatCard label="Workshop Revenue" value={rs ? `Rs. ${rs.workshopRevenue.toLocaleString()}` : '-'} color="#f59e0b" />
-                    <StatCard label="Workshop Profit" value={rs ? `Rs. ${rs.workshopProfit.toLocaleString()}` : '-'} color="var(--color-success)" />
-                    <StatCard label="Total Daily Revenue" value={rs ? `Rs. ${(rs.revenue + rs.workshopRevenue).toLocaleString()}` : '-'} color="var(--color-primary)" />
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <StatCard label="Workshop Sales" value={rs ? `Rs. ${rs.workshopRevenue.toLocaleString()}` : '-'} color="#f59e0b" />
                 </div>
 
                 {/* ── Section 3: Cash Tracking ── */}
                 <div style={{ marginBottom: '0.4rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Cash Tracking</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div className="grid-3" style={{ marginBottom: '1.5rem' }}>
                     <StatCard label="Total Cash Received" value={rs ? `Rs. ${rs.totalCashIn.toLocaleString()}` : '-'} color="var(--color-success)" sub="Bike price + Registration" />
                     <StatCard label="Deposit to Honda" value={rs ? `Rs. ${rs.cashToDeposit.toLocaleString()}` : '-'} color="#ef4444" sub="Purchase cost of bikes sold" />
                     <StatCard label="Cash in Hand" value={rs ? `Rs. ${rs.cashInHand.toLocaleString()}` : '-'} color="#10b981" sub="Remaining after Honda deposit" />
@@ -179,7 +176,11 @@ export default function DashboardPage() {
                     </div>
                 ) : (
                     <div style={{ marginBottom: '1.5rem' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', marginBottom: '0.75rem' }}>
+                        <div className="grid-2" style={{ marginBottom: '0.75rem' }}>
+                            <StatCard label="Workshop Margin" value={rs ? `Rs. ${rs.workshopProfit.toLocaleString()}` : '-'} color="var(--color-success)" sub="Labour + parts profit" />
+                            <StatCard label="Bike Sales Margin" value={rs ? `Rs. ${rs.bikeMargin.toLocaleString()}` : '-'} color="var(--color-primary)" sub="Unit + black + registration" />
+                        </div>
+                        <div className="grid-5" style={{ marginBottom: '0.75rem' }}>
                             <StatCard label="Unit Margin" value={rs ? `Rs. ${rs.unitMargin.toLocaleString()}` : '-'} color="var(--color-success)" sub="Fixed per model" />
                             <StatCard label="Black / Own" value={rs ? `Rs. ${rs.blackMargin.toLocaleString()}` : '-'} color="#f59e0b" sub="Above standard price" />
                             <StatCard label="Registration Margin" value={rs ? `Rs. ${rs.regMargin.toLocaleString()}` : '-'} color="var(--color-primary)" sub="Charged - actual cost" />
@@ -197,7 +198,7 @@ export default function DashboardPage() {
                 <div className="card" style={{ marginBottom: '2rem' }}>
                     <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>🔍 Search Records</h2>
                     <form onSubmit={handleSearch}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+                        <div className="grid-2" style={{ marginBottom: '1rem' }}>
                             <div className="form-group">
                                 <label className="label">Customer CNIC</label>
                                 <input type="text" className="input" placeholder="34601-XXXXXXXX-X"

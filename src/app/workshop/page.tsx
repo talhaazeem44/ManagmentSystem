@@ -77,11 +77,15 @@ export default function WorkshopPage() {
         setBillItems(billItems.filter((_, i) => i !== idx));
     };
 
+    const deleteRecord = async (id: string) => {
+        if (!confirm('Delete this record?')) return;
+        await fetch(`/api/workshop/${id}`, { method: 'DELETE' });
+        setHistory(history.filter(r => r._id !== id));
+    };
+
     const serviceCharges = Number(formData.serviceCharges) || 0;
     const itemsTotal = billItems.reduce((s, i) => s + i.customerPrice * i.quantity, 0);
-    const totalCost = billItems.reduce((s, i) => s + i.retailPrice * i.quantity, 0);
     const totalAmount = serviceCharges + itemsTotal;
-    const margin = totalAmount - totalCost;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -105,7 +109,6 @@ export default function WorkshopPage() {
                 setBillItems([]);
                 fetchStock(); // refresh stock quantities
                 setPrintingService(newRecord);
-                setTimeout(() => { window.print(); setPrintingService(null); }, 100);
             }
         } catch {
             alert('Failed to save service record');
@@ -117,9 +120,9 @@ export default function WorkshopPage() {
     return (
         <DashboardLayout>
             <div className="animate-fade-in">
-                <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '2rem' }}>Workshop Services</h1>
+                <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '1.25rem' }}>Workshop Services</h1>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '2rem' }}>
+                <div className="grid-2" style={{ alignItems: 'start' }}>
                     {/* New Service Form */}
                     <div className="card">
                         <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>New Service Bill</h2>
@@ -142,7 +145,17 @@ export default function WorkshopPage() {
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
                                 <label className="label">Service Type</label>
                                 <select className="select" value={formData.serviceType}
-                                    onChange={e => setFormData({ ...formData, serviceType: e.target.value })}>
+                                    onChange={e => {
+                                        const type = e.target.value;
+                                        const defaultCharges: Record<string, string> = {
+                                            'Tuning': '150',
+                                            'Oil Change': '200',
+                                            'Repair': '',
+                                            'Washing': '100',
+                                            'Other': '',
+                                        };
+                                        setFormData({ ...formData, serviceType: type, serviceCharges: defaultCharges[type] ?? '' });
+                                    }}>
                                     <option value="Tuning">Tuning</option>
                                     <option value="Oil Change">Oil Change</option>
                                     <option value="Repair">General Repair</option>
@@ -175,20 +188,21 @@ export default function WorkshopPage() {
                                         {stockList.filter(s => s.quantity > 0).length === 0 ? (
                                             <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>No stock items. Add from Workshop Stock page.</div>
                                         ) : (
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
                                                 {stockList.filter(s => s.quantity > 0).map(s => {
                                                     const inBill = billItems.find(i => i.stockId === s._id);
                                                     return (
-                                                        <div key={s._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.4rem 0.5rem', background: inBill ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)', borderRadius: '6px', border: inBill ? '1px solid rgba(16,185,129,0.4)' : '1px solid transparent' }}>
-                                                            <div style={{ fontSize: '0.75rem' }}>
-                                                                <div style={{ fontWeight: 600 }}>{s.name}</div>
-                                                                <div style={{ color: 'var(--color-success)' }}>Rs.{s.customerPrice}</div>
+                                                        <div key={s._id} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', padding: '0.6rem 0.75rem', background: inBill ? 'rgba(16,185,129,0.15)' : 'var(--color-bg)', borderRadius: '8px', border: inBill ? '2px solid rgba(16,185,129,0.5)' : '1px solid var(--color-border)' }}>
+                                                            <div>
+                                                                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text)' }}>{s.name}</div>
+                                                                <div style={{ fontSize: '0.8rem', color: 'var(--color-success)', fontWeight: 600 }}>Rs. {s.customerPrice.toLocaleString()}</div>
+                                                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Stock: {s.quantity}</div>
                                                             </div>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                                                 {inBill && (
                                                                     <>
                                                                         <button type="button"
-                                                                            style={{ width: '22px', height: '22px', borderRadius: '4px', border: 'none', background: 'rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer', fontSize: '0.9rem' }}
+                                                                            style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', background: 'rgba(0,0,0,0.1)', color: 'var(--color-text)', cursor: 'pointer', fontSize: '1rem', fontWeight: 700 }}
                                                                             onClick={() => {
                                                                                 if (inBill.quantity <= 1) {
                                                                                     setBillItems(billItems.filter(i => i.stockId !== s._id));
@@ -196,11 +210,11 @@ export default function WorkshopPage() {
                                                                                     setBillItems(billItems.map(i => i.stockId === s._id ? { ...i, quantity: i.quantity - 1 } : i));
                                                                                 }
                                                                             }}>−</button>
-                                                                        <span style={{ fontSize: '0.8rem', minWidth: '16px', textAlign: 'center' }}>{inBill.quantity}</span>
+                                                                        <span style={{ fontSize: '0.9rem', fontWeight: 700, minWidth: '20px', textAlign: 'center' }}>{inBill.quantity}</span>
                                                                     </>
                                                                 )}
                                                                 <button type="button"
-                                                                    style={{ width: '22px', height: '22px', borderRadius: '4px', border: 'none', background: 'var(--color-primary)', color: 'white', cursor: 'pointer', fontSize: '0.9rem' }}
+                                                                    style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', background: 'var(--color-primary)', color: 'white', cursor: 'pointer', fontSize: '1rem', fontWeight: 700 }}
                                                                     onClick={() => {
                                                                         if (inBill) {
                                                                             if (inBill.quantity >= s.quantity) { alert(`Only ${s.quantity} in stock`); return; }
@@ -277,13 +291,9 @@ export default function WorkshopPage() {
                                     <span style={{ color: 'var(--color-text-muted)' }}>Parts Total</span>
                                     <span>Rs. {itemsTotal.toLocaleString()}</span>
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '6px', marginBottom: '4px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '6px' }}>
                                     <span>Total Bill</span>
                                     <span>Rs. {totalAmount.toLocaleString()}</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-success)', fontWeight: 600 }}>
-                                    <span>Margin / Profit</span>
-                                    <span>Rs. {margin.toLocaleString()}</span>
                                 </div>
                             </div>
 
@@ -332,14 +342,18 @@ export default function WorkshopPage() {
                                                 Rs. {(record.margin ?? 0).toLocaleString()}
                                             </td>
                                             <td>
-                                                <button className="btn btn-secondary"
-                                                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                                                    onClick={() => {
-                                                        setPrintingService(record);
-                                                        setTimeout(() => { window.print(); setPrintingService(null); }, 100);
-                                                    }}>
-                                                    🖨️ Re-Print
-                                                </button>
+                                                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                    <button className="btn btn-secondary"
+                                                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                                                        onClick={() => setPrintingService(record)}>
+                                                        🖨️
+                                                    </button>
+                                                    <button className="btn"
+                                                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
+                                                        onClick={() => deleteRecord(record._id!)}>
+                                                        🗑️
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -349,7 +363,7 @@ export default function WorkshopPage() {
                     </div>
                 </div>
 
-                {printingService && <ServiceReceipt service={printingService} />}
+                {printingService && <ServiceReceipt service={printingService} onDone={() => setPrintingService(null)} />}
             </div>
         </DashboardLayout>
     );
