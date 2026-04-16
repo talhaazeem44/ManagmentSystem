@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Bike, DeliveryOrder, Sale, Customer } from '@/models';
 
@@ -6,19 +6,21 @@ export async function GET() {
     try {
         await dbConnect();
 
-        const bikes = await Bike.find().sort({ createdAt: -1 }).lean();
-        const deliveryOrders = await DeliveryOrder.find().lean();
-        const sales = await Sale.find().lean();
-        const customers = await Customer.find().lean();
+        const [bikes, deliveryOrders, sales, customers] = await Promise.all([
+            Bike.find().sort({ createdAt: -1 }).lean(),
+            DeliveryOrder.find().lean(),
+            Sale.find().lean(),
+            Customer.find().lean(),
+        ]);
 
-        // Populate relationships manually
+        const doMap = Object.fromEntries(deliveryOrders.map(d => [d._id.toString(), d]));
+        const saleMap = Object.fromEntries(sales.map(s => [s.bikeId.toString(), s]));
+        const customerMap = Object.fromEntries(customers.map(c => [c._id.toString(), c]));
+
         const bikesWithRelations = bikes.map(bike => {
-            const deliveryOrder = deliveryOrders.find(
-                d => d._id.toString() === bike.deliveryOrderId.toString()
-            );
-            const sale = sales.find(s => s.bikeId.toString() === bike._id.toString());
-            const customer = sale ? customers.find(c => c._id.toString() === sale.customerId.toString()) : null;
-
+            const deliveryOrder = doMap[bike.deliveryOrderId.toString()];
+            const sale = saleMap[bike._id.toString()];
+            const customer = sale ? customerMap[sale.customerId.toString()] : null;
             return {
                 ...bike,
                 id: bike._id.toString(),

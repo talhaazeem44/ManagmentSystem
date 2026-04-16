@@ -217,45 +217,31 @@ export default function SalesPage() {
                             <p>No sales found matching your filters.</p>
                         </div>
                     ) : (
-                        <div style={{ overflowX: 'auto' }}>
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Customer</th>
-                                        <th>CNIC</th>
-                                        <th>Bike</th>
-                                        <th>Engine #</th>
-                                        <th>DO Number</th>
-                                        <th>Price</th>
-                                        <th>Payment</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredSales.map((sale) => (
-                                        <tr key={sale._id}>
-                                            <td>{new Date(sale.saleDate).toLocaleDateString()}</td>
-                                            <td><strong>{sale.customer?.name || 'N/A'}</strong></td>
-                                            <td><code style={{ fontSize: '0.75rem' }}>{sale.customer?.cnic || 'N/A'}</code></td>
-                                            <td>{sale.bike?.model || 'N/A'} - {sale.bike?.color || ''}</td>
-                                            <td><code style={{ fontSize: '0.75rem' }}>{sale.bike?.engineNumber || 'N/A'}</code></td>
-                                            <td>{sale.bike?.deliveryOrder?.doNumber || 'N/A'}</td>
-                                            <td><strong>{Number(sale.price).toLocaleString()} PKR</strong></td>
-                                            <td>
-                                                <span className={`badge ${sale.paymentMode === 'CASH' ? 'badge-success' : 'badge-warning'}`}>
-                                                    {sale.paymentMode}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <Link href={`/sales/${sale._id}`} className="btn btn-secondary" style={{ padding: 'var(--spacing-sm) var(--spacing-md)', fontSize: '0.75rem' }}>
-                                                    View Receipt
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                            {filteredSales.map((sale) => (
+                                <div key={sale._id} style={{ padding: '0.75rem 1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-elevated)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ flex: '1 1 200px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
+                                            <strong style={{ fontSize: '0.9rem' }}>{sale.customer?.name || 'N/A'}</strong>
+                                            <span className={`badge ${sale.paymentMode === 'CASH' ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
+                                                {sale.paymentMode}
+                                            </span>
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                            <span>{sale.customer?.cnic || ''}</span>
+                                            <span>· {sale.bike?.model} {sale.bike?.color}</span>
+                                            <span>· DO: {sale.bike?.deliveryOrder?.doNumber || 'N/A'}</span>
+                                            <span>· {new Date(sale.saleDate).toLocaleDateString()}</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: '0.2rem' }}>
+                                            {Number(sale.price).toLocaleString()} PKR
+                                        </div>
+                                    </div>
+                                    <Link href={`/sales/${sale._id}`} className="btn btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', flexShrink: 0 }}>
+                                        View Receipt
+                                    </Link>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>

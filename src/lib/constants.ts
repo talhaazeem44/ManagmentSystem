@@ -14,25 +14,26 @@ export type HondaBikeModel = typeof HONDA_BIKE_MODELS[number];
 // Purchase price from Honda (book price)
 export const BIKE_BOOK_PRICES: Record<string, number> = {
     'CD70': 152000,
-    'CG 125': 226765,
-    'PRIDOR': 201158,
-    'CG125S.SE': 281406,
-    'CB150F': 477118,
-    'CG150 2-Tone': 437880,
-    'CB125F.SE': 375781,
+    'CG 125': 227000,
+    'PRIDOR': 202000,
+    'CG125S.SE': 282000,
+    'CB150F': 478000,
+    'CG150 2-Tone': 438000,
+    'CB125F.SE': 376000,
     'DREAM': 160000,
 };
 
 // Standard selling price to customer
 export const BIKE_STANDARD_PRICES: Record<string, number> = {
     'CD70': 160000,
-    'DREAM': 168000,
-    'PRIDOR': 210000,
+    'DREAM': 171000,
+    'PRIDOR': 212000,
     'CG 125': 238500,
-    'CG125S.SE': 292000,
-    'CB125F.SE': 386000,
-    'CB150F': 488000,
-    'CG150 2-Tone': 448000,
+    'CG125GOLD': 297000,
+    'CG125S.SE': 287000,
+    'CB125F.SE': 397000,
+    'CB150F': 504000,
+    'CG150 2-Tone': 460000,
 };
 
 // Unit margin = standard price - book price
@@ -59,8 +60,12 @@ export const BIKE_REGISTRATION_CHARGED: Record<string, number> = {
     'CG150 2-Tone': 8000,
 };
 
-// Actual registration cost paid to government
-export const REGISTRATION_ACTUAL_COST = 6500;
+// Actual registration cost paid to government (per model, fallback to default)
+export const REGISTRATION_ACTUAL_COST = 6500; // default
+export const REGISTRATION_ACTUAL_COST_BY_MODEL: Record<string, number> = {
+    'CG 125': 7000,
+    'CG125S.SE': 7000,
+};
 
 // Password to unlock margin section on dashboard
 export const MARGIN_PASSWORD = '786';

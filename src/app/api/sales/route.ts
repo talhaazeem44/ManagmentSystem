@@ -132,9 +132,11 @@ export async function GET(request: NextRequest) {
         let customerFilter: any = {};
         if (cnic) customerFilter.cnic = new RegExp(cnic, 'i');
 
-        // Find relevant bikes and customers first to filter sales
-        const filteredBikes = await Bike.find(bikeFilter).lean();
-        const filteredCustomers = await Customer.find(customerFilter).lean();
+        // Run bike + customer filters in parallel
+        const [filteredBikes, filteredCustomers] = await Promise.all([
+            Bike.find(bikeFilter).lean(),
+            Customer.find(customerFilter).lean(),
+        ]);
 
         const bikeIds = filteredBikes.map(b => b._id);
         const customerIds = filteredCustomers.map(c => c._id);
@@ -145,9 +147,13 @@ export async function GET(request: NextRequest) {
 
         const sales = await Sale.find(saleFilter).sort({ saleDate: -1 }).lean();
 
-        // Fetch remaining details for response
-        const allBikes = await Bike.find({ _id: { $in: sales.map(s => s.bikeId.toString()) } }).lean();
-        const allCustomers = await Customer.find({ _id: { $in: sales.map(s => s.customerId.toString()) } }).lean();
+        // Fetch all related data in parallel
+        const bikeIdsInSales = sales.map(s => s.bikeId.toString());
+        const customerIdsInSales = sales.map(s => s.customerId.toString());
+        const [allBikes, allCustomers] = await Promise.all([
+            Bike.find({ _id: { $in: bikeIdsInSales } }).lean(),
+            Customer.find({ _id: { $in: customerIdsInSales } }).lean(),
+        ]);
         const doIds = allBikes.map(b => b.deliveryOrderId.toString());
         const allDOs = await DeliveryOrder.find({ _id: { $in: doIds } }).lean();
 

@@ -178,14 +178,14 @@ export default function DashboardPage() {
                     <div style={{ marginBottom: '1.5rem' }}>
                         <div className="grid-2" style={{ marginBottom: '0.75rem' }}>
                             <StatCard label="Workshop Margin" value={rs ? `Rs. ${rs.workshopProfit.toLocaleString()}` : '-'} color="var(--color-success)" sub="Labour + parts profit" />
-                            <StatCard label="Bike Sales Margin" value={rs ? `Rs. ${rs.bikeMargin.toLocaleString()}` : '-'} color="var(--color-primary)" sub="Unit + black + registration" />
+                            <StatCard label="Bike Sales Margin" value={rs ? `Rs. ${rs.bikeMargin.toLocaleString()}` : '-'} color="var(--color-primary)" sub="Unit + registration" />
                         </div>
                         <div className="grid-5" style={{ marginBottom: '0.75rem' }}>
-                            <StatCard label="Unit Margin" value={rs ? `Rs. ${rs.unitMargin.toLocaleString()}` : '-'} color="var(--color-success)" sub="Fixed per model" />
-                            <StatCard label="Black / Own" value={rs ? `Rs. ${rs.blackMargin.toLocaleString()}` : '-'} color="#f59e0b" sub="Above standard price" />
+                            <StatCard label="Unit Margin" value={rs ? `Rs. ${(rs.unitMargin + rs.blackMargin).toLocaleString()}` : '-'} color="var(--color-success)" sub="Fixed + above list price" />
                             <StatCard label="Registration Margin" value={rs ? `Rs. ${rs.regMargin.toLocaleString()}` : '-'} color="var(--color-primary)" sub="Charged - actual cost" />
                             <StatCard label="Workshop Margin" value={rs ? `Rs. ${rs.workshopProfit.toLocaleString()}` : '-'} color="#8b5cf6" sub="Parts + labour profit" />
                             <StatCard label="Total Profit Today" value={rs ? `Rs. ${rs.totalProfit.toLocaleString()}` : '-'} color="#10b981" sub="All margins combined" />
+                            <StatCard label="Cash in Hand" value={rs ? `Rs. ${rs.cashInHand.toLocaleString()}` : '-'} color="#f59e0b" sub="After Honda deposit" />
                         </div>
                         <button className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
                             onClick={() => { setMarginUnlocked(false); setPasswordInput(''); }}>
@@ -229,57 +229,42 @@ export default function DashboardPage() {
                     </form>
                 </div>
 
-                {/* ── Records Table ── */}
-                <div className="card" style={{ overflowX: 'auto' }}>
+                {/* ── Records ── */}
+                <div className="card">
                     <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>Recent Sale Records</h2>
                     {loading ? (
                         <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>
                     ) : records.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>No records found</div>
                     ) : (
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead>
-                                <tr style={{ borderBottom: '2px solid var(--color-border)', textAlign: 'left' }}>
-                                    <th style={{ padding: '0.75rem' }}>Date</th>
-                                    <th style={{ padding: '0.75rem' }}>Customer</th>
-                                    <th style={{ padding: '0.75rem' }}>Bike</th>
-                                    <th style={{ padding: '0.75rem' }}>Price</th>
-                                    <th style={{ padding: '0.75rem' }}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {records.map(record => (
-                                    <tr key={record.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                                        <td style={{ padding: '0.75rem' }}>{new Date(record.saleDate).toLocaleDateString()}</td>
-                                        <td style={{ padding: '0.75rem' }}>
-                                            <div style={{ fontWeight: 600 }}>{record.customer.name}</div>
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{record.customer.cnic}</div>
-                                        </td>
-                                        <td style={{ padding: '0.75rem' }}>
-                                            <div style={{ fontWeight: 600 }}>{record.bike.model} ({record.bike.color})</div>
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                                                Eng: {record.bike.engineNumber}
-                                            </div>
-                                        </td>
-                                        <td style={{ padding: '0.75rem' }}>Rs. {record.price.toLocaleString()}</td>
-                                        <td style={{ padding: '0.75rem' }}>
-                                            <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                                <button className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                                                    onClick={() => { setPrintingRecord(record); setTimeout(() => { window.print(); setPrintingRecord(null); }, 100); }}
-                                                    title="Print Receipt">🖨️</button>
-                                                <button className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                                                    onClick={() => { setPrintingSticker(record); setTimeout(() => { window.print(); setPrintingSticker(null); }, 100); }}
-                                                    title="Print Sticker">🏷️</button>
-                                                <button className="btn btn-primary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', backgroundColor: '#3b82f6' }}
-                                                    onClick={() => setEditingRecord(record)} title="Edit">✏️</button>
-                                                <button className="btn btn-primary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', backgroundColor: '#ef4444' }}
-                                                    onClick={() => handleDeleteSale(record.id)} disabled={isDeleting} title="Delete">🗑️</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                            {records.map(record => (
+                                <div key={record.id} style={{ padding: '0.75rem 1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-elevated)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ flex: '1 1 200px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
+                                            <strong style={{ fontSize: '0.9rem' }}>{record.customer.name}</strong>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{record.customer.cnic}</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                            <span>{record.bike.model} · {record.bike.color}</span>
+                                            <span>· Eng: {record.bike.engineNumber}</span>
+                                            <span>· {new Date(record.saleDate).toLocaleDateString()}</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: '0.2rem' }}>Rs. {record.price.toLocaleString()}</div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0, flexWrap: 'wrap' }}>
+                                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}
+                                            onClick={() => { setPrintingRecord(record); setTimeout(() => { window.print(); setPrintingRecord(null); }, 100); }}>🖨️</button>
+                                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}
+                                            onClick={() => { setPrintingSticker(record); setTimeout(() => { window.print(); setPrintingSticker(null); }, 100); }}>🏷️</button>
+                                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', color: '#3b82f6' }}
+                                            onClick={() => setEditingRecord(record)}>✏️</button>
+                                        <button className="btn" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
+                                            onClick={() => handleDeleteSale(record.id)} disabled={isDeleting}>🗑️</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     )}
                 </div>
 
@@ -343,7 +328,7 @@ function EditRecordModal({ record, onClose, onSuccess }: { record: SaleRecord; o
                     <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
                 </div>
                 <form onSubmit={handleSubmit}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                         <div className="form-group">
                             <label className="label">Full Name</label>
                             <input type="text" className="input" value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} required />

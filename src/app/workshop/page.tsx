@@ -44,6 +44,7 @@ export default function WorkshopPage() {
     const [billItems, setBillItems] = useState<BillItem[]>([]);
     const [itemTab, setItemTab] = useState<'stock' | 'manual'>('stock');
     const [manualItem, setManualItem] = useState({ name: '', price: '', qty: '1' });
+    const [stockSearch, setStockSearch] = useState('');
     const [formData, setFormData] = useState({
         customerName: '',
         customerMobile: '',
@@ -184,70 +185,101 @@ export default function WorkshopPage() {
 
                                 {itemTab === 'stock' ? (
                                     <div>
-                                        {/* Quick-add grid — all stock items visible at once */}
                                         {stockList.filter(s => s.quantity > 0).length === 0 ? (
                                             <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>No stock items. Add from Workshop Stock page.</div>
                                         ) : (
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                                {stockList.filter(s => s.quantity > 0).map(s => {
-                                                    const inBill = billItems.find(i => i.stockId === s._id);
-                                                    return (
-                                                        <div key={s._id} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', padding: '0.6rem 0.75rem', background: inBill ? 'rgba(16,185,129,0.15)' : 'var(--color-bg)', borderRadius: '8px', border: inBill ? '2px solid rgba(16,185,129,0.5)' : '1px solid var(--color-border)' }}>
-                                                            <div>
-                                                                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text)' }}>{s.name}</div>
-                                                                <div style={{ fontSize: '0.8rem', color: 'var(--color-success)', fontWeight: 600 }}>Rs. {s.customerPrice.toLocaleString()}</div>
-                                                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Stock: {s.quantity}</div>
-                                                            </div>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                                {inBill && (
-                                                                    <>
-                                                                        <button type="button"
-                                                                            style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', background: 'rgba(0,0,0,0.1)', color: 'var(--color-text)', cursor: 'pointer', fontSize: '1rem', fontWeight: 700 }}
-                                                                            onClick={() => {
-                                                                                if (inBill.quantity <= 1) {
-                                                                                    setBillItems(billItems.filter(i => i.stockId !== s._id));
-                                                                                } else {
-                                                                                    setBillItems(billItems.map(i => i.stockId === s._id ? { ...i, quantity: i.quantity - 1 } : i));
-                                                                                }
-                                                                            }}>−</button>
-                                                                        <span style={{ fontSize: '0.9rem', fontWeight: 700, minWidth: '20px', textAlign: 'center' }}>{inBill.quantity}</span>
-                                                                    </>
-                                                                )}
-                                                                <button type="button"
-                                                                    style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', background: 'var(--color-primary)', color: 'white', cursor: 'pointer', fontSize: '1rem', fontWeight: 700 }}
-                                                                    onClick={() => {
-                                                                        if (inBill) {
-                                                                            if (inBill.quantity >= s.quantity) { alert(`Only ${s.quantity} in stock`); return; }
-                                                                            setBillItems(billItems.map(i => i.stockId === s._id ? { ...i, quantity: i.quantity + 1 } : i));
-                                                                        } else {
-                                                                            setBillItems([...billItems, { stockId: s._id, name: s.name, quantity: 1, retailPrice: s.retailPrice, customerPrice: s.customerPrice }]);
-                                                                        }
-                                                                    }}>+</button>
-                                                            </div>
+                                            <div style={{ marginBottom: '0.5rem' }}>
+                                                <input
+                                                    className="input"
+                                                    placeholder="Search stock item..."
+                                                    value={stockSearch}
+                                                    onChange={e => setStockSearch(e.target.value)}
+                                                    style={{ marginBottom: '0.5rem', fontSize: '0.85rem' }}
+                                                />
+                                                {stockSearch.trim() && (() => {
+                                                    const filtered = stockList.filter(s => s.quantity > 0 && s.name.toLowerCase().includes(stockSearch.toLowerCase()));
+                                                    return filtered.length === 0 ? (
+                                                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', padding: '0.5rem 0' }}>No items match "{stockSearch}"</div>
+                                                    ) : (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', maxHeight: '200px', overflowY: 'auto' }}>
+                                                            {filtered.map(s => {
+                                                                const inBill = billItems.find(i => i.stockId === s._id);
+                                                                return (
+                                                                    <div key={s._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: inBill ? 'rgba(16,185,129,0.15)' : 'var(--color-bg)', borderRadius: '8px', border: inBill ? '2px solid rgba(16,185,129,0.5)' : '1px solid var(--color-border)' }}>
+                                                                        <div>
+                                                                            <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{s.name}</div>
+                                                                            <div style={{ fontSize: '0.75rem', color: 'var(--color-success)', fontWeight: 600 }}>Rs. {s.customerPrice.toLocaleString()} <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>· Stock: {s.quantity}</span></div>
+                                                                        </div>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                                            {inBill ? (
+                                                                                <>
+                                                                                    <button type="button"
+                                                                                        style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', background: 'rgba(0,0,0,0.2)', color: 'var(--color-text)', cursor: 'pointer', fontSize: '1rem', fontWeight: 700 }}
+                                                                                        onClick={() => {
+                                                                                            if (inBill.quantity <= 1) {
+                                                                                                setBillItems(billItems.filter(i => i.stockId !== s._id));
+                                                                                            } else {
+                                                                                                setBillItems(billItems.map(i => i.stockId === s._id ? { ...i, quantity: i.quantity - 1 } : i));
+                                                                                            }
+                                                                                        }}>−</button>
+                                                                                    <input
+                                                                                        type="number"
+                                                                                        min="1"
+                                                                                        max={s.quantity}
+                                                                                        value={inBill.quantity}
+                                                                                        onChange={e => {
+                                                                                            const val = Math.max(1, Math.min(s.quantity, Number(e.target.value) || 1));
+                                                                                            setBillItems(billItems.map(i => i.stockId === s._id ? { ...i, quantity: val } : i));
+                                                                                        }}
+                                                                                        style={{ width: '44px', textAlign: 'center', padding: '2px 4px', fontSize: '0.85rem', fontWeight: 700, border: '1px solid var(--color-border)', borderRadius: '6px', background: 'var(--color-bg)' }}
+                                                                                    />
+                                                                                    <button type="button"
+                                                                                        style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', background: 'var(--color-primary)', color: 'white', cursor: 'pointer', fontSize: '1rem', fontWeight: 700 }}
+                                                                                        onClick={() => {
+                                                                                            if (inBill.quantity >= s.quantity) { alert(`Only ${s.quantity} in stock`); return; }
+                                                                                            setBillItems(billItems.map(i => i.stockId === s._id ? { ...i, quantity: i.quantity + 1 } : i));
+                                                                                        }}>+</button>
+                                                                                    <button type="button"
+                                                                                        style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', background: 'rgba(239,68,68,0.15)', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700 }}
+                                                                                        onClick={() => setBillItems(billItems.filter(i => i.stockId !== s._id))}>✕</button>
+                                                                                </>
+                                                                            ) : (
+                                                                                <button type="button"
+                                                                                    style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', background: 'var(--color-primary)', color: 'white', cursor: 'pointer', fontSize: '1rem', fontWeight: 700 }}
+                                                                                    onClick={() => {
+                                                                                        setBillItems([...billItems, { stockId: s._id, name: s.name, quantity: 1, retailPrice: s.retailPrice, customerPrice: s.customerPrice }]);
+                                                                                    }}>+</button>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
                                                         </div>
                                                     );
-                                                })}
+                                                })()}
                                             </div>
                                         )}
                                     </div>
                                 ) : (
-                                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                        <input className="input" style={{ flex: 2 }} placeholder="Item name (e.g. CD70 Oil)"
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                                        <input className="input" placeholder="Item name (e.g. CD70 Oil)"
                                             value={manualItem.name}
                                             onChange={e => setManualItem({ ...manualItem, name: e.target.value })} />
-                                        <input type="number" className="input" style={{ flex: 1 }} placeholder="Price"
-                                            value={manualItem.price}
-                                            onChange={e => setManualItem({ ...manualItem, price: e.target.value })} />
-                                        <input type="number" className="input" style={{ width: '55px' }} placeholder="Qty"
-                                            min="1" value={manualItem.qty}
-                                            onChange={e => setManualItem({ ...manualItem, qty: e.target.value })} />
-                                        <button type="button" className="btn btn-secondary"
-                                            onClick={() => {
-                                                if (!manualItem.name || !manualItem.price) return;
-                                                setBillItems([...billItems, { stockId: '', name: manualItem.name, quantity: Number(manualItem.qty) || 1, retailPrice: Number(manualItem.price), customerPrice: Number(manualItem.price) }]);
-                                                setManualItem({ name: '', price: '', qty: '1' });
-                                            }}
-                                            disabled={!manualItem.name || !manualItem.price}>Add</button>
+                                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                            <input type="number" className="input" placeholder="Price"
+                                                value={manualItem.price}
+                                                onChange={e => setManualItem({ ...manualItem, price: e.target.value })} />
+                                            <input type="number" className="input" style={{ maxWidth: '70px' }} placeholder="Qty"
+                                                min="1" value={manualItem.qty}
+                                                onChange={e => setManualItem({ ...manualItem, qty: e.target.value })} />
+                                            <button type="button" className="btn btn-secondary"
+                                                onClick={() => {
+                                                    if (!manualItem.name || !manualItem.price) return;
+                                                    setBillItems([...billItems, { stockId: '', name: manualItem.name, quantity: Number(manualItem.qty) || 1, retailPrice: Number(manualItem.price), customerPrice: Number(manualItem.price) }]);
+                                                    setManualItem({ name: '', price: '', qty: '1' });
+                                                }}
+                                                disabled={!manualItem.name || !manualItem.price}>Add</button>
+                                        </div>
                                     </div>
                                 )}
 
@@ -311,54 +343,36 @@ export default function WorkshopPage() {
                     {/* History */}
                     <div className="card">
                         <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>Recent Workshop History</h2>
-                        <div style={{ maxHeight: '700px', overflowY: 'auto' }}>
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Customer</th>
-                                        <th>Service</th>
-                                        <th>Bill</th>
-                                        <th>Margin</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {history.map(record => (
-                                        <tr key={record._id}>
-                                            <td>{new Date(record.date).toLocaleDateString()}</td>
-                                            <td>
-                                                <strong>{record.customerName}</strong>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{record.bikeNumber}</div>
-                                            </td>
-                                            <td>
-                                                {record.serviceType}
-                                                {record.items?.length > 0 && (
-                                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{record.items.length} part(s)</div>
-                                                )}
-                                            </td>
-                                            <td>Rs. {(record.totalAmount ?? record.serviceCharges ?? 0).toLocaleString()}</td>
-                                            <td style={{ color: 'var(--color-success)', fontWeight: 600 }}>
-                                                Rs. {(record.margin ?? 0).toLocaleString()}
-                                            </td>
-                                            <td>
-                                                <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                                    <button className="btn btn-secondary"
-                                                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                                                        onClick={() => setPrintingService(record)}>
-                                                        🖨️
-                                                    </button>
-                                                    <button className="btn"
-                                                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
-                                                        onClick={() => deleteRecord(record._id!)}>
-                                                        🗑️
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '700px', overflowY: 'auto' }}>
+                            {history.length === 0 && (
+                                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>No records yet.</div>
+                            )}
+                            {history.map(record => (
+                                <div key={record._id} style={{ padding: '0.75rem 1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-elevated)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ flex: '1 1 180px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                                            <strong style={{ fontSize: '0.9rem' }}>{record.customerName}</strong>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{record.bikeNumber}</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                            <span>{new Date(record.date).toLocaleDateString()}</span>
+                                            <span>· {record.serviceType}{record.items?.length > 0 ? ` + ${record.items.length} part(s)` : ''}</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.8rem', marginTop: '0.2rem', display: 'flex', gap: '0.75rem' }}>
+                                            <span style={{ fontWeight: 700 }}>Rs. {(record.totalAmount ?? record.serviceCharges ?? 0).toLocaleString()}</span>
+                                            <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>Margin: Rs. {(record.margin ?? 0).toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
+                                        <button className="btn btn-secondary"
+                                            style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+                                            onClick={() => setPrintingService(record)}>🖨️</button>
+                                        <button className="btn"
+                                            style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
+                                            onClick={() => deleteRecord(record._id!)}>🗑️</button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>

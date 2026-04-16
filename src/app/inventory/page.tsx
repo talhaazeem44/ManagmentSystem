@@ -212,61 +212,34 @@ export default function InventoryPage() {
                             <p>No bikes found matching your filters.</p>
                         </div>
                     ) : (
-                        <div style={{ overflowX: 'auto' }}>
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>DO Number</th>
-                                        <th>Model</th>
-                                        <th>Color</th>
-                                        <th>Engine Number</th>
-                                        <th>Chassis Number</th>
-                                        <th>Status</th>
-                                        <th>Received Date</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredBikes.map((bike) => (
-                                        <tr key={bike._id}>
-                                            <td>{bike.deliveryOrder?.doNumber || 'N/A'}</td>
-                                            <td><strong>{bike.model}</strong></td>
-                                            <td>{bike.color}</td>
-                                            <td><code style={{ fontSize: '0.75rem' }}>{bike.engineNumber}</code></td>
-                                            <td><code style={{ fontSize: '0.75rem' }}>{bike.chassisNumber}</code></td>
-                                            <td>
-                                                <span className={`badge ${bike.status === 'AVAILABLE' ? 'badge-success' : 'badge-error'}`}>
-                                                    {bike.status}
-                                                </span>
-                                            </td>
-                                            <td>{bike.deliveryOrder?.date ? new Date(bike.deliveryOrder.date).toLocaleDateString() : 'N/A'}</td>
-                                            <td>
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <button
-                                                        className="btn btn-primary"
-                                                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', backgroundColor: '#3b82f6' }}
-                                                        onClick={() => setEditingBike(bike)}
-                                                        title="Edit Bike"
-                                                    >
-                                                        ✏️
-                                                    </button>
-                                                    {bike.status === 'AVAILABLE' && (
-                                                        <button
-                                                            className="btn btn-primary"
-                                                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', backgroundColor: '#ef4444' }}
-                                                            onClick={() => handleDeleteBike(bike._id)}
-                                                            disabled={isDeleting}
-                                                            title="Delete Bike"
-                                                        >
-                                                            🗑️
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {filteredBikes.map((bike) => (
+                                <div key={bike._id} style={{ padding: '0.875rem 1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-elevated)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ flex: '1 1 200px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                                            <strong style={{ fontSize: '0.95rem' }}>{bike.model}</strong>
+                                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{bike.color}</span>
+                                            <span className={`badge ${bike.status === 'AVAILABLE' ? 'badge-success' : 'badge-error'}`} style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
+                                                {bike.status}
+                                            </span>
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                                            <span>Engine: <code style={{ fontSize: '0.72rem' }}>{bike.engineNumber}</code></span>
+                                            <span>Chassis: <code style={{ fontSize: '0.72rem' }}>{bike.chassisNumber}</code></span>
+                                            <span>DO: {bike.deliveryOrder?.doNumber || 'N/A'}</span>
+                                            <span>{bike.deliveryOrder?.date ? new Date(bike.deliveryOrder.date).toLocaleDateString() : ''}</span>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+                                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+                                            onClick={() => setEditingBike(bike)}>✏️ Edit</button>
+                                        {bike.status === 'AVAILABLE' && (
+                                            <button className="btn" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
+                                                onClick={() => handleDeleteBike(bike._id)} disabled={isDeleting}>🗑️</button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>

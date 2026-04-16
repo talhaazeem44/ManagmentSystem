@@ -285,45 +285,32 @@ export default function ReportsPage() {
                             <p>No delivery orders yet</p>
                         </div>
                     ) : (
-                        <div style={{ overflowX: 'auto' }}>
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>DO Number</th>
-                                        <th>Date</th>
-                                        <th>Dealer</th>
-                                        <th>Total Bikes</th>
-                                        <th>Sold</th>
-                                        <th>Remaining</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {data.deliveryOrders.map((dorder) => {
-                                        const percentSold = (dorder.soldBikes / dorder.totalBikes) * 100;
-                                        return (
-                                            <tr key={dorder.doNumber}>
-                                                <td><strong>{dorder.doNumber}</strong></td>
-                                                <td>{new Date(dorder.date).toLocaleDateString()}</td>
-                                                <td>{dorder.dealerName}</td>
-                                                <td>{dorder.totalBikes}</td>
-                                                <td><span className="badge badge-error">{dorder.soldBikes}</span></td>
-                                                <td><span className="badge badge-success">{dorder.remainingBikes}</span></td>
-                                                <td>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                        <div style={{ flex: 1, height: '8px', background: 'var(--color-bg-elevated)', borderRadius: '4px', overflow: 'hidden' }}>
-                                                            <div style={{ width: `${percentSold}%`, height: '100%', background: percentSold === 100 ? 'var(--color-error)' : 'var(--color-warning)', transition: 'width 0.3s' }}></div>
-                                                        </div>
-                                                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', minWidth: '40px' }}>
-                                                            {percentSold.toFixed(0)}%
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                            {data.deliveryOrders.map((dorder) => {
+                                const percentSold = (dorder.soldBikes / dorder.totalBikes) * 100;
+                                return (
+                                    <div key={dorder.doNumber} style={{ padding: '0.875rem 1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-elevated)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                            <div>
+                                                <strong style={{ fontSize: '0.95rem' }}>{dorder.doNumber}</strong>
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>{new Date(dorder.date).toLocaleDateString()}</span>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{dorder.dealerName}</div>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Total: <strong>{dorder.totalBikes}</strong></span>
+                                                <span className="badge badge-error" style={{ fontSize: '0.7rem' }}>Sold: {dorder.soldBikes}</span>
+                                                <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>Left: {dorder.remainingBikes}</span>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <div style={{ flex: 1, height: '8px', background: 'var(--color-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                                                <div style={{ width: `${percentSold}%`, height: '100%', background: percentSold === 100 ? 'var(--color-error)' : 'var(--color-warning)', transition: 'width 0.3s' }}></div>
+                                            </div>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', minWidth: '35px' }}>{percentSold.toFixed(0)}%</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>

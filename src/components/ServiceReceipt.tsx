@@ -122,7 +122,13 @@ const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service, onDone }) => {
                         <td class="r">${(item.customerPrice * item.quantity).toLocaleString()}</td>
                     </tr>`).join('')}
                 </tbody>
-            </table>` : ''}
+            </table>
+            <div class="row" style="font-size:8.5pt">
+                <span style="color:#555">Labour</span><span>Rs. ${serviceCharges.toLocaleString()}</span>
+            </div>
+            <div class="row" style="font-size:8.5pt">
+                <span style="color:#555">Parts</span><span>Rs. ${items.reduce((s, i) => s + i.customerPrice * i.quantity, 0).toLocaleString()}</span>
+            </div>` : ''}
             <div class="divider"></div>
             <div class="total-row"><span>TOTAL:</span><span>Rs. ${total.toLocaleString()}</span></div>
             <div class="divider"></div>

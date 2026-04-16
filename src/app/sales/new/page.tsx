@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useRouter } from 'next/navigation';
+import { BIKE_STANDARD_PRICES } from '@/lib/constants';
 
 interface Bike {
     id: string;
@@ -10,20 +11,33 @@ interface Bike {
     color: string;
     engineNumber: string;
     chassisNumber: string;
+    purchasePrice?: number;
     status: string;
     deliveryOrder?: {
         doNumber: string;
     };
 }
 
+function getSuggestedPrice(model: string): number {
+    // Direct lookup from constants (same source as reports/receipt)
+    if (BIKE_STANDARD_PRICES[model]) return BIKE_STANDARD_PRICES[model];
+    // Fallback: strip spaces and try again
+    const entry = Object.entries(BIKE_STANDARD_PRICES).find(
+        ([k]) => k.replace(/\s+/g, '').toUpperCase() === model.replace(/\s+/g, '').toUpperCase()
+    );
+    return entry ? entry[1] : 0;
+}
+
 export default function NewSalePage() {
     const router = useRouter();
     const [bikes, setBikes] = useState<Bike[]>([]);
+    const [doFilter, setDoFilter] = useState('');
     const [selectedBikeId, setSelectedBikeId] = useState('');
     const [selectedBike, setSelectedBike] = useState<Bike | null>(null);
 
     // Customer fields
     const [cnic, setCnic] = useState('');
+    const [cnicLookupStatus, setCnicLookupStatus] = useState<'idle' | 'found' | 'new'>('idle');
     const [name, setName] = useState('');
     const [fatherName, setFatherName] = useState('');
     const [address, setAddress] = useState('');
@@ -36,7 +50,7 @@ export default function NewSalePage() {
     const [balance, setBalance] = useState('');
     const [registrationCost, setRegistrationCost] = useState('');
     const [paymentMode, setPaymentMode] = useState('CASH');
-    const [taxAmount, setTaxAmount] = useState('1000');
+    const [taxAmount] = useState('1000');
     const [receiptNumber, setReceiptNumber] = useState('');
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,6 +63,10 @@ export default function NewSalePage() {
         if (selectedBikeId) {
             const bike = bikes.find(b => b.id === selectedBikeId);
             setSelectedBike(bike || null);
+            if (bike && bike.purchasePrice) {
+                const suggested = getSuggestedPrice(bike.model);
+                if (suggested > 0) setPrice(String(suggested));
+            }
         } else {
             setSelectedBike(null);
         }
@@ -63,6 +81,47 @@ export default function NewSalePage() {
             }
         } catch (error) {
             console.error('Failed to fetch bikes:', error);
+        }
+    };
+
+    // Unique DO numbers from available bikes
+    const uniqueDOs = Array.from(
+        new Set(bikes.map(b => b.deliveryOrder?.doNumber).filter(Boolean))
+    ) as string[];
+
+    // Bikes filtered by selected DO
+    const filteredBikes = doFilter
+        ? bikes.filter(b => b.deliveryOrder?.doNumber === doFilter)
+        : bikes;
+
+    // When DO filter changes, reset bike selection if it no longer matches
+    useEffect(() => {
+        if (doFilter && selectedBike && selectedBike.deliveryOrder?.doNumber !== doFilter) {
+            setSelectedBikeId('');
+        }
+    }, [doFilter]);
+
+    // Auto-fill customer info when CNIC is entered
+    const handleCnicBlur = async () => {
+        const cleaned = cnic.trim();
+        if (!cleaned) return;
+
+        try {
+            const res = await fetch(`/api/customers?cnic=${encodeURIComponent(cleaned)}`);
+            if (res.ok) {
+                const customer = await res.json();
+                if (customer) {
+                    setName(customer.name || '');
+                    setFatherName(customer.fatherName || '');
+                    setAddress(customer.address || '');
+                    setMobile(customer.mobile || '');
+                    setCnicLookupStatus('found');
+                } else {
+                    setCnicLookupStatus('new');
+                }
+            }
+        } catch {
+            // silently ignore lookup errors
         }
     };
 
@@ -124,21 +183,37 @@ export default function NewSalePage() {
                             Select Bike
                         </h2>
 
-                        <div className="form-group">
-                            <label className="label">Available Bike *</label>
-                            <select
-                                className="select"
-                                value={selectedBikeId}
-                                onChange={(e) => setSelectedBikeId(e.target.value)}
-                                required
-                            >
-                                <option value="">Select a bike</option>
-                                {bikes.map((bike) => (
-                                    <option key={bike.id} value={bike.id}>
-                                        {bike.model} - {bike.color} | Engine: {bike.engineNumber} | DO: {bike.deliveryOrder?.doNumber || 'N/A'}
-                                    </option>
-                                ))}
-                            </select>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label className="label">Filter by DO Number</label>
+                                <select
+                                    className="select"
+                                    value={doFilter}
+                                    onChange={(e) => setDoFilter(e.target.value)}
+                                >
+                                    <option value="">All DOs</option>
+                                    {uniqueDOs.map(doNum => (
+                                        <option key={doNum} value={doNum}>{doNum}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="label">Available Bike *</label>
+                                <select
+                                    className="select"
+                                    value={selectedBikeId}
+                                    onChange={(e) => setSelectedBikeId(e.target.value)}
+                                    required
+                                >
+                                    <option value="">Select a bike</option>
+                                    {filteredBikes.map((bike) => (
+                                        <option key={bike.id} value={bike.id}>
+                                            {bike.model} - {bike.color} | Engine: {bike.engineNumber} | DO: {bike.deliveryOrder?.doNumber || 'N/A'}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
 
                         {selectedBike && (
@@ -161,6 +236,27 @@ export default function NewSalePage() {
                                         <span style={{ color: 'var(--color-text-muted)' }}>Chassis #:</span>
                                         <code style={{ marginLeft: '0.5rem', fontSize: '0.75rem' }}>{selectedBike.chassisNumber}</code>
                                     </div>
+                                    <div>
+                                        <span style={{ color: 'var(--color-text-muted)' }}>DO Number:</span>
+                                        <strong style={{ marginLeft: '0.5rem' }}>{selectedBike.deliveryOrder?.doNumber || 'N/A'}</strong>
+                                    </div>
+                                    {selectedBike.purchasePrice ? (
+                                        <div style={{ gridColumn: '1 / -1', marginTop: '0.25rem', padding: '0.5rem', background: 'rgba(34,197,94,0.08)', borderRadius: '6px', display: 'flex', gap: '1.5rem' }}>
+                                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                                Purchase: <strong>{Math.round(selectedBike.purchasePrice / 1000) * 1000} PKR</strong>
+                                            </span>
+                                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                                Suggested: <strong style={{ color: 'var(--color-success)' }}>
+                                                    {getSuggestedPrice(selectedBike.model).toLocaleString()} PKR
+                                                </strong>
+                                            </span>
+                                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                                Margin: <strong>
+                                                    {(getSuggestedPrice(selectedBike.model) - selectedBike.purchasePrice).toLocaleString()} PKR
+                                                </strong>
+                                            </span>
+                                        </div>
+                                    ) : null}
                                 </div>
                             </div>
                         )}
@@ -178,10 +274,21 @@ export default function NewSalePage() {
                                     type="text"
                                     className="input"
                                     value={cnic}
-                                    onChange={(e) => setCnic(e.target.value)}
+                                    onChange={(e) => { setCnic(e.target.value); setCnicLookupStatus('idle'); }}
+                                    onBlur={handleCnicBlur}
                                     placeholder="34601-1181800-1"
                                     required
                                 />
+                                {cnicLookupStatus === 'found' && (
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--color-success)', marginTop: '0.25rem' }}>
+                                        ✓ Returning customer — details auto-filled
+                                    </p>
+                                )}
+                                {cnicLookupStatus === 'new' && (
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
+                                        New customer
+                                    </p>
+                                )}
                             </div>
 
                             <div className="form-group">
@@ -231,12 +338,6 @@ export default function NewSalePage() {
                                 onChange={(e) => setAddress(e.target.value)}
                                 placeholder="Street, City"
                             />
-                        </div>
-
-                        <div style={{ marginTop: 'var(--spacing-md)', padding: 'var(--spacing-md)', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: 'var(--radius-md)' }}>
-                            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-                                💡 <strong>CNIC Scanning:</strong> OCR integration placeholder - manually enter CNIC for now
-                            </p>
                         </div>
                     </div>
 
@@ -326,18 +427,6 @@ export default function NewSalePage() {
                         </div>
 
                         <div className="form-row">
-                            <div className="form-group">
-                                <label className="label">Tax Amount (PKR) *</label>
-                                <input
-                                    type="number"
-                                    className="input"
-                                    value={taxAmount}
-                                    onChange={(e) => setTaxAmount(e.target.value)}
-                                    placeholder="1000"
-                                    required
-                                    min="0"
-                                />
-                            </div>
                             <div className="form-group">
                                 <label className="label">Receipt Number</label>
                                 <input

@@ -5,8 +5,8 @@ import {
     BIKE_BOOK_PRICES,
     BIKE_STANDARD_PRICES,
     BIKE_UNIT_MARGINS,
-    BIKE_REGISTRATION_CHARGED,
-    REGISTRATION_ACTUAL_COST
+    REGISTRATION_ACTUAL_COST,
+    REGISTRATION_ACTUAL_COST_BY_MODEL
 } from '@/lib/constants';
 
 export async function GET(request: NextRequest) {
@@ -71,9 +71,10 @@ export async function GET(request: NextRequest) {
             const purchasePrice = Number(bike?.purchasePrice || BIKE_BOOK_PRICES[model] || 0);
             const standardPrice = BIKE_STANDARD_PRICES[model] || actualSoldPrice;
             const unitMargin = BIKE_UNIT_MARGINS[model] || (standardPrice - purchasePrice);
-            const blackMargin = actualSoldPrice - standardPrice; // extra above standard price
-            const regCharged = Number(sale.registrationCost || BIKE_REGISTRATION_CHARGED[model] || 0);
-            const regMargin = regCharged > 0 ? regCharged - REGISTRATION_ACTUAL_COST : 0;
+            const blackMargin = Math.max(0, actualSoldPrice - standardPrice); // extra above standard price
+            const regCharged = Number(sale.registrationCost || 0);
+            const actualRegCost = REGISTRATION_ACTUAL_COST_BY_MODEL[model] ?? REGISTRATION_ACTUAL_COST;
+            const regMargin = regCharged > 0 ? regCharged - actualRegCost : 0;
             const totalMargin = unitMargin + blackMargin + regMargin;
             return { unitMargin, blackMargin, regMargin, totalMargin, purchasePrice };
         };

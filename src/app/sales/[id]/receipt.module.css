@@ -195,6 +195,40 @@
     font-weight: 800;
 }
 
+@media (max-width: 768px) {
+    .receipt {
+        padding: 1rem;
+        border: 1px solid #ccc;
+    }
+
+    .header {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 0.5rem;
+    }
+
+    .receiptNumber { text-align: center; }
+
+    .row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .models {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+
+    .label { min-width: 130px; font-size: 0.9rem; }
+    .field { font-size: 0.9rem; }
+
+    .paymentModes { gap: 1rem; justify-content: flex-start; flex-wrap: wrap; }
+
+    .paymentDetails { grid-template-columns: 1fr; gap: 1rem; }
+
+    .footer { grid-template-columns: 1fr; gap: 1.5rem; }
+}
+
 @media print {
     .receipt {
         border: none;

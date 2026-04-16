@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import styles from './receipt.module.css';
+import { BIKE_STANDARD_PRICES } from '@/lib/constants';
 
 interface Sale {
     id: number;
@@ -199,7 +200,9 @@ export default function ReceiptPage() {
                             <div className={styles.paymentCol}>
                                 <div className={styles.field}>
                                     <span className={styles.label}>Cash Price:</span>
-                                    <span className={styles.value}>{Number(sale.price).toLocaleString()}</span>
+                                    <span className={styles.value}>
+                                        {(BIKE_STANDARD_PRICES[sale.bike.model] || Number(sale.price)).toLocaleString()}
+                                    </span>
                                 </div>
                                 <div className={styles.field}>
                                     <span className={styles.label}>Advance Amount:</span>
