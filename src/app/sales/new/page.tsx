@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useRouter } from 'next/navigation';
-import { BIKE_STANDARD_PRICES } from '@/lib/constants';
+import { BIKE_STANDARD_PRICES, BIKE_UNIT_MARGINS } from '@/lib/constants';
 
 interface Bike {
     id: string;
@@ -252,7 +252,7 @@ export default function NewSalePage() {
                                             </span>
                                             <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                                                 Margin: <strong>
-                                                    {(getSuggestedPrice(selectedBike.model) - selectedBike.purchasePrice).toLocaleString()} PKR
+                                                    {(BIKE_UNIT_MARGINS[selectedBike.model] ?? (getSuggestedPrice(selectedBike.model) - Math.round(selectedBike.purchasePrice / 1000) * 1000)).toLocaleString()} PKR
                                                 </strong>
                                             </span>
                                         </div>

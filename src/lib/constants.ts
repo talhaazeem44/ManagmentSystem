@@ -4,6 +4,7 @@ export const HONDA_BIKE_MODELS = [
     'PRIDOR',
     'CG 125',
     'CG125S.SE',
+    'CG125GOLD',
     'CB125F.SE',
     'CB150F',
     'CG150 2-Tone'
@@ -16,7 +17,8 @@ export const BIKE_BOOK_PRICES: Record<string, number> = {
     'CD70': 152000,
     'CG 125': 227000,
     'PRIDOR': 202000,
-    'CG125S.SE': 282000,
+    'CG125S.SE': 273000,
+    'CG125GOLD': 282000,
     'CB150F': 478000,
     'CG150 2-Tone': 438000,
     'CB125F.SE': 376000,
@@ -42,10 +44,11 @@ export const BIKE_UNIT_MARGINS: Record<string, number> = {
     'DREAM': 8000,
     'PRIDOR': 8000,
     'CG 125': 11000,
-    'CG125S.SE': 10000,
-    'CB125F.SE': 10000,
-    'CB150F': 10000,
-    'CG150 2-Tone': 10000,
+    'CG125S.SE': 11000,
+    'CG125GOLD': 11000,
+    'CB125F.SE': 20000,
+    'CB150F': 20000,
+    'CG150 2-Tone': 20000,
 };
 
 // Registration fee charged to customer
@@ -55,6 +58,7 @@ export const BIKE_REGISTRATION_CHARGED: Record<string, number> = {
     'PRIDOR': 8000,
     'CG 125': 9000,
     'CG125S.SE': 8000,
+    'CG125GOLD': 8000,
     'CB125F.SE': 8000,
     'CB150F': 8000,
     'CG150 2-Tone': 8000,

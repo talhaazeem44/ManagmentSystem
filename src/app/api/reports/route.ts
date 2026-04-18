@@ -70,8 +70,15 @@ export async function GET(request: NextRequest) {
             const actualSoldPrice = Number(sale.price || 0);
             const purchasePrice = Number(bike?.purchasePrice || BIKE_BOOK_PRICES[model] || 0);
             const standardPrice = BIKE_STANDARD_PRICES[model] || actualSoldPrice;
-            const unitMargin = BIKE_UNIT_MARGINS[model] || (standardPrice - purchasePrice);
-            const blackMargin = Math.max(0, actualSoldPrice - standardPrice); // extra above standard price
+            const fixedMargin = BIKE_UNIT_MARGINS[model] || (standardPrice - purchasePrice);
+            // Below list → actual margin (soldPrice - purchasePrice)
+            // Above list → fixed margin + extra above list
+            const unitMargin = actualSoldPrice <= standardPrice
+                ? actualSoldPrice - purchasePrice
+                : fixedMargin;
+            const blackMargin = actualSoldPrice > standardPrice
+                ? actualSoldPrice - standardPrice
+                : 0;
             const regCharged = Number(sale.registrationCost || 0);
             const actualRegCost = REGISTRATION_ACTUAL_COST_BY_MODEL[model] ?? REGISTRATION_ACTUAL_COST;
             const regMargin = regCharged > 0 ? regCharged - actualRegCost : 0;
