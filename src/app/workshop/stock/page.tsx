@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
+import Toast from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
 
 interface StockItem {
     _id?: string;
@@ -19,6 +21,7 @@ const emptyForm = { name: '', category: 'Other', retailPrice: '', customerPrice:
 const PAGE_SIZE = 12;
 
 export default function WorkshopStockPage() {
+    const { toasts, showToast, removeToast } = useToast();
     const [stock, setStock] = useState<StockItem[]>([]);
     const [formData, setFormData] = useState<any>(emptyForm);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -67,7 +70,7 @@ export default function WorkshopStockPage() {
             }
             setFormData(emptyForm);
         } catch {
-            alert('Failed to save stock item');
+            showToast('Failed to save stock item', 'error');
         } finally {
             setLoading(false);
         }
@@ -232,6 +235,7 @@ export default function WorkshopStockPage() {
                     )}
                 </div>
             </div>
+            <Toast toasts={toasts} removeToast={removeToast} />
         </DashboardLayout>
     );
 }

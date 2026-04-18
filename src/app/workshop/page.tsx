@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import ServiceReceipt from '@/components/ServiceReceipt';
+import Toast from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
 
 interface StockItem {
     _id: string;
@@ -37,6 +39,7 @@ interface ServiceRecord {
 }
 
 export default function WorkshopPage() {
+    const { toasts, showToast, removeToast } = useToast();
     const [history, setHistory] = useState<ServiceRecord[]>([]);
     const [stockList, setStockList] = useState<StockItem[]>([]);
     const [loading, setLoading] = useState(false);
@@ -112,7 +115,7 @@ export default function WorkshopPage() {
                 setPrintingService(newRecord);
             }
         } catch {
-            alert('Failed to save service record');
+            showToast('Failed to save service record', 'error');
         } finally {
             setLoading(false);
         }
@@ -379,6 +382,7 @@ export default function WorkshopPage() {
 
                 {printingService && <ServiceReceipt service={printingService} onDone={() => setPrintingService(null)} />}
             </div>
+            <Toast toasts={toasts} removeToast={removeToast} />
         </DashboardLayout>
     );
 }

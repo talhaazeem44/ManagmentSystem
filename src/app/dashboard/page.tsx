@@ -5,6 +5,8 @@ import DashboardLayout from '@/components/DashboardLayout';
 import SaleReceipt from '@/components/SaleReceipt';
 import BikeSticker from '@/components/BikeSticker';
 import { MARGIN_PASSWORD } from '@/lib/constants';
+import Toast from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
 
 interface SaleRecord {
     id: string;
@@ -58,6 +60,7 @@ function StatCard({ label, value, color, sub }: { label: string; value: string; 
 }
 
 export default function DashboardPage() {
+    const { toasts, showToast, removeToast } = useToast();
     const [records, setRecords] = useState<SaleRecord[]>([]);
     const [stats, setStats] = useState<Stats | null>(null);
     const [loading, setLoading] = useState(true);
@@ -104,9 +107,9 @@ export default function DashboardPage() {
         setIsDeleting(true);
         try {
             const res = await fetch(`/api/sales/${id}`, { method: 'DELETE' });
-            if (res.ok) { alert('Sale deleted'); fetchDashboardData(); }
-            else { const e = await res.json(); alert(`Failed: ${e.message}`); }
-        } catch { alert('Error deleting sale'); }
+            if (res.ok) { showToast('Sale deleted', 'success'); fetchDashboardData(); }
+            else { const e = await res.json(); showToast(`Failed: ${e.message}`, 'error'); }
+        } catch { showToast('Error deleting sale', 'error'); }
         finally { setIsDeleting(false); }
     };
 
@@ -276,14 +279,16 @@ export default function DashboardPage() {
                         record={editingRecord}
                         onClose={() => setEditingRecord(null)}
                         onSuccess={() => { setEditingRecord(null); fetchDashboardData(); }}
+                        showToast={showToast}
                     />
                 )}
             </div>
+            <Toast toasts={toasts} removeToast={removeToast} />
         </DashboardLayout>
     );
 }
 
-function EditRecordModal({ record, onClose, onSuccess }: { record: SaleRecord; onClose: () => void; onSuccess: () => void }) {
+function EditRecordModal({ record, onClose, onSuccess, showToast }: { record: SaleRecord; onClose: () => void; onSuccess: () => void; showToast: (message: string, type: 'success' | 'error') => void }) {
     const [formData, setFormData] = useState({
         customerName: record.customer.name,
         customerMobile: record.customer.mobile,
@@ -314,9 +319,9 @@ function EditRecordModal({ record, onClose, onSuccess }: { record: SaleRecord; o
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ engineNumber: formData.engineNumber, chassisNumber: formData.chassisNumber })
             });
-            if (saleRes.ok && customerRes.ok && bikeRes.ok) { alert('Updated successfully'); onSuccess(); }
-            else alert('Failed to update some fields');
-        } catch { alert('Error during update'); }
+            if (saleRes.ok && customerRes.ok && bikeRes.ok) { showToast('Updated successfully', 'success'); onSuccess(); }
+            else showToast('Failed to update some fields', 'error');
+        } catch { showToast('Error during update', 'error'); }
         finally { setSubmitting(false); }
     };
 

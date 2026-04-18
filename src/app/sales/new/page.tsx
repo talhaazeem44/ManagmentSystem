@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useRouter } from 'next/navigation';
 import { BIKE_STANDARD_PRICES, BIKE_UNIT_MARGINS } from '@/lib/constants';
+import Toast from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
 
 interface Bike {
     id: string;
@@ -30,6 +32,7 @@ function getSuggestedPrice(model: string): number {
 
 export default function NewSalePage() {
     const router = useRouter();
+    const { toasts, showToast, removeToast } = useToast();
     const [bikes, setBikes] = useState<Bike[]>([]);
     const [doFilter, setDoFilter] = useState('');
     const [selectedBikeId, setSelectedBikeId] = useState('');
@@ -155,14 +158,14 @@ export default function NewSalePage() {
 
             if (response.ok) {
                 const sale = await response.json();
-                alert('Sale completed successfully!');
+                showToast('Sale completed successfully!', 'success');
                 router.push(`/sales/${sale.id}`);
             } else {
                 const error = await response.json();
-                alert(`Error: ${error.message || 'Failed to complete sale'}`);
+                showToast(`Error: ${error.message || 'Failed to complete sale'}`, 'error');
             }
         } catch (error) {
-            alert('Failed to submit sale. Please ensure the database is running.');
+            showToast('Failed to submit sale. Please ensure the database is running.', 'error');
             console.error(error);
         } finally {
             setIsSubmitting(false);
@@ -457,6 +460,7 @@ export default function NewSalePage() {
                     </div>
                 </form>
             </div>
+            <Toast toasts={toasts} removeToast={removeToast} />
         </DashboardLayout>
     );
 }

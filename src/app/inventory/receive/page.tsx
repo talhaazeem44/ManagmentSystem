@@ -4,6 +4,8 @@ import { useState, useRef } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { HONDA_BIKE_MODELS, BIKE_COLORS, BIKE_BOOK_PRICES } from '@/lib/constants';
 import * as XLSX from 'xlsx';
+import Toast from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
 
 interface BikeEntry {
     id: string;
@@ -89,6 +91,7 @@ function findCol(headers: string[], keywords: string[]): number {
 }
 
 export default function ReceiveInventoryPage() {
+    const { toasts, showToast, removeToast } = useToast();
     const [doNumber, setDoNumber] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [dealerName, setDealerName] = useState('NAEEM AUTOS (SBL)');
@@ -295,16 +298,16 @@ export default function ReceiveInventoryPage() {
             });
 
             if (response.ok) {
-                alert('Delivery Order received successfully!');
+                showToast('Delivery Order received successfully!', 'success');
                 setDoNumber('');
                 setDate(new Date().toISOString().split('T')[0]);
                 setBikes([{ id: '1', orderNumber: '', model: '', color: '', engineNumber: '', chassisNumber: '', purchasePrice: '' }]);
             } else {
                 const error = await response.json();
-                alert(`Error: ${error.message || 'Failed to save delivery order'}`);
+                showToast(`Error: ${error.message || 'Failed to save delivery order'}`, 'error');
             }
         } catch (error) {
-            alert('Failed to submit delivery order. Please ensure the database is running.');
+            showToast('Failed to submit delivery order. Please ensure the database is running.', 'error');
             console.error(error);
         } finally {
             setIsSubmitting(false);
@@ -526,6 +529,7 @@ export default function ReceiveInventoryPage() {
                     </div>
                 </form>
             </div>
+            <Toast toasts={toasts} removeToast={removeToast} />
         </DashboardLayout>
     );
 }

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
+import Toast from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
 
 interface Bike {
     id: string;
@@ -18,6 +20,7 @@ interface Bike {
 }
 
 export default function InventoryPage() {
+    const { toasts, showToast, removeToast } = useToast();
     const [bikes, setBikes] = useState<Bike[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'ALL' | 'AVAILABLE' | 'SOLD'>('ALL');
@@ -55,15 +58,15 @@ export default function InventoryPage() {
             });
 
             if (response.ok) {
-                alert('Bike deleted successfully');
+                showToast('Bike deleted successfully', 'success');
                 fetchBikes();
             } else {
                 const error = await response.json();
-                alert(`Failed to delete: ${error.message}`);
+                showToast(`Failed to delete: ${error.message}`, 'error');
             }
         } catch (error) {
             console.error('Delete error:', error);
-            alert('An error occurred while deleting');
+            showToast('An error occurred while deleting', 'error');
         } finally {
             setIsDeleting(false);
         }
@@ -253,14 +256,16 @@ export default function InventoryPage() {
                             setEditingBike(null);
                             fetchBikes();
                         }}
+                        showToast={showToast}
                     />
                 )}
             </div>
+            <Toast toasts={toasts} removeToast={removeToast} />
         </DashboardLayout>
     );
 }
 
-function EditBikeModal({ bike, onClose, onSuccess }: { bike: Bike; onClose: () => void; onSuccess: () => void }) {
+function EditBikeModal({ bike, onClose, onSuccess, showToast }: { bike: Bike; onClose: () => void; onSuccess: () => void; showToast: (message: string, type: 'success' | 'error') => void }) {
     const [formData, setFormData] = useState({
         model: bike.model,
         color: bike.color,
@@ -280,15 +285,15 @@ function EditBikeModal({ bike, onClose, onSuccess }: { bike: Bike; onClose: () =
             });
 
             if (response.ok) {
-                alert('Bike updated successfully');
+                showToast('Bike updated successfully', 'success');
                 onSuccess();
             } else {
                 const error = await response.json();
-                alert(`Failed to update: ${error.message}`);
+                showToast(`Failed to update: ${error.message}`, 'error');
             }
         } catch (error) {
             console.error('Update error:', error);
-            alert('An error occurred during update');
+            showToast('An error occurred during update', 'error');
         } finally {
             setSubmitting(false);
         }
