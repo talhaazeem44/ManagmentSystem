@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import DashboardLayout from '@/components/DashboardLayout';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
+
+const QrScanner = dynamic(() => import('@/components/QrScanner'), { ssr: false });
 
 interface StockItem {
     _id?: string;
@@ -26,6 +29,7 @@ export default function WorkshopStockPage() {
     const [formData, setFormData] = useState<any>(emptyForm);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [showQrScanner, setShowQrScanner] = useState(false);
     const [page, setPage] = useState(1);
 
     useEffect(() => { fetchStock(); }, []);
@@ -76,6 +80,40 @@ export default function WorkshopStockPage() {
         }
     };
 
+    const handleQrScan = async (text: string) => {
+        setShowQrScanner(false);
+
+        const partNoMatch = text.match(/[A-Z0-9]{4,6}-[A-Z0-9]{3,4}-[A-Z0-9]{3,4}/i);
+        const partNumber = partNoMatch ? partNoMatch[0].toUpperCase() : '';
+
+        // If QR is a URL, fetch part details from it server-side
+        let name = '';
+        let price = '';
+        try {
+            new URL(text); // throws if not a URL
+            showToast('Reading part details...', 'success');
+            const res = await fetch('/api/fetch-part-details', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: text }),
+            });
+            const data = await res.json();
+            name = data.name || '';
+            price = data.price || '';
+        } catch {
+            // Not a URL — use raw text as name
+            name = text.length < 100 ? text.trim() : partNumber;
+        }
+
+        setFormData((prev: any) => ({
+            ...prev,
+            name: name || partNumber || prev.name,
+            retailPrice: price || prev.retailPrice,
+        }));
+        showToast(`Scanned: ${name || partNumber || 'done — fill in name'}`, 'success');
+    };
+
+
     const handleEdit = (item: StockItem) => {
         setEditingId(item._id!);
         setFormData({
@@ -122,9 +160,18 @@ export default function WorkshopStockPage() {
 
                 {/* Add / Edit Form */}
                 <div className="card" style={{ marginBottom: '1.5rem' }}>
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>
-                        {editingId ? '✏️ Edit Item' : '➕ Add Stock Item'}
-                    </h2>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>
+                            {editingId ? '✏️ Edit Item' : '➕ Add Stock Item'}
+                        </h2>
+                        {!editingId && (
+                            <button type="button" className="btn btn-secondary"
+                                style={{ fontSize: '0.85rem', padding: '0.35rem 0.85rem' }}
+                                onClick={() => setShowQrScanner(true)}>
+                                📷 Scan QR
+                            </button>
+                        )}
+                    </div>
                     <form onSubmit={handleSubmit}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
                             <div>
@@ -235,6 +282,7 @@ export default function WorkshopStockPage() {
                     )}
                 </div>
             </div>
+            {showQrScanner && <QrScanner onScan={handleQrScan} onClose={() => setShowQrScanner(false)} />}
             <Toast toasts={toasts} removeToast={removeToast} />
         </DashboardLayout>
     );

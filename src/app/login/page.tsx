@@ -1,6 +1,6 @@
 'use client';
 
-import { signIn } from 'next-auth/react';
+import { signIn, getSession } from 'next-auth/react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './login.module.css';
@@ -27,7 +27,9 @@ export default function LoginPage() {
             if (result?.error) {
                 setError('Invalid email or password');
             } else {
-                router.push('/dashboard');
+                const session = await getSession();
+                const role = (session?.user as any)?.role;
+                router.push(role === 'workshop' ? '/workshop' : '/dashboard');
                 router.refresh();
             }
         } catch (error) {

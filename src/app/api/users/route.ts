@@ -6,7 +6,7 @@ import { User } from '@/models';
 export async function POST(request: NextRequest) {
     try {
         await dbConnect();
-        const { email, password, name } = await request.json();
+        const { email, password, name, role } = await request.json();
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
             email,
             password: hashedPassword,
             name,
-            role: 'admin' // First user is admin
+            role: role || 'user',
         });
 
         return NextResponse.json(

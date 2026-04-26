@@ -4,23 +4,47 @@ import { getToken } from 'next-auth/jwt';
 
 export async function middleware(request: NextRequest) {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
-    const isLoginPage = request.nextUrl.pathname === '/login';
-    const isApiAuth = request.nextUrl.pathname.startsWith('/api/auth');
-    const isScratchPage = request.nextUrl.pathname.startsWith('/scratch');
+    const { pathname } = request.nextUrl;
 
-    // Allow public routes
-    if (isApiAuth || isScratchPage) {
+    const isLoginPage = pathname === '/login';
+    const isApiAuth = pathname.startsWith('/api/auth');
+    const isApiUsers = pathname.startsWith('/api/users');
+    const isScratchPage = pathname.startsWith('/scratch');
+    const isWorkshopPage = pathname.startsWith('/workshop');
+    const isWorkshopApi = pathname.startsWith('/api/workshop');
+
+    if (isApiAuth || isApiUsers || isScratchPage) {
         return NextResponse.next();
     }
 
-    // Redirect to dashboard if already logged in and trying to access login
     if (isLoginPage && token) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
+        const role = token.role as string;
+        const dest = role === 'workshop' ? '/workshop' : '/dashboard';
+        return NextResponse.redirect(new URL(dest, request.url));
     }
 
-    // Redirect to login if not authenticated and trying to access protected routes
     if (!isLoginPage && !token) {
         return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    if (token) {
+        const role = token.role as string;
+
+        // Workshop users can only access /workshop pages and /api/workshop
+        if (role === 'workshop' && !isWorkshopPage && !isWorkshopApi) {
+            return NextResponse.redirect(new URL('/workshop', request.url));
+        }
+
+        // Regular users cannot access workshop section
+        if (role === 'user' && (isWorkshopPage || isWorkshopApi)) {
+            if (isWorkshopApi) {
+                return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
+                    status: 403,
+                    headers: { 'Content-Type': 'application/json' },
+                });
+            }
+            return NextResponse.redirect(new URL('/dashboard', request.url));
+        }
     }
 
     return NextResponse.next();

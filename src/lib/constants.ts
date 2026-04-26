@@ -51,24 +51,16 @@ export const BIKE_UNIT_MARGINS: Record<string, number> = {
     'CG150 2-Tone': 20000,
 };
 
-// Registration fee charged to customer
-export const BIKE_REGISTRATION_CHARGED: Record<string, number> = {
-    'CD70': 8000,
-    'DREAM': 8000,
-    'PRIDOR': 8000,
-    'CG 125': 9000,
-    'CG125S.SE': 8000,
-    'CG125GOLD': 8000,
-    'CB125F.SE': 8000,
-    'CB150F': 8000,
-    'CG150 2-Tone': 8000,
-};
 
-// Actual registration cost paid to government (per model, fallback to default)
-export const REGISTRATION_ACTUAL_COST = 6500; // default
+// Actual registration cost paid to government
+export const REGISTRATION_ACTUAL_COST = 6000; // default (CD70, DREAM, PRIDOR)
 export const REGISTRATION_ACTUAL_COST_BY_MODEL: Record<string, number> = {
-    'CG 125': 7000,
-    'CG125S.SE': 7000,
+    'CG 125':       6500,
+    'CG125S.SE':    6500,
+    'CG125GOLD':    6500,
+    'CB125F.SE':    6500,
+    'CB150F':       6500,
+    'CG150 2-Tone': 6500,
 };
 
 // Password to unlock margin section on dashboard

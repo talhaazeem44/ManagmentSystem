@@ -14,6 +14,7 @@ interface Sale {
     receivedCash?: number;
     balance?: number;
     registrationCost: number | null;
+    bankTransferAmount?: number;
     paymentMode: string;
     receiptNumber: string | null;
     bike: {
@@ -214,6 +215,12 @@ export default function ReceiptPage() {
                                         {sale.receivedCash ? Number(sale.receivedCash).toLocaleString() : '-'}
                                     </span>
                                 </div>
+                                {sale.bankTransferAmount ? (
+                                    <div className={styles.field}>
+                                        <span className={styles.label}>Bank Transfer:</span>
+                                        <span className={styles.value}>{Number(sale.bankTransferAmount).toLocaleString()}</span>
+                                    </div>
+                                ) : null}
                                 <div className={styles.field}>
                                     <span className={styles.label}>Balance:</span>
                                     <span className={styles.value}>

@@ -53,6 +53,7 @@ export default function NewSalePage() {
     const [balance, setBalance] = useState('');
     const [registrationCost, setRegistrationCost] = useState('');
     const [paymentMode, setPaymentMode] = useState('CASH');
+    const [bankTransferAmount, setBankTransferAmount] = useState('');
     const [taxAmount] = useState('1000');
     const [receiptNumber, setReceiptNumber] = useState('');
 
@@ -152,6 +153,7 @@ export default function NewSalePage() {
                     registrationCost: registrationCost || null,
                     taxAmount: taxAmount || 0,
                     paymentMode,
+                    bankTransferAmount: bankTransferAmount || 0,
                     receiptNumber
                 })
             });
@@ -430,6 +432,17 @@ export default function NewSalePage() {
                         </div>
 
                         <div className="form-row">
+                            <div className="form-group">
+                                <label className="label">Bank Transfer Amount (PKR)</label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    value={bankTransferAmount}
+                                    onChange={(e) => setBankTransferAmount(e.target.value)}
+                                    placeholder="0"
+                                    min="0"
+                                />
+                            </div>
                             <div className="form-group">
                                 <label className="label">Receipt Number</label>
                                 <input

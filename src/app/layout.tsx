@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Providers from '@/components/Providers';
 
 export const metadata: Metadata = {
   title: "Naeem Autos",
@@ -31,7 +32,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Naeem Autos" />
         <link rel="apple-touch-icon" href="/icon-192.svg" />
       </head>
-      <body>{children}</body>
+      <body><Providers>{children}</Providers></body>
     </html>
   );
 }

@@ -1,4 +1,5 @@
 import React from 'react';
+import { BIKE_STANDARD_PRICES } from '@/lib/constants';
 
 interface SaleReceiptProps {
     sale: {
@@ -8,6 +9,7 @@ interface SaleReceiptProps {
         receivedCash: number;
         balance: number;
         registrationCost?: number;
+        bankTransferAmount?: number;
         receiptNumber?: string;
         paymentMode: string;
         bike: {
@@ -251,7 +253,7 @@ const SaleReceipt: React.FC<SaleReceiptProps> = ({ sale }) => {
             <div className="price-section">
                 <div className="price-row">
                     <div className="price-label">Cash Price:</div>
-                    <div className="price-value">{sale.price.toLocaleString()}</div>
+                    <div className="price-value">{(BIKE_STANDARD_PRICES[sale.bike.model] || sale.price).toLocaleString()}</div>
                 </div>
                 <div className="price-row">
                     <div className="price-label">Advance Amount:</div>
@@ -261,16 +263,22 @@ const SaleReceipt: React.FC<SaleReceiptProps> = ({ sale }) => {
                     <div className="price-label">Received Cash:</div>
                     <div className="price-value">{sale.receivedCash?.toLocaleString() || '0'}</div>
                 </div>
+                {sale.bankTransferAmount ? (
+                    <div className="price-row">
+                        <div className="price-label">Bank Transfer:</div>
+                        <div className="price-value">{sale.bankTransferAmount.toLocaleString()}</div>
+                    </div>
+                ) : null}
                 <div className="price-row">
                     <div className="price-label">Balance:</div>
                     <div className="price-value">{sale.balance?.toLocaleString() || '0'}</div>
                 </div>
-                {sale.registrationCost && (
+                {sale.registrationCost ? (
                     <div className="price-row">
                         <div className="price-label">Registration Fees:</div>
                         <div className="price-value">{sale.registrationCost.toLocaleString()}</div>
                     </div>
-                )}
+                ) : null}
             </div>
 
             <div className="urdu-note">

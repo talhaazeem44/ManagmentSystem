@@ -35,16 +35,15 @@ interface Stats {
         revenue: number;
         workshopRevenue: number;
         workshopProfit: number;
-        unitMargin: number;
-        blackMargin: number;
-        regMargin: number;
-        bikeMargin: number;
-        totalProfit: number;
+        bikeProfit: number;
+        regProfit: number;
+        profit: number;
         cashReceived: number;
         registrationCollected: number;
         totalCashIn: number;
         cashToDeposit: number;
         cashInHand: number;
+        bankTransfer: number;
     };
     allTime: { totalBikes: number; availableBikes: number; soldBikes: number };
 }
@@ -156,8 +155,9 @@ export default function DashboardPage() {
 
                 {/* ── Section 3: Cash Tracking ── */}
                 <div style={{ marginBottom: '0.4rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Cash Tracking</div>
-                <div className="grid-3" style={{ marginBottom: '1.5rem' }}>
+                <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
                     <StatCard label="Total Cash Received" value={rs ? `Rs. ${rs.totalCashIn.toLocaleString()}` : '-'} color="var(--color-success)" sub="Bike price + Registration" />
+                    <StatCard label="Bank Transfer" value={rs ? `Rs. ${rs.bankTransfer.toLocaleString()}` : '-'} color="#3b82f6" sub="Received via bank/online" />
                     <StatCard label="Deposit to Honda" value={rs ? `Rs. ${rs.cashToDeposit.toLocaleString()}` : '-'} color="#ef4444" sub="Purchase cost of bikes sold" />
                     <StatCard label="Cash in Hand" value={rs ? `Rs. ${rs.cashInHand.toLocaleString()}` : '-'} color="#10b981" sub="Remaining after Honda deposit" />
                 </div>
@@ -180,15 +180,14 @@ export default function DashboardPage() {
                 ) : (
                     <div style={{ marginBottom: '1.5rem' }}>
                         <div className="grid-2" style={{ marginBottom: '0.75rem' }}>
-                            <StatCard label="Workshop Margin" value={rs ? `Rs. ${rs.workshopProfit.toLocaleString()}` : '-'} color="var(--color-success)" sub="Labour + parts profit" />
-                            <StatCard label="Bike Sales Margin" value={rs ? `Rs. ${rs.bikeMargin.toLocaleString()}` : '-'} color="var(--color-primary)" sub="Unit + registration" />
+                            <StatCard label="Workshop Profit" value={rs ? `Rs. ${rs.workshopProfit.toLocaleString()}` : '-'} color="var(--color-success)" sub="Labour + parts profit" />
+                            <StatCard label="Bike Sales Profit" value={rs ? `Rs. ${rs.bikeProfit.toLocaleString()}` : '-'} color="var(--color-primary)" sub="Fixed margin + extra received" />
                         </div>
-                        <div className="grid-5" style={{ marginBottom: '0.75rem' }}>
-                            <StatCard label="Unit Margin" value={rs ? `Rs. ${(rs.unitMargin + rs.blackMargin).toLocaleString()}` : '-'} color="var(--color-success)" sub="Fixed + above list price" />
-                            <StatCard label="Registration Margin" value={rs ? `Rs. ${rs.regMargin.toLocaleString()}` : '-'} color="var(--color-primary)" sub="Charged - actual cost" />
-                            <StatCard label="Workshop Margin" value={rs ? `Rs. ${rs.workshopProfit.toLocaleString()}` : '-'} color="#8b5cf6" sub="Parts + labour profit" />
-                            <StatCard label="Total Profit Today" value={rs ? `Rs. ${rs.totalProfit.toLocaleString()}` : '-'} color="#10b981" sub="All margins combined" />
-                            <StatCard label="Cash in Hand" value={rs ? `Rs. ${rs.cashInHand.toLocaleString()}` : '-'} color="#f59e0b" sub="After Honda deposit" />
+                        <div className="grid-4" style={{ marginBottom: '0.75rem' }}>
+                            <StatCard label="Bike Margin" value={rs ? `Rs. ${rs.bikeProfit.toLocaleString()}` : '-'} color="var(--color-success)" sub="Fixed + above standard price" />
+                            <StatCard label="Registration Profit" value={rs ? `Rs. ${rs.regProfit.toLocaleString()}` : '-'} color="var(--color-primary)" sub="Charged - actual cost" />
+                            <StatCard label="Workshop Profit" value={rs ? `Rs. ${rs.workshopProfit.toLocaleString()}` : '-'} color="#8b5cf6" sub="Parts + labour profit" />
+                            <StatCard label="Total Profit Today" value={rs ? `Rs. ${rs.profit.toLocaleString()}` : '-'} color="#10b981" sub="All profits combined" />
                         </div>
                         <button className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
                             onClick={() => { setMarginUnlocked(false); setPasswordInput(''); }}>

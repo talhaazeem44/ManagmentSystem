@@ -5,7 +5,7 @@ export interface IUser {
     email: string;
     password: string;
     name: string;
-    role: 'admin' | 'user';
+    role: 'admin' | 'user' | 'workshop';
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -14,7 +14,7 @@ const UserSchema = new Schema<IUser>({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     name: { type: String, required: true },
-    role: { type: String, enum: ['admin', 'user'], default: 'user' },
+    role: { type: String, enum: ['admin', 'user', 'workshop'], default: 'user' },
 }, {
     timestamps: true
 });
@@ -104,6 +104,7 @@ export interface ISale {
     registrationCost?: number;
     taxAmount?: number;
     paymentMode: string;
+    bankTransferAmount?: number;
     receiptNumber?: string;
     createdAt?: Date;
     updatedAt?: Date;
@@ -120,6 +121,7 @@ const SaleSchema = new Schema<ISale>({
     registrationCost: { type: Number },
     taxAmount: { type: Number, default: 0 },
     paymentMode: { type: String, default: 'CASH' },
+    bankTransferAmount: { type: Number, default: 0 },
     receiptNumber: { type: String },
 }, {
     timestamps: true

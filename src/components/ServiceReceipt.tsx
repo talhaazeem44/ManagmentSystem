@@ -39,7 +39,7 @@ const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service, onDone }) => {
     let rand = Math.floor(Math.random() * total_weight);
     let prizeCode = 'R';
     for (const p of prizes) { if (rand < p.weight) { prizeCode = p.code; break; } rand -= p.weight; }
-    const scratchUrl = `http://94.72.122.32:3000/scratch?p=${prizeCode}`;
+    const scratchUrl = `${window.location.origin}/scratch?p=${prizeCode}`;
 
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(scratchUrl)}`;
 

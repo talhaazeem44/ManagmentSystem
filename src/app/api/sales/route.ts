@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
             registrationCost,
             taxAmount,
             paymentMode,
+            bankTransferAmount,
             receiptNumber
         } = body;
 
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
             registrationCost: registrationCost ? parseFloat(registrationCost) : undefined,
             taxAmount: taxAmount ? parseFloat(taxAmount) : 0,
             paymentMode: paymentMode || 'CASH',
+            bankTransferAmount: bankTransferAmount ? parseFloat(bankTransferAmount) : 0,
             receiptNumber
         });
 

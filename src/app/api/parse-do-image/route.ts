@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(request: NextRequest) {
     try {
@@ -14,34 +14,26 @@ export async function POST(request: NextRequest) {
 
         const buffer = await file.arrayBuffer();
         const base64 = Buffer.from(buffer).toString('base64');
+        const mimeType = (file.type || 'image/jpeg') as string;
 
-        // Determine media type
-        let mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' = 'image/jpeg';
-        if (file.type === 'image/png') mediaType = 'image/png';
-        else if (file.type === 'image/webp') mediaType = 'image/webp';
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-        const response = await client.messages.create({
-            model: 'claude-opus-4-6',
-            max_tokens: 2000,
-            messages: [
-                {
-                    role: 'user',
-                    content: [
-                        {
-                            type: 'image',
-                            source: { type: 'base64', media_type: mediaType, data: base64 }
-                        },
-                        {
-                            type: 'text',
-                            text: `This is a Honda motorcycle Delivery Order (DO) document. Extract ALL bike entries from it.
+        const result = await model.generateContent([
+            {
+                inlineData: {
+                    mimeType,
+                    data: base64,
+                }
+            },
+            `This is a Honda motorcycle Delivery Order (DO) document from Atlas Honda Pakistan. Extract ALL bike entries from it.
 
 For each bike, extract:
-- orderNumber (order/booking number, e.g. AHL/MC/2349)
-- model (e.g. CD70, CG 125, CB150F, PRIDOR, DREAM, CG125S.SE, CB125F.SE)
-- color (e.g. BLK=Black, RED=Red, BLUE=Blue, SLV/SILVER=Silver, WHT=White)
-- engineNumber (engine no / eng no)
-- chassisNumber (chassis no / frame no)
-- purchasePrice (unit price / ex-factory price, numbers only)
+- orderNumber (booking/order number, e.g. AHL/MC/2546)
+- model (e.g. CD70, CG125, CG 125, CB150F, PRIDOR, DREAM, CG125S.SE, CB125F.SE — strip color suffix like BLK/RED from model)
+- color (BLK=Black, RED=Red, BLUE=Blue, SLV/SILVER=Silver, WHT=White, GOLD=Gold — extract from model column if combined)
+- engineNumber (engine no column — alphanumeric, e.g. L026349)
+- chassisNumber (chassis no column — full alphanumeric string like ED708356; if only last digits are shown like 013 look for the full number elsewhere in the document)
+- purchasePrice (unit/ex-factory price, numbers only, no commas)
 
 Return ONLY a valid JSON array, no explanation, no markdown:
 [
@@ -55,16 +47,10 @@ Return ONLY a valid JSON array, no explanation, no markdown:
   }
 ]
 
-If a field is not visible, leave it as empty string. Extract every row you can see.`
-                        }
-                    ]
-                }
-            ]
-        });
+If a field is not visible, leave it as empty string. Extract every row. The document may be photographed at an angle — read all rows carefully.`
+        ]);
 
-        const text = response.content[0].type === 'text' ? response.content[0].text : '';
-
-        // Extract JSON from response
+        const text = result.response.text();
         const jsonMatch = text.match(/\[[\s\S]*\]/);
         if (!jsonMatch) {
             return NextResponse.json({ message: 'Could not parse response', raw: text }, { status: 422 });

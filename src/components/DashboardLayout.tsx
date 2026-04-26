@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 import styles from './DashboardLayout.module.css';
 
 export default function DashboardLayout({
@@ -10,16 +11,31 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
+    const { data: session } = useSession();
+    const role = (session?.user as any)?.role as string | undefined;
 
-    const navItems = [
+    const mainNavItems = [
         { href: '/dashboard', label: 'Dashboard', icon: '📊' },
         { href: '/sales/new', label: 'New Sale', icon: '➕' },
         { href: '/inventory', label: 'Inventory', icon: '🏍️' },
         { href: '/inventory/receive', label: 'Receive', icon: '📦' },
         { href: '/sales', label: 'Sales', icon: '💰' },
+        { href: '/reports', label: 'Reports', icon: '📈' },
+    ];
+
+    const workshopNavItems = [
         { href: '/workshop', label: 'Workshop', icon: '🛠️' },
         { href: '/workshop/stock', label: 'W. Stock', icon: '🔩' },
     ];
+
+    let navItems;
+    if (role === 'workshop') {
+        navItems = workshopNavItems;
+    } else if (role === 'admin') {
+        navItems = [...mainNavItems, ...workshopNavItems];
+    } else {
+        navItems = mainNavItems;
+    }
 
     return (
         <div className={styles.layout}>
@@ -44,6 +60,12 @@ export default function DashboardLayout({
                 </nav>
 
                 <div className={styles.sidebarFooter}>
+                    <button
+                        onClick={() => signOut({ callbackUrl: '/login' })}
+                        style={{ width: '100%', padding: '0.5rem', marginBottom: '0.5rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                    >
+                        Logout
+                    </button>
                     <p className={styles.footerText}>© 2026 Naeem Autos</p>
                 </div>
             </aside>

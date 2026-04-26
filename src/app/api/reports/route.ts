@@ -9,6 +9,24 @@ import {
     REGISTRATION_ACTUAL_COST_BY_MODEL
 } from '@/lib/constants';
 
+// Profit per sale:
+// - Bike profit  = fixed margin (8k/11k/20k) + extra received above standard price
+// - Reg profit   = registration charged to customer − actual government cost
+const calcSaleMargin = (sale: any) => {
+    const model = sale.bikeId?.model || '';
+    const standardPrice = BIKE_STANDARD_PRICES[model] || Number(sale.price || 0);
+    const baseMargin = BIKE_UNIT_MARGINS[model] || 0;
+    const receivedCash = Number(sale.receivedCash || sale.price || 0);
+    const extraCash = Math.max(0, receivedCash - standardPrice);
+    const bikeProfit = baseMargin + extraCash;
+
+    const regCharged = Number(sale.registrationCost || 0);
+    const actualRegCost = REGISTRATION_ACTUAL_COST_BY_MODEL[model] ?? REGISTRATION_ACTUAL_COST;
+    const regProfit = regCharged > 0 ? regCharged - actualRegCost : 0;
+
+    return { bikeProfit, regProfit, totalProfit: bikeProfit + regProfit };
+};
+
 export async function GET(request: NextRequest) {
     try {
         await dbConnect();
@@ -30,100 +48,75 @@ export async function GET(request: NextRequest) {
             filterEndDate.setDate(filterEndDate.getDate() + 1);
         }
 
-        // ── Range sales ────────────────────────────────────────────────────────
-        const filteredSales = await Sale.find({
-            saleDate: { $gte: filterStartDate, $lt: filterEndDate }
-        }).populate('bikeId').lean();
+        // ── Fetch data ─────────────────────────────────────────────────────────
+        const [filteredSales, filteredServices, allSales, allServices,
+            totalBikesCount, availableBikesCount, soldBikesCount,
+            deliveryOrders, bikes] = await Promise.all([
+            Sale.find({ saleDate: { $gte: filterStartDate, $lt: filterEndDate } }).populate('bikeId').lean(),
+            ServiceSale.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
+            Sale.find().populate('bikeId').lean(),
+            ServiceSale.find().lean(),
+            Bike.countDocuments(),
+            Bike.countDocuments({ status: 'AVAILABLE' }),
+            Bike.countDocuments({ status: 'SOLD' }),
+            DeliveryOrder.find().sort({ date: -1 }).lean(),
+            Bike.find().lean(),
+        ]);
 
-        // ── Range workshop ─────────────────────────────────────────────────────
-        const filteredServices = await ServiceSale.find({
-            date: { $gte: filterStartDate, $lt: filterEndDate }
-        }).lean();
+        // ── Range: bike sales ──────────────────────────────────────────────────
+        const rangeRevenue = filteredSales.reduce((s, sale: any) => s + Number(sale.price || 0), 0);
+        const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || sale.price || 0), 0);
+        const rangeRegistration = filteredSales.reduce((s, sale: any) => s + Number(sale.registrationCost || 0), 0);
+        const rangeBankTransfer = filteredSales.reduce((s, sale: any) => s + Number(sale.bankTransferAmount || 0), 0);
+        const rangeTotalCashIn = rangeCashReceived + rangeRegistration;
+        const rangeCashToDeposit = filteredSales.reduce((s, sale: any) => {
+            const model = sale.bikeId?.model || '';
+            return s + Number(sale.bikeId?.purchasePrice || BIKE_BOOK_PRICES[model] || 0);
+        }, 0);
+        const rangeCashInHand = Math.max(0, rangeTotalCashIn - rangeCashToDeposit);
 
-        // ── All-time counts ────────────────────────────────────────────────────
-        const totalBikesCount = await Bike.countDocuments();
-        const availableBikesCount = await Bike.countDocuments({ status: 'AVAILABLE' });
-        const soldBikesCount = await Bike.countDocuments({ status: 'SOLD' });
+        const rangeBikeProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).bikeProfit, 0);
+        const rangeRegProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).regProfit, 0);
 
-        // ── Delivery order stats ───────────────────────────────────────────────
-        const deliveryOrders = await DeliveryOrder.find().sort({ date: -1 }).lean();
-        const bikes = await Bike.find().lean();
+        // ── Range: workshop ────────────────────────────────────────────────────
+        const rangeWorkshopRevenue = filteredServices.reduce((s, svc: any) => s + Number(svc.totalAmount || 0), 0);
+        const rangeWorkshopProfit = filteredServices.reduce((s, svc: any) => s + Number(svc.margin || 0), 0);
 
-        const doStats = deliveryOrders.map(dorder => {
-            const orderBikes = bikes.filter(b => b.deliveryOrderId.toString() === dorder._id.toString());
-            const totalBikes = orderBikes.length;
-            const soldBikes = orderBikes.filter(b => b.status === 'SOLD').length;
+        const rangeProfit = rangeBikeProfit + rangeRegProfit + rangeWorkshopProfit;
+
+        // ── All-time ───────────────────────────────────────────────────────────
+        const allTimeRevenue = allSales.reduce((s, sale: any) => s + Number(sale.price || 0), 0);
+        const allTimeBikeProfit = allSales.reduce((s, sale: any) => s + calcSaleMargin(sale).totalProfit, 0);
+        const allTimeWorkshopRevenue = allServices.reduce((s, svc: any) => s + Number(svc.totalAmount || 0), 0);
+        const allTimeWorkshopProfit = allServices.reduce((s, svc: any) => s + Number(svc.margin || 0), 0);
+        const allTimeProfit = allTimeBikeProfit + allTimeWorkshopProfit;
+
+        // ── Delivery orders ────────────────────────────────────────────────────
+        const doStats = deliveryOrders.map((dorder: any) => {
+            const orderBikes = bikes.filter((b: any) => b.deliveryOrderId.toString() === dorder._id.toString());
             return {
                 doNumber: dorder.doNumber,
                 date: dorder.date,
-                totalBikes,
-                soldBikes,
-                remainingBikes: totalBikes - soldBikes,
                 dealerName: dorder.dealerName,
+                totalBikes: orderBikes.length,
+                soldBikes: orderBikes.filter((b: any) => b.status === 'SOLD').length,
+                remainingBikes: orderBikes.filter((b: any) => b.status === 'AVAILABLE').length,
             };
         });
-
-        // ── Margin calculation helper ─────────────────────────────────────────
-        const calcSaleMargin = (sale: any) => {
-            const bike = sale.bikeId;
-            const model = bike?.model || '';
-            const actualSoldPrice = Number(sale.price || 0);
-            const purchasePrice = Number(bike?.purchasePrice || BIKE_BOOK_PRICES[model] || 0);
-            const standardPrice = BIKE_STANDARD_PRICES[model] || actualSoldPrice;
-            const fixedMargin = BIKE_UNIT_MARGINS[model] || (standardPrice - purchasePrice);
-            // Below list → actual margin (soldPrice - purchasePrice)
-            // Above list → fixed margin + extra above list
-            const unitMargin = actualSoldPrice <= standardPrice
-                ? actualSoldPrice - purchasePrice
-                : fixedMargin;
-            const blackMargin = actualSoldPrice > standardPrice
-                ? actualSoldPrice - standardPrice
-                : 0;
-            const regCharged = Number(sale.registrationCost || 0);
-            const actualRegCost = REGISTRATION_ACTUAL_COST_BY_MODEL[model] ?? REGISTRATION_ACTUAL_COST;
-            const regMargin = regCharged > 0 ? regCharged - actualRegCost : 0;
-            const totalMargin = unitMargin + blackMargin + regMargin;
-            return { unitMargin, blackMargin, regMargin, totalMargin, purchasePrice };
-        };
-
-        // ── Range calculations ─────────────────────────────────────────────────
-        const rangeRevenue = filteredSales.reduce((s, sale: any) => s + Number(sale.price || 0), 0);
-        const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || sale.price || 0), 0);
-        const rangeRegistrationCollected = filteredSales.reduce((s, sale: any) => s + Number(sale.registrationCost || 0), 0);
-        const rangeTotalCashIn = rangeCashReceived + rangeRegistrationCollected;
-        const rangePurchaseCost = filteredSales.reduce((s, sale: any) => {
-            const bike = (sale as any).bikeId;
-            return s + Number(bike?.purchasePrice || BIKE_BOOK_PRICES[bike?.model] || 0);
-        }, 0);
-        const rangeCashToDeposit = rangePurchaseCost;
-        const rangeCashInHand = rangeTotalCashIn - rangeCashToDeposit;
-
-        const rangeUnitMargin = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).unitMargin, 0);
-        const rangeBlackMargin = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).blackMargin, 0);
-        const rangeRegMargin = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).regMargin, 0);
-        const rangeBikeMargin = rangeUnitMargin + rangeBlackMargin + rangeRegMargin;
-
-        const rangeWorkshopRevenue = filteredServices.reduce((s, svc: any) => s + Number(svc.totalAmount || svc.amount || 0), 0);
-        const rangeWorkshopProfit = filteredServices.reduce((s, svc: any) => s + Number(svc.margin || svc.totalAmount || svc.amount || 0), 0);
-
-        const rangeTotalProfit = rangeBikeMargin + rangeWorkshopProfit;
 
         return NextResponse.json({
             range: {
                 sales: filteredSales.length,
                 revenue: rangeRevenue,
                 workshopRevenue: rangeWorkshopRevenue,
+                bikeProfit: rangeBikeProfit,
+                regProfit: rangeRegProfit,
                 workshopProfit: rangeWorkshopProfit,
-                // Margin breakdown
-                unitMargin: rangeUnitMargin,
-                blackMargin: rangeBlackMargin,
-                regMargin: rangeRegMargin,
-                bikeMargin: rangeBikeMargin,
-                totalProfit: rangeTotalProfit,
-                // Cash tracking
+                profit: rangeProfit,
                 cashReceived: rangeCashReceived,
-                registrationCollected: rangeRegistrationCollected,
+                registrationCollected: rangeRegistration,
                 totalCashIn: rangeTotalCashIn,
+                bankTransfer: rangeBankTransfer,
                 cashToDeposit: rangeCashToDeposit,
                 cashInHand: rangeCashInHand,
                 startDate: filterStartDate,
@@ -133,6 +126,10 @@ export async function GET(request: NextRequest) {
                 totalBikes: totalBikesCount,
                 availableBikes: availableBikesCount,
                 soldBikes: soldBikesCount,
+                totalSales: allSales.length,
+                totalRevenue: allTimeRevenue,
+                totalWorkshopRevenue: allTimeWorkshopRevenue,
+                totalProfit: allTimeProfit,
             },
             deliveryOrders: doStats,
         });
