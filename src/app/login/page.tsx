@@ -101,7 +101,7 @@ export default function LoginPage() {
                 </div>
             </div>
 
-            <div className={styles.demoCredentials}>
+            {/* <div className={styles.demoCredentials}>
                 <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
                     <strong>Demo Credentials:</strong>
                 </p>
@@ -109,7 +109,7 @@ export default function LoginPage() {
                     Email: admin@naeem-autos.com<br />
                     Password: admin123
                 </p>
-            </div>
+            </div> */}
         </div>
     );
 }
