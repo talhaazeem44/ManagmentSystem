@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { Sale, Bike, DeliveryOrder, ServiceSale, Customer, AdvanceBooking } from '@/models';
+import { Sale, Bike, DeliveryOrder, ServiceSale, Customer, AdvanceBooking, Expense } from '@/models';
 import {
     BIKE_BOOK_PRICES,
     BIKE_STANDARD_PRICES,
@@ -50,9 +50,13 @@ export async function GET(request: NextRequest) {
         }
 
         // ── Fetch data ─────────────────────────────────────────────────────────
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+
         const [filteredSales, filteredServices, allSales, allServices,
             totalBikesCount, availableBikesCount, soldBikesCount,
-            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings, filteredAdvanceBookings] = await Promise.all([
+            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings, filteredAdvanceBookings, filteredExpenses, weekSales] = await Promise.all([
             Sale.find({ saleDate: { $gte: filterStartDate, $lt: filterEndDate } }).populate('bikeId').lean(),
             ServiceSale.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
             Sale.find().populate('bikeId').lean(),
@@ -65,7 +69,28 @@ export async function GET(request: NextRequest) {
             Sale.find({ paymentMode: 'CREDIT', balance: { $gt: 0 } }).populate('bikeId').lean(),
             AdvanceBooking.find({ status: 'PENDING' }).lean(),
             AdvanceBooking.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
+            Expense.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
+            Sale.find({ saleDate: { $gte: sevenDaysAgo } }).lean(),
         ]);
+
+        // 7-day chart data
+        const chartData = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date();
+            d.setHours(0, 0, 0, 0);
+            d.setDate(d.getDate() - (6 - i));
+            const nextD = new Date(d);
+            nextD.setDate(nextD.getDate() + 1);
+            const daySales = (weekSales as any[]).filter(s => {
+                const sd = new Date(s.saleDate);
+                return sd >= d && sd < nextD;
+            });
+            return {
+                day: d.toLocaleDateString('en-PK', { weekday: 'short' }),
+                date: d.toLocaleDateString('en-PK', { day: 'numeric', month: 'short' }),
+                sales: daySales.length,
+                revenue: daySales.reduce((s, sale) => s + Number(sale.price || 0), 0),
+            };
+        });
 
         const advancePendingCount = pendingAdvanceBookings.length;
         const advancePendingMargin = pendingAdvanceBookings.reduce((s: number, b: any) => s + Number(b.margin || 0), 0);
@@ -95,6 +120,10 @@ export async function GET(request: NextRequest) {
 
         // ── Range: bike sales ──────────────────────────────────────────────────
         const rangeRevenue = filteredSales.reduce((s, sale: any) => s + Number(sale.price || 0), 0);
+        // ── Expenses ───────────────────────────────────────────────────────────
+        const expenseCash = filteredExpenses.reduce((s: number, e: any) => e.deductFrom === 'CASH' ? s + Number(e.amount || 0) : s, 0);
+        const expenseMargin = filteredExpenses.reduce((s: number, e: any) => e.deductFrom === 'MARGIN' ? s + Number(e.amount || 0) : s, 0);
+
         const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || 0), 0) + rangeAdvanceCash;
         const rangeRegistration = filteredSales.reduce((s, sale: any) => s + Number(sale.registrationCost || 0), 0);
         const rangeBankTransfer = filteredSales.reduce((s, sale: any) => s + Number(sale.bankTransferAmount || 0), 0);
@@ -103,7 +132,7 @@ export async function GET(request: NextRequest) {
             const model = sale.bikeId?.model || '';
             return s + Number(sale.bikeId?.purchasePrice || BIKE_BOOK_PRICES[model] || 0);
         }, 0);
-        const rangeCashInHand = Math.max(0, rangeTotalCashIn - rangeCashToDeposit);
+        const rangeCashInHand = Math.max(0, rangeTotalCashIn - rangeCashToDeposit - expenseCash);
 
         const rangeBikeProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).bikeProfit, 0) + rangeAdvanceMargin;
         const rangeRegProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).regProfit, 0);
@@ -112,7 +141,7 @@ export async function GET(request: NextRequest) {
         const rangeWorkshopRevenue = filteredServices.reduce((s, svc: any) => s + Number(svc.totalAmount || 0), 0);
         const rangeWorkshopProfit = filteredServices.reduce((s, svc: any) => s + Number(svc.margin || 0), 0);
 
-        const rangeProfit = rangeBikeProfit + rangeRegProfit + rangeWorkshopProfit;
+        const rangeProfit = rangeBikeProfit + rangeRegProfit + rangeWorkshopProfit - expenseMargin;
 
         // ── All-time ───────────────────────────────────────────────────────────
         const allTimeRevenue = allSales.reduce((s, sale: any) => s + Number(sale.price || 0), 0);
@@ -187,6 +216,7 @@ export async function GET(request: NextRequest) {
                 pendingCount: advancePendingCount,
                 pendingMargin: advancePendingMargin,
             },
+            chartData,
         });
     } catch (error: any) {
         console.error('Error fetching reports:', error);

@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import SaleReceipt from '@/components/SaleReceipt';
-import BikeSticker from '@/components/BikeSticker';
-import { MARGIN_PASSWORD } from '@/lib/constants';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 interface SaleRecord {
     id: string;
@@ -16,74 +14,27 @@ interface SaleRecord {
     receivedCash?: number;
     balance?: number;
     bankTransferAmount?: number;
-    bike: {
-        model: string;
-        color: string;
-        engineNumber: string;
-        chassisNumber: string;
-        deliveryOrder: { doNumber: string }
-    };
-    customer: {
-        _id: string;
-        name: string;
-        cnic: string;
-        mobile: string;
-        address?: string;
-    };
+    bike: { model: string; color: string; engineNumber: string; chassisNumber: string; deliveryOrder: { doNumber: string } };
+    customer: { _id: string; name: string; cnic: string; mobile: string; address?: string };
 }
 
 interface CreditSale {
-    id: string;
-    saleDate: string;
-    price: number;
-    balance: number;
-    receivedCash: number;
-    bankTransferAmount: number;
-    bikeModel: string;
-    customerName: string;
-    customerMobile: string;
-    cnic: string;
-}
-
-interface CashBreakdownItem {
-    bikeModel: string;
-    paymentMode: string;
-    price: number;
-    receivedCash: number;
-    bankTransferAmount: number;
-    counted: number;
+    id: string; saleDate: string; price: number; balance: number;
+    receivedCash: number; bankTransferAmount: number;
+    bikeModel: string; customerName: string; customerMobile: string; cnic: string;
 }
 
 interface Stats {
     range: {
-        sales: number;
-        revenue: number;
-        workshopRevenue: number;
-        workshopProfit: number;
-        bikeProfit: number;
-        regProfit: number;
-        profit: number;
-        cashReceived: number;
-        registrationCollected: number;
-        totalCashIn: number;
-        cashToDeposit: number;
-        cashInHand: number;
-        bankTransfer: number;
+        sales: number; revenue: number; workshopRevenue: number; workshopProfit: number;
+        bikeProfit: number; regProfit: number; profit: number; cashReceived: number;
+        registrationCollected: number; totalCashIn: number; cashToDeposit: number;
+        cashInHand: number; bankTransfer: number;
     };
     allTime: { totalBikes: number; availableBikes: number; soldBikes: number };
     creditSales: CreditSale[];
     advanceBookings: { pendingCount: number; pendingMargin: number };
-    cashBreakdown: CashBreakdownItem[];
-}
-
-function StatCard({ label, value, color, sub }: { label: string; value: string; color?: string; sub?: string }) {
-    return (
-        <div className="card" style={{ padding: '1.25rem' }}>
-            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{label}</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 700, color: color || 'inherit' }}>{value}</div>
-            {sub && <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>{sub}</div>}
-        </div>
-    );
+    chartData: { day: string; date: string; sales: number; revenue: number }[];
 }
 
 export default function DashboardPage() {
@@ -91,333 +42,228 @@ export default function DashboardPage() {
     const [records, setRecords] = useState<SaleRecord[]>([]);
     const [stats, setStats] = useState<Stats | null>(null);
     const [loading, setLoading] = useState(true);
-    const [printingRecord, setPrintingRecord] = useState<SaleRecord | null>(null);
-    const [printingSticker, setPrintingSticker] = useState<SaleRecord | null>(null);
-    const [editingRecord, setEditingRecord] = useState<SaleRecord | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [marginUnlocked, setMarginUnlocked] = useState(false);
-    const [passwordInput, setPasswordInput] = useState('');
-    const [passwordError, setPasswordError] = useState(false);
     const [filters, setFilters] = useState({ cnic: '', engineNumber: '', chassisNumber: '', doNumber: '' });
 
-    const fetchDashboardData = async (searchFilters = filters) => {
+    const fetchData = async (searchFilters = filters) => {
         setLoading(true);
         try {
-            const statsRes = await fetch('/api/reports');
+            const [statsRes, recordsRes] = await Promise.all([
+                fetch('/api/reports'),
+                fetch(`/api/sales?${new URLSearchParams(Object.fromEntries(Object.entries(searchFilters).filter(([, v]) => v))).toString()}`),
+            ]);
             if (statsRes.ok) setStats(await statsRes.json());
-
-            const query = new URLSearchParams();
-            if (searchFilters.cnic) query.append('cnic', searchFilters.cnic);
-            if (searchFilters.engineNumber) query.append('engineNumber', searchFilters.engineNumber);
-            if (searchFilters.chassisNumber) query.append('chassisNumber', searchFilters.chassisNumber);
-            if (searchFilters.doNumber) query.append('doNumber', searchFilters.doNumber);
-
-            const recordsRes = await fetch(`/api/sales?${query.toString()}`);
             if (recordsRes.ok) setRecords(await recordsRes.json());
-        } catch (error) {
-            console.error('Error fetching dashboard data:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => { fetchDashboardData(); }, []);
-
-    const handleSearch = (e: React.FormEvent) => { e.preventDefault(); fetchDashboardData(); };
-    const handleReset = () => {
-        const r = { cnic: '', engineNumber: '', chassisNumber: '', doNumber: '' };
-        setFilters(r); fetchDashboardData(r);
-    };
+    useEffect(() => { fetchData(); }, []);
 
     const handleDeleteSale = async (id: string) => {
         if (!confirm('Delete this sale? Bike will be marked AVAILABLE again.')) return;
         setIsDeleting(true);
         try {
             const res = await fetch(`/api/sales/${id}`, { method: 'DELETE' });
-            if (res.ok) { showToast('Sale deleted', 'success'); fetchDashboardData(); }
+            if (res.ok) { showToast('Sale deleted', 'success'); fetchData(); }
             else { const e = await res.json(); showToast(`Failed: ${e.message}`, 'error'); }
         } catch { showToast('Error deleting sale', 'error'); }
         finally { setIsDeleting(false); }
     };
 
-    const handlePasswordSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (passwordInput === MARGIN_PASSWORD) {
-            setMarginUnlocked(true);
-            setPasswordError(false);
-        } else {
-            setPasswordError(true);
-            setPasswordInput('');
-        }
-    };
-
     const rs = stats?.range;
+    const totalOutstanding = stats?.creditSales?.reduce((s, c) => s + c.balance, 0) ?? 0;
 
     return (
         <DashboardLayout>
             <div className="animate-fade-in">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', gap: '1rem', flexWrap: 'wrap' }}>
+
+                {/* ── Header ── */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                     <div>
-                        <h1 style={{ fontSize: '2rem', fontWeight: 700 }}>Dashboard</h1>
-                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>Today — {new Date().toLocaleDateString('en-PK', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Dashboard</h1>
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
+                            {new Date().toLocaleDateString('en-PK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        </p>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        <a href="/inventory/receive" className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>📦 Receive</a>
-                        <a href="/sales/new" className="btn btn-success" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>➕ New Sale</a>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <a href="/inventory/receive" className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>📦 Receive</a>
+                        <a href="/sales/new" className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>➕ New Sale</a>
                     </div>
                 </div>
 
-                {/* ── Section 1: Inventory & Sales ── */}
-                <div style={{ marginBottom: '0.4rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Sales & Inventory</div>
-                <div className="grid-3" style={{ marginBottom: '1.5rem' }}>
-                    <StatCard label="Available Bikes" value={String(stats?.allTime?.availableBikes ?? '-')} />
-                    <StatCard label="Bikes Sold Today" value={String(rs?.sales ?? '-')} color="var(--color-success)" />
-                    <StatCard label="Registration Collected" value={rs ? `Rs. ${rs.registrationCollected.toLocaleString()}` : '-'} />
-                </div>
-
-                {/* ── Outstanding Credit ── */}
-                <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
-                    <StatCard
-                        label="Total Outstanding (Credit)"
-                        value={stats?.creditSales ? `Rs. ${stats.creditSales.reduce((s, c) => s + c.balance, 0).toLocaleString()}` : '-'}
-                        color="#ef4444"
-                        sub={stats?.creditSales ? `${stats.creditSales.length} customer${stats.creditSales.length !== 1 ? 's' : ''} with pending balance` : undefined}
-                    />
-                    <StatCard
-                        label="Advance Bookings Collected"
-                        value={stats?.advanceBookings ? `${stats.advanceBookings.pendingCount} pending` : '-'}
-                        color="#f59e0b"
-                        sub="Bikes booked but not yet delivered"
-                    />
-                </div>
-
-                {/* ── Section 2: Workshop ── */}
-                <div style={{ marginBottom: '0.4rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Workshop Today</div>
-                <div style={{ marginBottom: '1.5rem' }}>
-                    <StatCard label="Workshop Sales" value={rs ? `Rs. ${rs.workshopRevenue.toLocaleString()}` : '-'} color="#f59e0b" />
-                </div>
-
-                {/* ── Section 3: Cash Tracking ── */}
-                <div style={{ marginBottom: '0.4rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Cash Tracking</div>
-                <div className="grid-4" style={{ marginBottom: '0.75rem' }}>
-                    <StatCard label="Bike Cash Received" value={rs ? `Rs. ${rs.cashReceived.toLocaleString()}` : '-'} color="var(--color-success)" sub="Cash from bike sales only" />
-                    <StatCard label="Registration Collected" value={rs ? `Rs. ${rs.registrationCollected.toLocaleString()}` : '-'} color="#8b5cf6" sub="Separate from bike price" />
-                    <StatCard label="Bank Transfer" value={rs ? `Rs. ${rs.bankTransfer.toLocaleString()}` : '-'} color="#3b82f6" sub="Received via bank/online" />
-                    <StatCard label="Deposit to Honda" value={rs ? `Rs. ${rs.cashToDeposit.toLocaleString()}` : '-'} color="#ef4444" sub="Book price of bikes (no reg)" />
-                </div>
-                <div style={{ marginBottom: '0.75rem' }}>
-                    <StatCard label="Cash in Hand" value={rs ? `Rs. ${rs.cashInHand.toLocaleString()}` : '-'} color="#10b981" sub="After depositing to Honda" />
-                </div>
-
-                {/* ── Cash Breakdown ── */}
-                {stats?.cashBreakdown && stats.cashBreakdown.length > 0 && (
-                    <div className="card" style={{ marginBottom: '1.5rem', padding: 0 }}>
-                        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--color-border)', fontWeight: 600, fontSize: '0.875rem' }}>
-                            Cash Received Breakdown — Today ({stats.cashBreakdown.length} sales)
-                        </div>
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <th>Bike</th>
-                                    <th>Mode</th>
-                                    <th style={{ textAlign: 'right' }}>Sale Price</th>
-                                    <th style={{ textAlign: 'right' }}>Received Cash</th>
-                                    <th style={{ textAlign: 'right' }}>Bank Transfer</th>
-                                    <th style={{ textAlign: 'right' }}>Counted</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {stats.cashBreakdown.map((item, i) => (
-                                    <tr key={i}>
-                                        <td>{item.bikeModel}</td>
-                                        <td>
-                                            <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '1px 5px', borderRadius: '4px',
-                                                background: item.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.1)',
-                                                color: item.paymentMode === 'CREDIT' ? '#ef4444' : '#16a34a' }}>
-                                                {item.paymentMode}
-                                            </span>
-                                        </td>
-                                        <td style={{ textAlign: 'right' }}>Rs. {item.price.toLocaleString()}</td>
-                                        <td style={{ textAlign: 'right' }}>{item.receivedCash ? `Rs. ${item.receivedCash.toLocaleString()}` : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}</td>
-                                        <td style={{ textAlign: 'right' }}>{item.bankTransferAmount ? `Rs. ${item.bankTransferAmount.toLocaleString()}` : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}</td>
-                                        <td style={{ textAlign: 'right', fontWeight: 700, color: item.counted > 0 ? '#10b981' : '#ef4444' }}>
-                                            Rs. {item.counted.toLocaleString()}
-                                        </td>
-                                    </tr>
-                                ))}
-                                <tr style={{ background: 'var(--color-bg-elevated)', fontWeight: 700 }}>
-                                    <td colSpan={5} style={{ textAlign: 'right' }}>Total:</td>
-                                    <td style={{ textAlign: 'right', color: '#10b981' }}>
-                                        Rs. {stats.cashBreakdown.reduce((s, i) => s + i.counted, 0).toLocaleString()}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                {/* ── 4 KPI Cards ── */}
+                <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
+                    <div className="card" style={{ padding: '1.25rem' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Available Bikes</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 800 }}>{stats?.allTime?.availableBikes ?? '-'}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>in stock</div>
                     </div>
-                )}
 
-                {/* ── Section 4: Credit Customers ── */}
-                {stats?.creditSales && stats.creditSales.length > 0 && (
-                    <>
-                        <div style={{ marginBottom: '0.4rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
-                            Credit Customers — Outstanding Balance
-                        </div>
-                        <div className="card" style={{ marginBottom: '1.5rem' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                {stats.creditSales.map(cs => (
-                                    <div key={cs.id} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.8rem', background: 'rgba(239,68,68,0.06)', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.2)', gap: '0.5rem' }}>
-                                        <div>
-                                            <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{cs.customerName}</div>
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                                                {cs.customerMobile && <span>📞 {cs.customerMobile}</span>}
-                                                {cs.cnic && <span>ID: {cs.cnic}</span>}
-                                                <span>🏍️ {cs.bikeModel}</span>
-                                                <span>📅 {new Date(cs.saleDate).toLocaleDateString()}</span>
-                                            </div>
-                                        </div>
-                                        <div style={{ textAlign: 'right' }}>
-                                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ef4444' }}>Rs. {cs.balance.toLocaleString()} left</div>
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>of Rs. {cs.price.toLocaleString()}</div>
-                                        </div>
-                                    </div>
-                                ))}
-                                <div style={{ paddingTop: '0.5rem', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'flex-end' }}>
-                                    <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                                        Total Outstanding: <span style={{ color: '#ef4444' }}>Rs. {stats.creditSales.reduce((s, c) => s + c.balance, 0).toLocaleString()}</span>
-                                    </span>
+                    <div className="card" style={{ padding: '1.25rem' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Sold Today</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-success)' }}>{rs?.sales ?? '-'}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>bikes sold</div>
+                    </div>
+
+                    <div className="card" style={{ padding: '1.25rem' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Cash in Hand</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{rs ? `Rs. ${rs.cashInHand.toLocaleString()}` : '-'}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>after deposit</div>
+                    </div>
+
+                    {/* Profit — link to profit page */}
+                    <a href="/profit" className="card" style={{ padding: '1.25rem', textDecoration: 'none', display: 'block', cursor: 'pointer' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Net Profit Today</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text-muted)', letterSpacing: '0.2em' }}>••••••</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)', marginTop: '0.3rem', fontWeight: 600 }}>Tap to view →</div>
+                    </a>
+                </div>
+
+                {/* ── Chart + Credit Summary ── */}
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                    {/* Sales Chart */}
+                    <div className="card" style={{ padding: '1.25rem' }}>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>Sales — Last 7 Days</div>
+                        {stats?.chartData ? (
+                            <ResponsiveContainer width="100%" height={200}>
+                                <BarChart data={stats.chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                                    <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
+                                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
+                                    <Tooltip
+                                        contentStyle={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '0.8rem' }}
+                                        formatter={(value: any, name: any) => name === 'revenue' ? [`Rs. ${Number(value).toLocaleString()}`, 'Revenue'] : [value, 'Bikes Sold']}
+                                        labelFormatter={(label) => {
+                                            const d = stats.chartData.find(c => c.day === label);
+                                            return d?.date || label;
+                                        }}
+                                    />
+                                    <Bar dataKey="sales" fill="hsl(0,85%,45%)" radius={[4, 4, 0, 0]} name="sales" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>Loading chart...</div>
+                        )}
+                    </div>
+
+                    {/* Right column: Cash summary + Credit */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div className="card" style={{ padding: '1.25rem', flex: 1 }}>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Today's Cash</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: 'var(--color-text-muted)' }}>Received</span>
+                                    <strong style={{ color: '#10b981' }}>Rs. {rs?.cashReceived.toLocaleString() ?? '-'}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: 'var(--color-text-muted)' }}>Bank Transfer</span>
+                                    <strong style={{ color: '#3b82f6' }}>Rs. {rs?.bankTransfer.toLocaleString() ?? '-'}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: 'var(--color-text-muted)' }}>Registration</span>
+                                    <strong style={{ color: '#8b5cf6' }}>Rs. {rs?.registrationCollected.toLocaleString() ?? '-'}</strong>
+                                </div>
+                                <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.4rem', display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: 'var(--color-text-muted)' }}>Deposit Honda</span>
+                                    <strong style={{ color: '#ef4444' }}>Rs. {rs?.cashToDeposit.toLocaleString() ?? '-'}</strong>
                                 </div>
                             </div>
                         </div>
-                    </>
-                )}
 
-                {/* ── Section 5: Profit — Password Protected ── */}
-                <div style={{ marginBottom: '0.5rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
-                    🔒 Profit Breakdown {marginUnlocked && <span style={{ color: 'var(--color-success)' }}>— Unlocked</span>}
-                </div>
-                {!marginUnlocked ? (
-                    <div className="card" style={{ marginBottom: '1.5rem', maxWidth: '380px' }}>
-                        <p style={{ marginBottom: '1rem', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>Enter password to view profit details</p>
-                        <form onSubmit={handlePasswordSubmit} style={{ display: 'flex', gap: '0.5rem' }}>
-                            <input type="password" className="input" placeholder="Password" value={passwordInput}
-                                onChange={e => { setPasswordInput(e.target.value); setPasswordError(false); }}
-                                style={{ flex: 1, borderColor: passwordError ? '#ef4444' : undefined }} />
-                            <button type="submit" className="btn btn-primary">Unlock</button>
-                        </form>
-                        {passwordError && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem' }}>Wrong password</p>}
-                    </div>
-                ) : (
-                    <div style={{ marginBottom: '1.5rem' }}>
-                        <div className="grid-4" style={{ marginBottom: '0.75rem' }}>
-                            <StatCard label="Bike Margin" value={rs ? `Rs. ${rs.bikeProfit.toLocaleString()}` : '-'} color="var(--color-success)" />
-                            <StatCard label="Registration Profit" value={rs ? `Rs. ${rs.regProfit.toLocaleString()}` : '-'} color="var(--color-primary)" sub="Charged - actual cost" />
-                            <StatCard label="Workshop Profit" value={rs ? `Rs. ${rs.workshopProfit.toLocaleString()}` : '-'} color="#8b5cf6" sub="Parts + labour profit" />
-                            <StatCard label="Total Profit Today" value={rs ? `Rs. ${rs.profit.toLocaleString()}` : '-'} color="#10b981" sub="All profits combined" />
-                        </div>
-                        {(stats?.advanceBookings?.pendingMargin ?? 0) > 0 && (
-                            <div style={{ padding: '0.75rem 1rem', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '8px', marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                <div>
-                                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase' }}>Advance Bookings — Expected Profit</div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.15rem' }}>{stats?.advanceBookings?.pendingCount ?? 0} pending bookings not yet delivered</div>
-                                </div>
-                                <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#f59e0b' }}>Rs. {(stats?.advanceBookings?.pendingMargin ?? 0).toLocaleString()}</div>
+                        {totalOutstanding > 0 && (
+                            <div className="card" style={{ padding: '1.25rem', background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                                <div style={{ fontSize: '0.7rem', color: '#ef4444', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>Credit Outstanding</div>
+                                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ef4444' }}>Rs. {totalOutstanding.toLocaleString()}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{stats?.creditSales?.length} customer{(stats?.creditSales?.length ?? 0) !== 1 ? 's' : ''}</div>
                             </div>
                         )}
-                        <button className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
-                            onClick={() => { setMarginUnlocked(false); setPasswordInput(''); }}>
-                            🔒 Lock
-                        </button>
+                    </div>
+                </div>
+
+                {/* ── Credit customers detail ── */}
+                {(stats?.creditSales?.length ?? 0) > 0 && (
+                    <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: '#ef4444', marginBottom: '0.75rem' }}>Credit Customers</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            {stats!.creditSales.map(cs => (
+                                <div key={cs.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'rgba(239,68,68,0.05)', borderRadius: '8px', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                    <div>
+                                        <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{cs.customerName}</span>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>🏍️ {cs.bikeModel}</span>
+                                        {cs.customerMobile && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>📞 {cs.customerMobile}</span>}
+                                    </div>
+                                    <span style={{ fontWeight: 700, color: '#ef4444', fontSize: '0.9rem' }}>Rs. {cs.balance.toLocaleString()} left</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
 
                 {/* ── Search ── */}
-                <div className="card" style={{ marginBottom: '2rem' }}>
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>🔍 Search Records</h2>
-                    <form onSubmit={handleSearch}>
-                        <div className="grid-2" style={{ marginBottom: '1rem' }}>
-                            <div className="form-group">
-                                <label className="label">Customer CNIC</label>
-                                <input type="text" className="input" placeholder="34601-XXXXXXXX-X"
-                                    value={filters.cnic} onChange={e => setFilters({ ...filters, cnic: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label className="label">Engine Number</label>
-                                <input type="text" className="input" placeholder="Search engine #"
-                                    value={filters.engineNumber} onChange={e => setFilters({ ...filters, engineNumber: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label className="label">Chassis Number</label>
-                                <input type="text" className="input" placeholder="Search chassis #"
-                                    value={filters.chassisNumber} onChange={e => setFilters({ ...filters, chassisNumber: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label className="label">Delivery Order #</label>
-                                <input type="text" className="input" placeholder="Search DO #"
-                                    value={filters.doNumber} onChange={e => setFilters({ ...filters, doNumber: e.target.value })} />
-                            </div>
+                <div className="card" style={{ marginBottom: '1.25rem', padding: '1rem' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.75rem' }}>🔍 Search Records</div>
+                    <form onSubmit={e => { e.preventDefault(); fetchData(); }}>
+                        <div className="grid-4" style={{ marginBottom: '0.75rem' }}>
+                            {[
+                                { label: 'CNIC', key: 'cnic', ph: '34601-XXXXXXX-X' },
+                                { label: 'Engine #', key: 'engineNumber', ph: 'Engine number' },
+                                { label: 'Chassis #', key: 'chassisNumber', ph: 'Chassis number' },
+                                { label: 'DO #', key: 'doNumber', ph: 'Delivery order #' },
+                            ].map(f => (
+                                <input key={f.key} type="text" className="input" placeholder={f.ph}
+                                    value={(filters as any)[f.key]}
+                                    onChange={e => setFilters({ ...filters, [f.key]: e.target.value })} />
+                            ))}
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button type="submit" className="btn btn-primary" disabled={loading}>
-                                {loading ? 'Searching...' : 'Search'}
+                            <button type="submit" className="btn btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>Search</button>
+                            <button type="button" className="btn btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}
+                                onClick={() => { const r = { cnic: '', engineNumber: '', chassisNumber: '', doNumber: '' }; setFilters(r); fetchData(r); }}>
+                                Reset
                             </button>
-                            <button type="button" className="btn btn-secondary" onClick={handleReset} disabled={loading}>Reset</button>
                         </div>
                     </form>
                 </div>
 
-                {/* ── Records ── */}
-                <div className="card">
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>Recent Sale Records</h2>
+                {/* ── Sale Records ── */}
+                <div className="card" style={{ padding: '1rem' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.75rem' }}>Sale Records</div>
                     {loading ? (
-                        <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>
+                        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>Loading...</div>
                     ) : records.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>No records found</div>
                     ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                            {records.map(record => (
-                                <div key={record.id} style={{ padding: '0.75rem 1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-elevated)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <div style={{ flex: '1 1 200px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
-                                            <strong style={{ fontSize: '0.9rem' }}>{record.customer.name}</strong>
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{record.customer.cnic}</span>
-                                            {record.paymentMode !== 'CASH' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            {records.map(r => (
+                                <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.75rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-elevated)', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                    <div style={{ flex: '1 1 180px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                            <strong style={{ fontSize: '0.875rem' }}>{r.customer.name}</strong>
+                                            {r.paymentMode !== 'CASH' && (
                                                 <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '1px 5px', borderRadius: '4px',
-                                                    background: record.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : 'rgba(59,130,246,0.12)',
-                                                    color: record.paymentMode === 'CREDIT' ? '#ef4444' : '#3b82f6' }}>
-                                                    {record.paymentMode}
+                                                    background: r.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : 'rgba(59,130,246,0.12)',
+                                                    color: r.paymentMode === 'CREDIT' ? '#ef4444' : '#3b82f6' }}>
+                                                    {r.paymentMode}
                                                 </span>
                                             )}
                                         </div>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                            <span>{record.bike.model} · {record.bike.color}</span>
-                                            <span>· Eng: {record.bike.engineNumber}</span>
-                                            <span>· {new Date(record.saleDate).toLocaleDateString()}</span>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.1rem' }}>
+                                            <span>{r.bike.model} · {r.bike.color}</span>
+                                            <span>· {new Date(r.saleDate).toLocaleDateString()}</span>
                                         </div>
-                                        <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                                            <span style={{ fontWeight: 700 }}>Rs. {record.price.toLocaleString()}</span>
-                                            {record.paymentMode === 'CREDIT' && (
-                                                <>
-                                                    <span style={{ color: 'var(--color-text-muted)' }}>
-                                                        Paid: <strong style={{ color: 'var(--color-success)' }}>Rs. {(record.receivedCash || 0).toLocaleString()}</strong>
-                                                    </span>
-                                                    {(record.balance ?? 0) > 0 && (
-                                                        <span style={{ color: 'var(--color-text-muted)' }}>
-                                                            Balance: <strong style={{ color: '#ef4444' }}>Rs. {(record.balance ?? 0).toLocaleString()}</strong>
-                                                        </span>
-                                                    )}
-                                                </>
+                                        <div style={{ fontSize: '0.8rem', marginTop: '0.15rem', display: 'flex', gap: '0.6rem' }}>
+                                            <strong>Rs. {r.price.toLocaleString()}</strong>
+                                            {r.paymentMode === 'CREDIT' && (r.balance ?? 0) > 0 && (
+                                                <span style={{ color: '#ef4444' }}>Balance: Rs. {(r.balance ?? 0).toLocaleString()}</span>
                                             )}
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0, flexWrap: 'wrap' }}>
-                                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}
-                                            onClick={() => { setPrintingRecord(record); setTimeout(() => { window.print(); setPrintingRecord(null); }, 100); }}>🖨️</button>
-                                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}
-                                            onClick={() => { setPrintingSticker(record); setTimeout(() => { window.print(); setPrintingSticker(null); }, 100); }}>🏷️</button>
-                                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', color: '#3b82f6' }}
-                                            onClick={() => setEditingRecord(record)}>✏️</button>
+                                    <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
+                                        <a href={`/sales/${r.id}`} className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}>🖨️</a>
                                         <button className="btn" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
-                                            onClick={() => handleDeleteSale(record.id)} disabled={isDeleting}>🗑️</button>
+                                            onClick={() => handleDeleteSale(r.id)} disabled={isDeleting}>🗑️</button>
                                     </div>
                                 </div>
                             ))}
@@ -425,100 +271,8 @@ export default function DashboardPage() {
                     )}
                 </div>
 
-                {printingRecord && <div style={{ display: 'none' }}><SaleReceipt sale={printingRecord as any} /></div>}
-                {printingSticker && <div style={{ display: 'none' }}><BikeSticker bike={printingSticker.bike as any} /></div>}
-
-                {editingRecord && (
-                    <EditRecordModal
-                        record={editingRecord}
-                        onClose={() => setEditingRecord(null)}
-                        onSuccess={() => { setEditingRecord(null); fetchDashboardData(); }}
-                        showToast={showToast}
-                    />
-                )}
             </div>
             <Toast toasts={toasts} removeToast={removeToast} />
         </DashboardLayout>
-    );
-}
-
-function EditRecordModal({ record, onClose, onSuccess, showToast }: { record: SaleRecord; onClose: () => void; onSuccess: () => void; showToast: (message: string, type: 'success' | 'error') => void }) {
-    const [formData, setFormData] = useState({
-        customerName: record.customer.name,
-        customerMobile: record.customer.mobile,
-        customerAddress: record.customer.address || '',
-        engineNumber: record.bike.engineNumber,
-        chassisNumber: record.bike.chassisNumber,
-        price: record.price.toString()
-    });
-    const [submitting, setSubmitting] = useState(false);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSubmitting(true);
-        try {
-            const saleRes = await fetch(`/api/sales/${record.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ price: parseFloat(formData.price) })
-            });
-            const customerRes = await fetch(`/api/customers/${record.customer._id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: formData.customerName, mobile: formData.customerMobile, address: formData.customerAddress })
-            });
-            const bikeId = (record as any).bikeId || (record as any).bike?._id;
-            const bikeRes = await fetch(`/api/bikes/${bikeId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ engineNumber: formData.engineNumber, chassisNumber: formData.chassisNumber })
-            });
-            if (saleRes.ok && customerRes.ok && bikeRes.ok) { showToast('Updated successfully', 'success'); onSuccess(); }
-            else showToast('Failed to update some fields', 'error');
-        } catch { showToast('Error during update', 'error'); }
-        finally { setSubmitting(false); }
-    };
-
-    return (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-            <div className="card" style={{ maxWidth: '600px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Edit Record</h2>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
-                </div>
-                <form onSubmit={handleSubmit}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                        <div className="form-group">
-                            <label className="label">Full Name</label>
-                            <input type="text" className="input" value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} required />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Mobile</label>
-                            <input type="text" className="input" value={formData.customerMobile} onChange={e => setFormData({ ...formData, customerMobile: e.target.value })} />
-                        </div>
-                        <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                            <label className="label">Address</label>
-                            <textarea className="input" value={formData.customerAddress} onChange={e => setFormData({ ...formData, customerAddress: e.target.value })} />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Engine Number</label>
-                            <input type="text" className="input" value={formData.engineNumber} onChange={e => setFormData({ ...formData, engineNumber: e.target.value })} />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Chassis Number</label>
-                            <input type="text" className="input" value={formData.chassisNumber} onChange={e => setFormData({ ...formData, chassisNumber: e.target.value })} />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Sale Price</label>
-                            <input type="text" inputMode="decimal" className="input" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} required />
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                        <button type="button" className="btn btn-secondary" onClick={onClose} disabled={submitting}>Cancel</button>
-                        <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? 'Saving...' : 'Save Changes'}</button>
-                    </div>
-                </form>
-            </div>
-        </div>
     );
 }

@@ -22,6 +22,8 @@ export default function DashboardLayout({
         { href: '/inventory/receive', label: 'Receive', icon: '📦' },
         { href: '/sales', label: 'Sales', icon: '💰' },
         { href: '/reports', label: 'Reports', icon: '📈' },
+        { href: '/profit', label: 'Profit', icon: '💰' },
+        { href: '/expenses', label: 'Expenses', icon: '💸' },
     ];
 
     const workshopNavItems = [

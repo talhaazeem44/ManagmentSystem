@@ -240,3 +240,22 @@ const AdvanceBookingSchema = new Schema<IAdvanceBooking>({
 }, { timestamps: true });
 
 export const AdvanceBooking: Model<IAdvanceBooking> = models.AdvanceBooking || mongoose.model<IAdvanceBooking>('AdvanceBooking', AdvanceBookingSchema);
+
+// ── Expense ───────────────────────────────────────────────────────────────────
+export interface IExpense {
+    _id?: string;
+    amount: number;
+    description: string;
+    deductFrom: 'MARGIN' | 'CASH';
+    date: Date;
+    createdAt?: Date;
+}
+
+const ExpenseSchema = new Schema<IExpense>({
+    amount: { type: Number, required: true },
+    description: { type: String, required: true },
+    deductFrom: { type: String, enum: ['MARGIN', 'CASH'], required: true },
+    date: { type: Date, default: Date.now },
+}, { timestamps: true });
+
+export const Expense: Model<IExpense> = models.Expense || mongoose.model<IExpense>('Expense', ExpenseSchema);
