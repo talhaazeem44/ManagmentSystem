@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { AdvanceBooking } from '@/models';
 
+export async function GET(_: NextRequest, context: { params: Promise<{ id: string }> }) {
+    try {
+        await dbConnect();
+        const { id } = await context.params;
+        const booking = await AdvanceBooking.findById(id).lean();
+        if (!booking) return NextResponse.json({ message: 'Not found' }, { status: 404 });
+        return NextResponse.json(booking);
+    } catch (error: any) {
+        return NextResponse.json({ message: error.message }, { status: 500 });
+    }
+}
+
 export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
         await dbConnect();

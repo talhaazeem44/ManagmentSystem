@@ -57,6 +57,17 @@ export default function NewSalePage() {
     const [taxAmount] = useState('1000');
     const [receiptNumber, setReceiptNumber] = useState('');
 
+    // Auto-calculate balance for credit sales
+    useEffect(() => {
+        if (paymentMode === 'CREDIT') {
+            const p = parseFloat(price) || 0;
+            const r = parseFloat(receivedCash) || 0;
+            const b = parseFloat(bankTransferAmount) || 0;
+            const calc = p - r - b;
+            setBalance(calc > 0 ? String(calc) : '0');
+        }
+    }, [paymentMode, price, receivedCash, bankTransferAmount]);
+
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -397,7 +408,14 @@ export default function NewSalePage() {
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label className="label">Balance</label>
+                                <label className="label">
+                                    Balance
+                                    {paymentMode === 'CREDIT' && (
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem', fontWeight: 400 }}>
+                                            (auto-calculated)
+                                        </span>
+                                    )}
+                                </label>
                                 <input
                                     type="text"
                                     inputMode="decimal"
@@ -405,6 +423,7 @@ export default function NewSalePage() {
                                     value={balance}
                                     onChange={(e) => setBalance(e.target.value)}
                                     placeholder="9000"
+                                    style={paymentMode === 'CREDIT' ? { background: 'rgba(239,68,68,0.06)', borderColor: '#ef4444', fontWeight: 700 } : undefined}
                                 />
                             </div>
 

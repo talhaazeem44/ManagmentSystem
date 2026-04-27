@@ -387,11 +387,11 @@ a {
     color: black !important;
   }
 
-  /* Hide everything using visibility so parent/child override works */
   body * {
     visibility: hidden !important;
   }
 
+  /* Thermal receipt (workshop job card) */
   .print-only {
     display: block !important;
     visibility: visible !important;
@@ -410,11 +410,6 @@ a {
 
   .no-print {
     display: none !important;
-  }
-
-  @page {
-    size: 80mm auto;
-    margin: 0mm;
   }
 }
 

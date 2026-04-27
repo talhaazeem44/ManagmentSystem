@@ -13,6 +13,9 @@ interface SaleRecord {
     saleDate: string;
     price: number;
     paymentMode: string;
+    receivedCash?: number;
+    balance?: number;
+    bankTransferAmount?: number;
     bike: {
         model: string;
         color: string;
@@ -162,6 +165,22 @@ export default function DashboardPage() {
                     <StatCard label="Registration Collected" value={rs ? `Rs. ${rs.registrationCollected.toLocaleString()}` : '-'} />
                 </div>
 
+                {/* ── Outstanding Credit ── */}
+                <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
+                    <StatCard
+                        label="Total Outstanding (Credit)"
+                        value={stats?.creditSales ? `Rs. ${stats.creditSales.reduce((s, c) => s + c.balance, 0).toLocaleString()}` : '-'}
+                        color="#ef4444"
+                        sub={stats?.creditSales ? `${stats.creditSales.length} customer${stats.creditSales.length !== 1 ? 's' : ''} with pending balance` : undefined}
+                    />
+                    <StatCard
+                        label="Advance Bookings Collected"
+                        value={stats?.advanceBookings ? `${stats.advanceBookings.pendingCount} pending` : '-'}
+                        color="#f59e0b"
+                        sub="Bikes booked but not yet delivered"
+                    />
+                </div>
+
                 {/* ── Section 2: Workshop ── */}
                 <div style={{ marginBottom: '0.4rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Workshop Today</div>
                 <div style={{ marginBottom: '1.5rem' }}>
@@ -308,13 +327,34 @@ export default function DashboardPage() {
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
                                             <strong style={{ fontSize: '0.9rem' }}>{record.customer.name}</strong>
                                             <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{record.customer.cnic}</span>
+                                            {record.paymentMode !== 'CASH' && (
+                                                <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '1px 5px', borderRadius: '4px',
+                                                    background: record.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : 'rgba(59,130,246,0.12)',
+                                                    color: record.paymentMode === 'CREDIT' ? '#ef4444' : '#3b82f6' }}>
+                                                    {record.paymentMode}
+                                                </span>
+                                            )}
                                         </div>
                                         <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                             <span>{record.bike.model} · {record.bike.color}</span>
                                             <span>· Eng: {record.bike.engineNumber}</span>
                                             <span>· {new Date(record.saleDate).toLocaleDateString()}</span>
                                         </div>
-                                        <div style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: '0.2rem' }}>Rs. {record.price.toLocaleString()}</div>
+                                        <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                            <span style={{ fontWeight: 700 }}>Rs. {record.price.toLocaleString()}</span>
+                                            {record.paymentMode === 'CREDIT' && (
+                                                <>
+                                                    <span style={{ color: 'var(--color-text-muted)' }}>
+                                                        Paid: <strong style={{ color: 'var(--color-success)' }}>Rs. {(record.receivedCash || 0).toLocaleString()}</strong>
+                                                    </span>
+                                                    {(record.balance ?? 0) > 0 && (
+                                                        <span style={{ color: 'var(--color-text-muted)' }}>
+                                                            Balance: <strong style={{ color: '#ef4444' }}>Rs. {(record.balance ?? 0).toLocaleString()}</strong>
+                                                        </span>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0, flexWrap: 'wrap' }}>
                                         <button className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}

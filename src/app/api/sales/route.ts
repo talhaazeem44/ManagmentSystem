@@ -58,18 +58,27 @@ export async function POST(request: NextRequest) {
             });
         }
 
+        const parsedPrice = parseFloat(price);
+        const parsedReceived = receivedCash ? parseFloat(receivedCash) : 0;
+        const parsedBank = bankTransferAmount ? parseFloat(bankTransferAmount) : 0;
+        const parsedBalance = balance ? parseFloat(balance) : 0;
+        // For credit sales: if balance wasn't provided, auto-calculate it
+        const finalBalance = (paymentMode === 'CREDIT' && parsedBalance === 0)
+            ? Math.max(0, parsedPrice - parsedReceived - parsedBank)
+            : parsedBalance;
+
         // Create sale
         const sale = await Sale.create({
             bikeId: bike._id,
             customerId: customerRecord._id,
-            price: parseFloat(price),
+            price: parsedPrice,
             advanceAmount: advanceAmount || 0,
-            receivedCash: receivedCash ? parseFloat(receivedCash) : 0,
-            balance: balance ? parseFloat(balance) : 0,
+            receivedCash: parsedReceived,
+            balance: finalBalance,
             registrationCost: registrationCost ? parseFloat(registrationCost) : undefined,
             taxAmount: taxAmount ? parseFloat(taxAmount) : 0,
             paymentMode: paymentMode || 'CASH',
-            bankTransferAmount: bankTransferAmount ? parseFloat(bankTransferAmount) : 0,
+            bankTransferAmount: parsedBank,
             receiptNumber
         });
 

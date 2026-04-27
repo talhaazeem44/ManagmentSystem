@@ -35,51 +35,7 @@ const emptyForm = {
 };
 
 function printBooking(b: AdvanceBooking) {
-    const remaining = b.totalPrice ? b.totalPrice - b.advancePaid : null;
-    const html = `
-        <html><head><style>
-            * { margin:0; padding:0; box-sizing:border-box; }
-            @page { size: 80mm auto; margin: 0; }
-            body { width:76mm; font-family:'Courier New',monospace; font-size:10pt; color:#000; background:#fff; padding:3mm 2mm; line-height:1.4; }
-            .center { text-align:center; }
-            .bold { font-weight:900; }
-            .divider { border-top:1px dashed #000; margin:2mm 0; }
-            .row { display:flex; justify-content:space-between; font-size:9.5pt; margin-bottom:1mm; }
-            .title { font-size:15pt; font-weight:900; letter-spacing:1px; }
-            .subtitle { font-size:9pt; font-weight:700; }
-            .total-row { display:flex; justify-content:space-between; font-size:12pt; font-weight:900; margin:2mm 0; }
-        </style></head>
-        <body>
-            <div class="center">
-                <div class="title">NAEEM AUTOS</div>
-                <div class="subtitle">ADVANCE BOOKING SLIP</div>
-                <div style="font-size:8pt;margin-top:1mm">${new Date(b.date).toLocaleString('en-PK')}</div>
-            </div>
-            <div class="divider"></div>
-            <div class="row"><span>Customer:</span><span class="bold">${b.customerName}</span></div>
-            ${b.customerMobile ? `<div class="row"><span>Mobile:</span><span>${b.customerMobile}</span></div>` : ''}
-            ${b.cnic ? `<div class="row"><span>CNIC:</span><span>${b.cnic}</span></div>` : ''}
-            <div class="divider"></div>
-            ${b.bikeModel ? `<div class="row"><span>Bike Model:</span><span class="bold">${b.bikeModel}${b.bikeColor ? ' · ' + b.bikeColor : ''}</span></div>` : ''}
-            ${b.totalPrice ? `<div class="row"><span>Total Price:</span><span>Rs. ${b.totalPrice.toLocaleString()}</span></div>` : ''}
-            ${b.registrationFee ? `<div class="row"><span>Registration:</span><span>Rs. ${b.registrationFee.toLocaleString()}</span></div>` : ''}
-            <div class="divider"></div>
-            <div class="total-row"><span>Advance Paid:</span><span>Rs. ${b.advancePaid.toLocaleString()}</span></div>
-            ${remaining !== null ? `<div class="row"><span>Remaining:</span><span class="bold">Rs. ${remaining.toLocaleString()}</span></div>` : ''}
-            ${b.notes ? `<div class="divider"></div><div style="font-size:8pt;font-style:italic">Note: ${b.notes}</div>` : ''}
-            <div class="divider"></div>
-            <div class="center" style="font-size:8pt;margin-top:2mm">
-                <div>Thank you for choosing Naeem Autos!</div>
-                <div>Honda Authorized Dealer</div>
-                <div style="margin-top:1mm">1.5 Km Daska Road, Sambrial | 052-6525001-2</div>
-            </div>
-        </body></html>
-    `;
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, '_blank', 'width=400,height=500');
-    if (!win) return;
-    win.onload = () => { win.focus(); win.print(); setTimeout(() => { win.close(); URL.revokeObjectURL(url); }, 1000); };
+    window.open(`/advance-bookings/${b._id}/receipt`, '_blank');
 }
 
 export default function AdvanceBookingsPage() {
