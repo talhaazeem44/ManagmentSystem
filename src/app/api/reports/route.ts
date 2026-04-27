@@ -9,6 +9,16 @@ import {
     REGISTRATION_ACTUAL_COST_BY_MODEL
 } from '@/lib/constants';
 
+// Advance booking margin: same formula as sale — base margin + extra above standard price
+const calcAdvanceMargin = (booking: any) => {
+    const model = booking.bikeModel || '';
+    const standardPrice = BIKE_STANDARD_PRICES[model] || 0;
+    const baseMargin = BIKE_UNIT_MARGINS[model] || 0;
+    const totalPrice = Number(booking.totalPrice || 0);
+    const extraCash = Math.max(0, totalPrice - standardPrice);
+    return { bikeProfit: baseMargin + extraCash, standardPrice, baseMargin };
+};
+
 // Profit per sale:
 // - Bike profit  = fixed margin (8k/11k/20k) + extra received above standard price
 // - Reg profit   = registration charged to customer − actual government cost
@@ -93,11 +103,11 @@ export async function GET(request: NextRequest) {
         });
 
         const advancePendingCount = pendingAdvanceBookings.length;
-        const advancePendingMargin = pendingAdvanceBookings.reduce((s: number, b: any) => s + Number(b.margin || 0), 0);
+        const advancePendingMargin = pendingAdvanceBookings.reduce((s: number, b: any) => s + calcAdvanceMargin(b).bikeProfit, 0);
 
         // Today's advance bookings cash and margin
         const rangeAdvanceCash = filteredAdvanceBookings.reduce((s: number, b: any) => s + Number(b.advancePaid || 0), 0);
-        const rangeAdvanceMargin = filteredAdvanceBookings.reduce((s: number, b: any) => s + Number(b.margin || 0), 0);
+        const rangeAdvanceMargin = filteredAdvanceBookings.reduce((s: number, b: any) => s + calcAdvanceMargin(b).bikeProfit, 0);
 
         // Attach customer info to credit sales
         const creditCustomerIds = creditSalesRaw.map((s: any) => s.customerId);
@@ -164,22 +174,38 @@ export async function GET(request: NextRequest) {
         });
 
         const cashBreakdown = [
-            ...filteredSales.map((sale: any) => ({
-                bikeModel: sale.bikeId?.model || '',
-                paymentMode: sale.paymentMode || 'CASH',
-                price: Number(sale.price || 0),
-                receivedCash: Number(sale.receivedCash || 0),
-                bankTransferAmount: Number(sale.bankTransferAmount || 0),
-                counted: Number(sale.receivedCash || 0),
-            })),
-            ...filteredAdvanceBookings.map((b: any) => ({
-                bikeModel: (b.bikeModel || 'Advance Booking'),
-                paymentMode: 'ADVANCE',
-                price: Number(b.totalPrice || 0),
-                receivedCash: Number(b.advancePaid || 0),
-                bankTransferAmount: 0,
-                counted: Number(b.advancePaid || 0),
-            })),
+            ...filteredSales.map((sale: any) => {
+                const m = calcSaleMargin(sale);
+                return {
+                    bikeModel: sale.bikeId?.model || '?',
+                    paymentMode: sale.paymentMode || 'CASH',
+                    price: Number(sale.price || 0),
+                    receivedCash: Number(sale.receivedCash || 0),
+                    bankTransferAmount: Number(sale.bankTransferAmount || 0),
+                    counted: Number(sale.receivedCash || 0),
+                    bikeProfit: m.bikeProfit,
+                    regProfit: m.regProfit,
+                    totalProfit: m.totalProfit,
+                    standardPrice: BIKE_STANDARD_PRICES[sale.bikeId?.model || ''] || 0,
+                    baseMargin: BIKE_UNIT_MARGINS[sale.bikeId?.model || ''] || 0,
+                };
+            }),
+            ...filteredAdvanceBookings.map((b: any) => {
+                const am = calcAdvanceMargin(b);
+                return {
+                    bikeModel: b.bikeModel || 'Advance',
+                    paymentMode: 'ADVANCE',
+                    price: Number(b.totalPrice || 0),
+                    receivedCash: Number(b.advancePaid || 0),
+                    bankTransferAmount: 0,
+                    counted: Number(b.advancePaid || 0),
+                    bikeProfit: am.bikeProfit,
+                    regProfit: 0,
+                    totalProfit: am.bikeProfit,
+                    standardPrice: am.standardPrice,
+                    baseMargin: am.baseMargin,
+                };
+            }),
         ];
 
         return NextResponse.json({
@@ -188,6 +214,7 @@ export async function GET(request: NextRequest) {
                 revenue: rangeRevenue,
                 workshopRevenue: rangeWorkshopRevenue,
                 bikeProfit: rangeBikeProfit,
+                advanceMargin: rangeAdvanceMargin,
                 regProfit: rangeRegProfit,
                 workshopProfit: rangeWorkshopProfit,
                 profit: rangeProfit,
@@ -196,6 +223,7 @@ export async function GET(request: NextRequest) {
                 totalCashIn: rangeTotalCashIn,
                 bankTransfer: rangeBankTransfer,
                 cashToDeposit: rangeCashToDeposit,
+                expenseCash: expenseCash,
                 cashInHand: rangeCashInHand,
                 startDate: filterStartDate,
                 endDate: filterEndDate,

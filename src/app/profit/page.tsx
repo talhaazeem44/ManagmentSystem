@@ -7,7 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 
 interface Stats {
     range: {
-        bikeProfit: number; regProfit: number; workshopProfit: number; profit: number;
+        bikeProfit: number; advanceMargin: number; regProfit: number; workshopProfit: number; profit: number;
         sales: number; cashReceived: number; cashInHand: number;
     };
     advanceBookings: { pendingCount: number; pendingMargin: number };
@@ -103,9 +103,9 @@ export default function ProfitPage() {
                     <>
                         {/* ── 4 Profit Cards ── */}
                         <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
-                            <Card label="Bike Margin" value={rs ? `Rs. ${rs.bikeProfit.toLocaleString()}` : '-'} color="var(--color-success)" />
+                            <Card label="Bike Margin" value={rs ? `Rs. ${((rs.bikeProfit) - (rs.advanceMargin ?? 0)).toLocaleString()}` : '-'} color="var(--color-success)" sub="Sales only" />
+                            <Card label="Advance Margin" value={rs ? `Rs. ${(rs.advanceMargin ?? 0).toLocaleString()}` : '-'} color="#f59e0b" sub="Today's bookings" />
                             <Card label="Registration Profit" value={rs ? `Rs. ${rs.regProfit.toLocaleString()}` : '-'} color="var(--color-primary)" sub="Charged − actual cost" />
-                            <Card label="Workshop Profit" value={rs ? `Rs. ${rs.workshopProfit.toLocaleString()}` : '-'} color="#8b5cf6" />
                             <Card label="Total Profit Today" value={rs ? `Rs. ${rs.profit.toLocaleString()}` : '-'} color="#10b981" />
                         </div>
 
@@ -159,10 +159,11 @@ export default function ProfitPage() {
                             <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>Profit Sources</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 {[
-                                    { label: 'Bike Margin', value: rs?.bikeProfit ?? 0, color: 'var(--color-success)', total: rs?.profit ?? 1 },
+                                    { label: 'Bike Margin', value: (rs?.bikeProfit ?? 0) - (rs?.advanceMargin ?? 0), color: 'var(--color-success)', total: rs?.profit ?? 1 },
+                                    { label: 'Advance Booking Margin', value: rs?.advanceMargin ?? 0, color: '#f59e0b', total: rs?.profit ?? 1 },
                                     { label: 'Registration Profit', value: rs?.regProfit ?? 0, color: 'var(--color-primary)', total: rs?.profit ?? 1 },
                                     { label: 'Workshop Profit', value: rs?.workshopProfit ?? 0, color: '#8b5cf6', total: rs?.profit ?? 1 },
-                                ].map(item => (
+                                ].filter(item => item.value > 0).map(item => (
                                     <div key={item.label}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.3rem' }}>
                                             <span>{item.label}</span>

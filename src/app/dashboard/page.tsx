@@ -24,17 +24,25 @@ interface CreditSale {
     bikeModel: string; customerName: string; customerMobile: string; cnic: string;
 }
 
+interface CashBreakdownItem {
+    bikeModel: string; paymentMode: string; price: number;
+    receivedCash: number; bankTransferAmount: number; counted: number;
+    bikeProfit: number; regProfit: number; totalProfit: number;
+    standardPrice: number; baseMargin: number;
+}
+
 interface Stats {
     range: {
         sales: number; revenue: number; workshopRevenue: number; workshopProfit: number;
         bikeProfit: number; regProfit: number; profit: number; cashReceived: number;
         registrationCollected: number; totalCashIn: number; cashToDeposit: number;
-        cashInHand: number; bankTransfer: number;
+        expenseCash: number; cashInHand: number; bankTransfer: number;
     };
     allTime: { totalBikes: number; availableBikes: number; soldBikes: number };
     creditSales: CreditSale[];
     advanceBookings: { pendingCount: number; pendingMargin: number };
     chartData: { day: string; date: string; sales: number; revenue: number }[];
+    cashBreakdown: CashBreakdownItem[];
 }
 
 export default function DashboardPage() {
@@ -44,6 +52,7 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState(false);
     const [filters, setFilters] = useState({ cnic: '', engineNumber: '', chassisNumber: '', doNumber: '' });
+    const [showBreakdown, setShowBreakdown] = useState(false);
 
     const fetchData = async (searchFilters = filters) => {
         setLoading(true);
@@ -105,12 +114,6 @@ export default function DashboardPage() {
                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Sold Today</div>
                         <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-success)' }}>{rs?.sales ?? '-'}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>bikes sold</div>
-                    </div>
-
-                    <div className="card" style={{ padding: '1.25rem' }}>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Cash in Hand</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{rs ? `Rs. ${rs.cashInHand.toLocaleString()}` : '-'}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>after deposit</div>
                     </div>
 
                     {/* Profit — link to profit page */}
@@ -198,6 +201,88 @@ export default function DashboardPage() {
                                 </div>
                             ))}
                         </div>
+                    </div>
+                )}
+
+                {/* ── Cash Breakdown Debug Table ── */}
+                {(stats?.cashBreakdown?.length ?? 0) > 0 && (
+                    <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showBreakdown ? '0.75rem' : 0 }}>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)' }}>
+                                Cash &amp; Margin Breakdown ({stats!.cashBreakdown.length} entries)
+                            </div>
+                            <button className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
+                                onClick={() => setShowBreakdown(p => !p)}>
+                                {showBreakdown ? 'Hide ▲' : 'Show ▼'}
+                            </button>
+                        </div>
+                        {showBreakdown && (
+                            <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                                    <thead>
+                                        <tr style={{ background: 'var(--color-bg-elevated)' }}>
+                                            {['#', 'Model', 'Mode', 'Sale Price', 'Std Price', 'Rcvd Cash', 'Bank Xfer', 'Base Margin', 'Extra', 'Bike Profit', 'Reg Profit', 'Total Profit'].map(h => (
+                                                <th key={h} style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 700, color: 'var(--color-text-muted)', whiteSpace: 'nowrap', borderBottom: '1px solid var(--color-border)' }}>{h}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {stats!.cashBreakdown.map((row, i) => {
+                                            const totalRcvd = row.receivedCash + row.bankTransferAmount;
+                                            const extra = Math.max(0, totalRcvd - row.standardPrice);
+                                            return (
+                                                <tr key={i} style={{ borderBottom: '1px solid var(--color-border)', background: i % 2 === 0 ? 'transparent' : 'var(--color-bg-elevated)' }}>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-text-muted)' }}>{i + 1}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 600 }}>{row.bikeModel}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right' }}>
+                                                        <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px',
+                                                            background: row.paymentMode === 'ADVANCE' ? 'rgba(245,158,11,0.15)' : row.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)',
+                                                            color: row.paymentMode === 'ADVANCE' ? '#f59e0b' : row.paymentMode === 'CREDIT' ? '#ef4444' : '#10b981' }}>
+                                                            {row.paymentMode}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right' }}>{row.price.toLocaleString()}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-text-muted)' }}>{row.standardPrice.toLocaleString()}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: '#10b981' }}>{row.receivedCash.toLocaleString()}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: '#3b82f6' }}>{row.bankTransferAmount > 0 ? row.bankTransferAmount.toLocaleString() : '-'}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-text-muted)' }}>{row.baseMargin.toLocaleString()}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: extra > 0 ? '#10b981' : 'var(--color-text-muted)' }}>{extra > 0 ? `+${extra.toLocaleString()}` : '-'}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 700, color: 'var(--color-success)' }}>{row.bikeProfit.toLocaleString()}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-primary)' }}>{row.regProfit > 0 ? row.regProfit.toLocaleString() : '-'}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 700, color: '#10b981' }}>{row.totalProfit.toLocaleString()}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 700, background: 'var(--color-bg-elevated)' }}>
+                                            <td colSpan={5} style={{ padding: '0.5rem 0.6rem', textAlign: 'right', fontSize: '0.8rem' }}>TOTALS</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#10b981' }}>
+                                                {stats!.cashBreakdown.reduce((s, r) => s + r.receivedCash, 0).toLocaleString()}
+                                            </td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#3b82f6' }}>
+                                                {stats!.cashBreakdown.reduce((s, r) => s + r.bankTransferAmount, 0).toLocaleString()}
+                                            </td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>
+                                                {stats!.cashBreakdown.reduce((s, r) => s + r.baseMargin, 0).toLocaleString()}
+                                            </td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>
+                                                {stats!.cashBreakdown.reduce((s, r) => s + Math.max(0, (r.receivedCash + r.bankTransferAmount) - r.standardPrice), 0).toLocaleString()}
+                                            </td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: 'var(--color-success)' }}>
+                                                {stats!.cashBreakdown.reduce((s, r) => s + r.bikeProfit, 0).toLocaleString()}
+                                            </td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: 'var(--color-primary)' }}>
+                                                {stats!.cashBreakdown.reduce((s, r) => s + r.regProfit, 0).toLocaleString()}
+                                            </td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#10b981' }}>
+                                                {stats!.cashBreakdown.reduce((s, r) => s + r.totalProfit, 0).toLocaleString()}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        )}
                     </div>
                 )}
 
