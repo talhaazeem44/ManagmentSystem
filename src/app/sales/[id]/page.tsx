@@ -195,6 +195,9 @@ export default function ReceiptPage() {
                             <label className={sale.paymentMode === 'LEASE' ? styles.checked : ''}>
                                 <input type="checkbox" checked={sale.paymentMode === 'LEASE'} readOnly /> LEASE
                             </label>
+                            <label className={sale.paymentMode === 'ONLINE' ? styles.checked : ''}>
+                                <input type="checkbox" checked={sale.paymentMode === 'ONLINE'} readOnly /> ONLINE
+                            </label>
                         </div>
 
                         <div className={styles.paymentDetails}>

@@ -419,6 +419,7 @@ export default function NewSalePage() {
                                     <option value="CASH">Cash</option>
                                     <option value="CREDIT">Credit</option>
                                     <option value="LEASE">Lease</option>
+                                    <option value="ONLINE">Online</option>
                                 </select>
                             </div>
                         </div>
