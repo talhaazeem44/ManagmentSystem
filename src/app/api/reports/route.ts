@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
 
         // ── Range: bike sales ──────────────────────────────────────────────────
         const rangeRevenue = filteredSales.reduce((s, sale: any) => s + Number(sale.price || 0), 0);
-        const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || sale.price || 0), 0);
+        const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || 0), 0);
         const rangeRegistration = filteredSales.reduce((s, sale: any) => s + Number(sale.registrationCost || 0), 0);
         const rangeBankTransfer = filteredSales.reduce((s, sale: any) => s + Number(sale.bankTransferAmount || 0), 0);
         const rangeTotalCashIn = rangeCashReceived + rangeRegistration;

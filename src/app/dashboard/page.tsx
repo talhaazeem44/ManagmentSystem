@@ -251,12 +251,8 @@ export default function DashboardPage() {
                     </div>
                 ) : (
                     <div style={{ marginBottom: '1.5rem' }}>
-                        <div className="grid-2" style={{ marginBottom: '0.75rem' }}>
-                            <StatCard label="Workshop Profit" value={rs ? `Rs. ${rs.workshopProfit.toLocaleString()}` : '-'} color="var(--color-success)" sub="Labour + parts profit" />
-                            <StatCard label="Bike Sales Profit" value={rs ? `Rs. ${rs.bikeProfit.toLocaleString()}` : '-'} color="var(--color-primary)" sub="Fixed margin + extra received" />
-                        </div>
                         <div className="grid-4" style={{ marginBottom: '0.75rem' }}>
-                            <StatCard label="Bike Margin" value={rs ? `Rs. ${rs.bikeProfit.toLocaleString()}` : '-'} color="var(--color-success)" sub="Fixed + above standard price" />
+                            <StatCard label="Bike Margin" value={rs ? `Rs. ${rs.bikeProfit.toLocaleString()}` : '-'} color="var(--color-success)" />
                             <StatCard label="Registration Profit" value={rs ? `Rs. ${rs.regProfit.toLocaleString()}` : '-'} color="var(--color-primary)" sub="Charged - actual cost" />
                             <StatCard label="Workshop Profit" value={rs ? `Rs. ${rs.workshopProfit.toLocaleString()}` : '-'} color="#8b5cf6" sub="Parts + labour profit" />
                             <StatCard label="Total Profit Today" value={rs ? `Rs. ${rs.profit.toLocaleString()}` : '-'} color="#10b981" sub="All profits combined" />
