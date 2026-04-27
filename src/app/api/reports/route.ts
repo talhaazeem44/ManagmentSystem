@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
         // ── Fetch data ─────────────────────────────────────────────────────────
         const [filteredSales, filteredServices, allSales, allServices,
             totalBikesCount, availableBikesCount, soldBikesCount,
-            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings] = await Promise.all([
+            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings, filteredAdvanceBookings] = await Promise.all([
             Sale.find({ saleDate: { $gte: filterStartDate, $lt: filterEndDate } }).populate('bikeId').lean(),
             ServiceSale.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
             Sale.find().populate('bikeId').lean(),
@@ -64,10 +64,15 @@ export async function GET(request: NextRequest) {
             Bike.find().lean(),
             Sale.find({ paymentMode: 'CREDIT', balance: { $gt: 0 } }).populate('bikeId').lean(),
             AdvanceBooking.find({ status: 'PENDING' }).lean(),
+            AdvanceBooking.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
         ]);
 
         const advancePendingCount = pendingAdvanceBookings.length;
         const advancePendingMargin = pendingAdvanceBookings.reduce((s: number, b: any) => s + Number(b.margin || 0), 0);
+
+        // Today's advance bookings cash and margin
+        const rangeAdvanceCash = filteredAdvanceBookings.reduce((s: number, b: any) => s + Number(b.advancePaid || 0), 0);
+        const rangeAdvanceMargin = filteredAdvanceBookings.reduce((s: number, b: any) => s + Number(b.margin || 0), 0);
 
         // Attach customer info to credit sales
         const creditCustomerIds = creditSalesRaw.map((s: any) => s.customerId);
@@ -90,7 +95,7 @@ export async function GET(request: NextRequest) {
 
         // ── Range: bike sales ──────────────────────────────────────────────────
         const rangeRevenue = filteredSales.reduce((s, sale: any) => s + Number(sale.price || 0), 0);
-        const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || 0), 0);
+        const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || 0), 0) + rangeAdvanceCash;
         const rangeRegistration = filteredSales.reduce((s, sale: any) => s + Number(sale.registrationCost || 0), 0);
         const rangeBankTransfer = filteredSales.reduce((s, sale: any) => s + Number(sale.bankTransferAmount || 0), 0);
         const rangeTotalCashIn = rangeCashReceived + rangeRegistration;
@@ -100,7 +105,7 @@ export async function GET(request: NextRequest) {
         }, 0);
         const rangeCashInHand = Math.max(0, rangeTotalCashIn - rangeCashToDeposit);
 
-        const rangeBikeProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).bikeProfit, 0);
+        const rangeBikeProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).bikeProfit, 0) + rangeAdvanceMargin;
         const rangeRegProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).regProfit, 0);
 
         // ── Range: workshop ────────────────────────────────────────────────────
@@ -129,6 +134,25 @@ export async function GET(request: NextRequest) {
             };
         });
 
+        const cashBreakdown = [
+            ...filteredSales.map((sale: any) => ({
+                bikeModel: sale.bikeId?.model || '',
+                paymentMode: sale.paymentMode || 'CASH',
+                price: Number(sale.price || 0),
+                receivedCash: Number(sale.receivedCash || 0),
+                bankTransferAmount: Number(sale.bankTransferAmount || 0),
+                counted: Number(sale.receivedCash || 0),
+            })),
+            ...filteredAdvanceBookings.map((b: any) => ({
+                bikeModel: (b.bikeModel || 'Advance Booking'),
+                paymentMode: 'ADVANCE',
+                price: Number(b.totalPrice || 0),
+                receivedCash: Number(b.advancePaid || 0),
+                bankTransferAmount: 0,
+                counted: Number(b.advancePaid || 0),
+            })),
+        ];
+
         return NextResponse.json({
             range: {
                 sales: filteredSales.length,
@@ -147,6 +171,7 @@ export async function GET(request: NextRequest) {
                 startDate: filterStartDate,
                 endDate: filterEndDate,
             },
+            cashBreakdown,
             allTime: {
                 totalBikes: totalBikesCount,
                 availableBikes: availableBikesCount,

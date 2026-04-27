@@ -45,6 +45,15 @@ interface CreditSale {
     cnic: string;
 }
 
+interface CashBreakdownItem {
+    bikeModel: string;
+    paymentMode: string;
+    price: number;
+    receivedCash: number;
+    bankTransferAmount: number;
+    counted: number;
+}
+
 interface Stats {
     range: {
         sales: number;
@@ -64,6 +73,7 @@ interface Stats {
     allTime: { totalBikes: number; availableBikes: number; soldBikes: number };
     creditSales: CreditSale[];
     advanceBookings: { pendingCount: number; pendingMargin: number };
+    cashBreakdown: CashBreakdownItem[];
 }
 
 function StatCard({ label, value, color, sub }: { label: string; value: string; color?: string; sub?: string }) {
@@ -195,9 +205,56 @@ export default function DashboardPage() {
                     <StatCard label="Bank Transfer" value={rs ? `Rs. ${rs.bankTransfer.toLocaleString()}` : '-'} color="#3b82f6" sub="Received via bank/online" />
                     <StatCard label="Deposit to Honda" value={rs ? `Rs. ${rs.cashToDeposit.toLocaleString()}` : '-'} color="#ef4444" sub="Book price of bikes (no reg)" />
                 </div>
-                <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ marginBottom: '0.75rem' }}>
                     <StatCard label="Cash in Hand" value={rs ? `Rs. ${rs.cashInHand.toLocaleString()}` : '-'} color="#10b981" sub="After depositing to Honda" />
                 </div>
+
+                {/* ── Cash Breakdown ── */}
+                {stats?.cashBreakdown && stats.cashBreakdown.length > 0 && (
+                    <div className="card" style={{ marginBottom: '1.5rem', padding: 0 }}>
+                        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--color-border)', fontWeight: 600, fontSize: '0.875rem' }}>
+                            Cash Received Breakdown — Today ({stats.cashBreakdown.length} sales)
+                        </div>
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>Bike</th>
+                                    <th>Mode</th>
+                                    <th style={{ textAlign: 'right' }}>Sale Price</th>
+                                    <th style={{ textAlign: 'right' }}>Received Cash</th>
+                                    <th style={{ textAlign: 'right' }}>Bank Transfer</th>
+                                    <th style={{ textAlign: 'right' }}>Counted</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {stats.cashBreakdown.map((item, i) => (
+                                    <tr key={i}>
+                                        <td>{item.bikeModel}</td>
+                                        <td>
+                                            <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '1px 5px', borderRadius: '4px',
+                                                background: item.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.1)',
+                                                color: item.paymentMode === 'CREDIT' ? '#ef4444' : '#16a34a' }}>
+                                                {item.paymentMode}
+                                            </span>
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>Rs. {item.price.toLocaleString()}</td>
+                                        <td style={{ textAlign: 'right' }}>{item.receivedCash ? `Rs. ${item.receivedCash.toLocaleString()}` : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}</td>
+                                        <td style={{ textAlign: 'right' }}>{item.bankTransferAmount ? `Rs. ${item.bankTransferAmount.toLocaleString()}` : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}</td>
+                                        <td style={{ textAlign: 'right', fontWeight: 700, color: item.counted > 0 ? '#10b981' : '#ef4444' }}>
+                                            Rs. {item.counted.toLocaleString()}
+                                        </td>
+                                    </tr>
+                                ))}
+                                <tr style={{ background: 'var(--color-bg-elevated)', fontWeight: 700 }}>
+                                    <td colSpan={5} style={{ textAlign: 'right' }}>Total:</td>
+                                    <td style={{ textAlign: 'right', color: '#10b981' }}>
+                                        Rs. {stats.cashBreakdown.reduce((s, i) => s + i.counted, 0).toLocaleString()}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                )}
 
                 {/* ── Section 4: Credit Customers ── */}
                 {stats?.creditSales && stats.creditSales.length > 0 && (
