@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { Sale, Bike, DeliveryOrder, ServiceSale } from '@/models';
+import { Sale, Bike, DeliveryOrder, ServiceSale, Customer, AdvanceBooking } from '@/models';
 import {
     BIKE_BOOK_PRICES,
     BIKE_STANDARD_PRICES,
@@ -16,8 +16,9 @@ const calcSaleMargin = (sale: any) => {
     const model = sale.bikeId?.model || '';
     const standardPrice = BIKE_STANDARD_PRICES[model] || Number(sale.price || 0);
     const baseMargin = BIKE_UNIT_MARGINS[model] || 0;
-    const receivedCash = Number(sale.receivedCash || sale.price || 0);
-    const extraCash = Math.max(0, receivedCash - standardPrice);
+    // Bank transfer counts the same as received cash
+    const totalReceived = (Number(sale.receivedCash || 0) + Number(sale.bankTransferAmount || 0)) || Number(sale.price || 0);
+    const extraCash = Math.max(0, totalReceived - standardPrice);
     const bikeProfit = baseMargin + extraCash;
 
     const regCharged = Number(sale.registrationCost || 0);
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
         // ── Fetch data ─────────────────────────────────────────────────────────
         const [filteredSales, filteredServices, allSales, allServices,
             totalBikesCount, availableBikesCount, soldBikesCount,
-            deliveryOrders, bikes] = await Promise.all([
+            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings] = await Promise.all([
             Sale.find({ saleDate: { $gte: filterStartDate, $lt: filterEndDate } }).populate('bikeId').lean(),
             ServiceSale.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
             Sale.find().populate('bikeId').lean(),
@@ -61,7 +62,31 @@ export async function GET(request: NextRequest) {
             Bike.countDocuments({ status: 'SOLD' }),
             DeliveryOrder.find().sort({ date: -1 }).lean(),
             Bike.find().lean(),
+            Sale.find({ paymentMode: 'CREDIT', balance: { $gt: 0 } }).populate('bikeId').lean(),
+            AdvanceBooking.find({ status: 'PENDING' }).lean(),
         ]);
+
+        const advancePendingCount = pendingAdvanceBookings.length;
+        const advancePendingMargin = pendingAdvanceBookings.reduce((s: number, b: any) => s + Number(b.margin || 0), 0);
+
+        // Attach customer info to credit sales
+        const creditCustomerIds = creditSalesRaw.map((s: any) => s.customerId);
+        const creditCustomers = await Customer.find({ _id: { $in: creditCustomerIds } }).lean();
+        const creditSales = creditSalesRaw.map((s: any) => {
+            const customer = creditCustomers.find((c: any) => c._id.toString() === s.customerId.toString());
+            return {
+                id: s._id.toString(),
+                saleDate: s.saleDate,
+                price: s.price,
+                balance: s.balance,
+                receivedCash: s.receivedCash,
+                bankTransferAmount: s.bankTransferAmount,
+                bikeModel: (s.bikeId as any)?.model || '',
+                customerName: customer?.name || '',
+                customerMobile: customer?.mobile || '',
+                cnic: customer?.cnic || '',
+            };
+        });
 
         // ── Range: bike sales ──────────────────────────────────────────────────
         const rangeRevenue = filteredSales.reduce((s, sale: any) => s + Number(sale.price || 0), 0);
@@ -132,6 +157,11 @@ export async function GET(request: NextRequest) {
                 totalProfit: allTimeProfit,
             },
             deliveryOrders: doStats,
+            creditSales,
+            advanceBookings: {
+                pendingCount: advancePendingCount,
+                pendingMargin: advancePendingMargin,
+            },
         });
     } catch (error: any) {
         console.error('Error fetching reports:', error);

@@ -28,7 +28,7 @@ export default function QrScanner({ onScan, onClose }: QrScannerProps) {
                         scanner.clear();
                         onScan(decodedText);
                     },
-                    () => {}
+                    () => { }
                 );
             } catch (e) {
                 setError('Camera not available. Try uploading an image instead.');
@@ -38,7 +38,7 @@ export default function QrScanner({ onScan, onClose }: QrScannerProps) {
         start();
 
         return () => {
-            scannerRef.current?.clear().catch(() => {});
+            scannerRef.current?.clear().catch(() => { });
         };
     }, [onScan]);
 

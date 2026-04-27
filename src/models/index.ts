@@ -204,3 +204,39 @@ const ServiceSaleSchema = new Schema<IServiceSale>({
 });
 
 export const ServiceSale: Model<IServiceSale> = models.ServiceSale || mongoose.model<IServiceSale>('ServiceSale', ServiceSaleSchema);
+
+// ── Advance Booking ───────────────────────────────────────────────────────────
+export interface IAdvanceBooking {
+    _id?: string;
+    customerName: string;
+    customerMobile?: string;
+    cnic?: string;
+    bikeModel?: string;
+    bikeColor?: string;
+    advancePaid: number;
+    totalPrice?: number;
+    registrationFee?: number;
+    margin?: number;
+    notes?: string;
+    status: 'PENDING' | 'DELIVERED';
+    date: Date;
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+const AdvanceBookingSchema = new Schema<IAdvanceBooking>({
+    customerName: { type: String, required: true },
+    customerMobile: { type: String },
+    cnic: { type: String },
+    bikeModel: { type: String },
+    bikeColor: { type: String },
+    advancePaid: { type: Number, required: true, default: 0 },
+    totalPrice: { type: Number },
+    registrationFee: { type: Number, default: 0 },
+    margin: { type: Number, default: 0 },
+    notes: { type: String },
+    status: { type: String, enum: ['PENDING', 'DELIVERED'], default: 'PENDING' },
+    date: { type: Date, default: Date.now },
+}, { timestamps: true });
+
+export const AdvanceBooking: Model<IAdvanceBooking> = models.AdvanceBooking || mongoose.model<IAdvanceBooking>('AdvanceBooking', AdvanceBookingSchema);

@@ -17,6 +17,7 @@ export default function DashboardLayout({
     const mainNavItems = [
         { href: '/dashboard', label: 'Dashboard', icon: '📊' },
         { href: '/sales/new', label: 'New Sale', icon: '➕' },
+        { href: '/advance-bookings', label: 'Advance', icon: '📋' },
         { href: '/inventory', label: 'Inventory', icon: '🏍️' },
         { href: '/inventory/receive', label: 'Receive', icon: '📦' },
         { href: '/sales', label: 'Sales', icon: '💰' },

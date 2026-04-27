@@ -261,7 +261,7 @@ const SaleReceipt: React.FC<SaleReceiptProps> = ({ sale }) => {
                 </div>
                 <div className="price-row">
                     <div className="price-label">Received Cash:</div>
-                    <div className="price-value">{sale.receivedCash?.toLocaleString() || '0'}</div>
+                    <div className="price-value">{(BIKE_STANDARD_PRICES[sale.bike.model] || sale.price).toLocaleString()}</div>
                 </div>
                 {sale.bankTransferAmount ? (
                     <div className="price-row">

@@ -29,6 +29,19 @@ interface SaleRecord {
     };
 }
 
+interface CreditSale {
+    id: string;
+    saleDate: string;
+    price: number;
+    balance: number;
+    receivedCash: number;
+    bankTransferAmount: number;
+    bikeModel: string;
+    customerName: string;
+    customerMobile: string;
+    cnic: string;
+}
+
 interface Stats {
     range: {
         sales: number;
@@ -46,6 +59,8 @@ interface Stats {
         bankTransfer: number;
     };
     allTime: { totalBikes: number; availableBikes: number; soldBikes: number };
+    creditSales: CreditSale[];
+    advanceBookings: { pendingCount: number; pendingMargin: number };
 }
 
 function StatCard({ label, value, color, sub }: { label: string; value: string; color?: string; sub?: string }) {
@@ -155,14 +170,52 @@ export default function DashboardPage() {
 
                 {/* ── Section 3: Cash Tracking ── */}
                 <div style={{ marginBottom: '0.4rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Cash Tracking</div>
-                <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
-                    <StatCard label="Total Cash Received" value={rs ? `Rs. ${rs.totalCashIn.toLocaleString()}` : '-'} color="var(--color-success)" sub="Bike price + Registration" />
+                <div className="grid-4" style={{ marginBottom: '0.75rem' }}>
+                    <StatCard label="Bike Cash Received" value={rs ? `Rs. ${rs.cashReceived.toLocaleString()}` : '-'} color="var(--color-success)" sub="Cash from bike sales only" />
+                    <StatCard label="Registration Collected" value={rs ? `Rs. ${rs.registrationCollected.toLocaleString()}` : '-'} color="#8b5cf6" sub="Separate from bike price" />
                     <StatCard label="Bank Transfer" value={rs ? `Rs. ${rs.bankTransfer.toLocaleString()}` : '-'} color="#3b82f6" sub="Received via bank/online" />
-                    <StatCard label="Deposit to Honda" value={rs ? `Rs. ${rs.cashToDeposit.toLocaleString()}` : '-'} color="#ef4444" sub="Purchase cost of bikes sold" />
-                    <StatCard label="Cash in Hand" value={rs ? `Rs. ${rs.cashInHand.toLocaleString()}` : '-'} color="#10b981" sub="Remaining after Honda deposit" />
+                    <StatCard label="Deposit to Honda" value={rs ? `Rs. ${rs.cashToDeposit.toLocaleString()}` : '-'} color="#ef4444" sub="Book price of bikes (no reg)" />
+                </div>
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <StatCard label="Cash in Hand" value={rs ? `Rs. ${rs.cashInHand.toLocaleString()}` : '-'} color="#10b981" sub="After depositing to Honda" />
                 </div>
 
-                {/* ── Section 4: Profit — Password Protected ── */}
+                {/* ── Section 4: Credit Customers ── */}
+                {stats?.creditSales && stats.creditSales.length > 0 && (
+                    <>
+                        <div style={{ marginBottom: '0.4rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                            Credit Customers — Outstanding Balance
+                        </div>
+                        <div className="card" style={{ marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                {stats.creditSales.map(cs => (
+                                    <div key={cs.id} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.8rem', background: 'rgba(239,68,68,0.06)', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.2)', gap: '0.5rem' }}>
+                                        <div>
+                                            <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{cs.customerName}</div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                                {cs.customerMobile && <span>📞 {cs.customerMobile}</span>}
+                                                {cs.cnic && <span>ID: {cs.cnic}</span>}
+                                                <span>🏍️ {cs.bikeModel}</span>
+                                                <span>📅 {new Date(cs.saleDate).toLocaleDateString()}</span>
+                                            </div>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ef4444' }}>Rs. {cs.balance.toLocaleString()} left</div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>of Rs. {cs.price.toLocaleString()}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div style={{ paddingTop: '0.5rem', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'flex-end' }}>
+                                    <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                                        Total Outstanding: <span style={{ color: '#ef4444' }}>Rs. {stats.creditSales.reduce((s, c) => s + c.balance, 0).toLocaleString()}</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* ── Section 5: Profit — Password Protected ── */}
                 <div style={{ marginBottom: '0.5rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
                     🔒 Profit Breakdown {marginUnlocked && <span style={{ color: 'var(--color-success)' }}>— Unlocked</span>}
                 </div>
@@ -189,6 +242,15 @@ export default function DashboardPage() {
                             <StatCard label="Workshop Profit" value={rs ? `Rs. ${rs.workshopProfit.toLocaleString()}` : '-'} color="#8b5cf6" sub="Parts + labour profit" />
                             <StatCard label="Total Profit Today" value={rs ? `Rs. ${rs.profit.toLocaleString()}` : '-'} color="#10b981" sub="All profits combined" />
                         </div>
+                        {(stats?.advanceBookings?.pendingMargin ?? 0) > 0 && (
+                            <div style={{ padding: '0.75rem 1rem', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '8px', marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                <div>
+                                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase' }}>Advance Bookings — Expected Profit</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.15rem' }}>{stats?.advanceBookings?.pendingCount ?? 0} pending bookings not yet delivered</div>
+                                </div>
+                                <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#f59e0b' }}>Rs. {(stats?.advanceBookings?.pendingMargin ?? 0).toLocaleString()}</div>
+                            </div>
+                        )}
                         <button className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
                             onClick={() => { setMarginUnlocked(false); setPasswordInput(''); }}>
                             🔒 Lock
@@ -355,7 +417,7 @@ function EditRecordModal({ record, onClose, onSuccess, showToast }: { record: Sa
                         </div>
                         <div className="form-group">
                             <label className="label">Sale Price</label>
-                            <input type="number" className="input" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} required />
+                            <input type="text" inputMode="decimal" className="input" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} required />
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>

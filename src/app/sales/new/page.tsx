@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useRouter } from 'next/navigation';
-import { BIKE_STANDARD_PRICES, BIKE_UNIT_MARGINS } from '@/lib/constants';
+import { BIKE_STANDARD_PRICES } from '@/lib/constants';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 
@@ -248,16 +248,8 @@ export default function NewSalePage() {
                                     {selectedBike.purchasePrice ? (
                                         <div style={{ gridColumn: '1 / -1', marginTop: '0.25rem', padding: '0.5rem', background: 'rgba(34,197,94,0.08)', borderRadius: '6px', display: 'flex', gap: '1.5rem' }}>
                                             <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                                                Purchase: <strong>{Math.round(selectedBike.purchasePrice / 1000) * 1000} PKR</strong>
-                                            </span>
-                                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                                                 Suggested: <strong style={{ color: 'var(--color-success)' }}>
                                                     {getSuggestedPrice(selectedBike.model).toLocaleString()} PKR
-                                                </strong>
-                                            </span>
-                                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                                                Margin: <strong>
-                                                    {(BIKE_UNIT_MARGINS[selectedBike.model] ?? (getSuggestedPrice(selectedBike.model) - Math.round(selectedBike.purchasePrice / 1000) * 1000)).toLocaleString()} PKR
                                                 </strong>
                                             </span>
                                         </div>
@@ -355,27 +347,25 @@ export default function NewSalePage() {
                             <div className="form-group">
                                 <label className="label">Price (PKR) *</label>
                                 <input
-                                    type="number"
+                                    type="text"
+                                    inputMode="decimal"
                                     className="input"
                                     value={price}
                                     onChange={(e) => setPrice(e.target.value)}
                                     placeholder="238500"
                                     required
-                                    min="0"
-                                    step="0.01"
                                 />
                             </div>
 
                             <div className="form-group">
                                 <label className="label">Registration Fees (PKR)</label>
                                 <input
-                                    type="number"
+                                    type="text"
+                                    inputMode="decimal"
                                     className="input"
                                     value={registrationCost}
                                     onChange={(e) => setRegistrationCost(e.target.value)}
                                     placeholder="9000"
-                                    min="0"
-                                    step="0.01"
                                 />
                             </div>
                         </div>
@@ -395,7 +385,8 @@ export default function NewSalePage() {
                             <div className="form-group">
                                 <label className="label">Received Cash</label>
                                 <input
-                                    type="number"
+                                    type="text"
+                                    inputMode="decimal"
                                     className="input"
                                     value={receivedCash}
                                     onChange={(e) => setReceivedCash(e.target.value)}
@@ -408,7 +399,8 @@ export default function NewSalePage() {
                             <div className="form-group">
                                 <label className="label">Balance</label>
                                 <input
-                                    type="number"
+                                    type="text"
+                                    inputMode="decimal"
                                     className="input"
                                     value={balance}
                                     onChange={(e) => setBalance(e.target.value)}
@@ -435,12 +427,12 @@ export default function NewSalePage() {
                             <div className="form-group">
                                 <label className="label">Bank Transfer Amount (PKR)</label>
                                 <input
-                                    type="number"
+                                    type="text"
+                                    inputMode="decimal"
                                     className="input"
                                     value={bankTransferAmount}
                                     onChange={(e) => setBankTransferAmount(e.target.value)}
                                     placeholder="0"
-                                    min="0"
                                 />
                             </div>
                             <div className="form-group">

@@ -502,7 +502,7 @@ export default function ReceiveInventoryPage() {
                                         </div>
                                         <div>
                                             <label className="label" style={{ fontSize: '0.75rem' }}>Booking Amount *</label>
-                                            <input type="number" className="input" value={bike.purchasePrice}
+                                            <input type="text" inputMode="decimal" className="input" value={bike.purchasePrice}
                                                 onChange={(e) => updateBike(bike.id, 'purchasePrice', e.target.value)}
                                                 placeholder="Purchase Price" required />
                                         </div>

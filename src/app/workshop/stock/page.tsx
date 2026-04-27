@@ -188,17 +188,17 @@ export default function WorkshopStockPage() {
                             </div>
                             <div>
                                 <label className="label">Cost Price (Rs.)</label>
-                                <input className="input" type="number" required min="0" value={formData.retailPrice}
+                                <input className="input" type="text" inputMode="decimal" required value={formData.retailPrice}
                                     onChange={e => setFormData({ ...formData, retailPrice: e.target.value })} />
                             </div>
                             <div>
                                 <label className="label">Selling Price (Rs.)</label>
-                                <input className="input" type="number" required min="0" value={formData.customerPrice}
+                                <input className="input" type="text" inputMode="decimal" required value={formData.customerPrice}
                                     onChange={e => setFormData({ ...formData, customerPrice: e.target.value })} />
                             </div>
                             <div>
                                 <label className="label">Quantity</label>
-                                <input className="input" type="number" required min="0" value={formData.quantity}
+                                <input className="input" type="text" inputMode="decimal" required value={formData.quantity}
                                     onChange={e => setFormData({ ...formData, quantity: e.target.value })} />
                             </div>
                         </div>

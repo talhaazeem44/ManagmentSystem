@@ -169,7 +169,7 @@ export default function WorkshopPage() {
                             </div>
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
                                 <label className="label">Service Charges (Rs.) — Labour</label>
-                                <input type="number" className="input" min="0" value={formData.serviceCharges}
+                                <input type="text" inputMode="decimal" className="input" value={formData.serviceCharges}
                                     onChange={e => setFormData({ ...formData, serviceCharges: e.target.value })} />
                             </div>
 
@@ -226,8 +226,8 @@ export default function WorkshopPage() {
                                                                                             }
                                                                                         }}>−</button>
                                                                                     <input
-                                                                                        type="number"
-                                                                                        min="1"
+                                                                                        type="text" inputMode="decimal"
+                                                                                       
                                                                                         max={s.quantity}
                                                                                         value={inBill.quantity}
                                                                                         onChange={e => {
@@ -269,11 +269,11 @@ export default function WorkshopPage() {
                                             value={manualItem.name}
                                             onChange={e => setManualItem({ ...manualItem, name: e.target.value })} />
                                         <div style={{ display: 'flex', gap: '0.4rem' }}>
-                                            <input type="number" className="input" placeholder="Price"
+                                            <input type="text" inputMode="decimal" className="input" placeholder="Price"
                                                 value={manualItem.price}
                                                 onChange={e => setManualItem({ ...manualItem, price: e.target.value })} />
-                                            <input type="number" className="input" style={{ maxWidth: '70px' }} placeholder="Qty"
-                                                min="1" value={manualItem.qty}
+                                            <input type="text" inputMode="decimal" className="input" style={{ maxWidth: '70px' }} placeholder="Qty"
+                                                value={manualItem.qty}
                                                 onChange={e => setManualItem({ ...manualItem, qty: e.target.value })} />
                                             <button type="button" className="btn btn-secondary"
                                                 onClick={() => {

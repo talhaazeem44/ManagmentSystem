@@ -212,7 +212,7 @@ export default function ReceiptPage() {
                                 <div className={styles.field}>
                                     <span className={styles.label}>Received Cash:</span>
                                     <span className={styles.value}>
-                                        {sale.receivedCash ? Number(sale.receivedCash).toLocaleString() : '-'}
+                                        {(BIKE_STANDARD_PRICES[sale.bike.model] || Number(sale.price)).toLocaleString()}
                                     </span>
                                 </div>
                                 {sale.bankTransferAmount ? (
