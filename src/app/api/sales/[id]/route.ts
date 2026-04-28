@@ -47,6 +47,26 @@ export async function PATCH(
         const { id } = await params;
         const body = await request.json();
 
+        // Special handler: record a payment against a credit sale
+        if (body.addPayment) {
+            const { amount, date, note } = body.addPayment;
+            const paymentAmount = Number(amount);
+            const existing = await Sale.findById(id);
+            if (!existing) return NextResponse.json({ message: 'Sale not found' }, { status: 404 });
+
+            const newBalance = Math.max(0, Number(existing.balance ?? 0) - paymentAmount);
+            const sale = await Sale.findByIdAndUpdate(
+                id,
+                {
+                    $push: { payments: { amount: paymentAmount, date: new Date(date), note: note || '' } },
+                    $inc: { receivedCash: paymentAmount },
+                    $set: { balance: newBalance },
+                },
+                { new: true }
+            );
+            return NextResponse.json(sale);
+        }
+
         const sale = await Sale.findByIdAndUpdate(
             id,
             { $set: body },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { Sale, Bike, Customer, DeliveryOrder } from '@/models';
+import { Sale, Bike, Customer, DeliveryOrder, Counter } from '@/models';
 
 export async function POST(request: NextRequest) {
     try {
@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
             taxAmount,
             paymentMode,
             bankTransferAmount,
-            receiptNumber
         } = body;
 
         // Validate required fields
@@ -67,6 +66,14 @@ export async function POST(request: NextRequest) {
             ? Math.max(0, parsedPrice - parsedReceived - parsedBank)
             : parsedBalance;
 
+        // Auto-increment receipt number
+        const counter = await Counter.findByIdAndUpdate(
+            'saleReceipt',
+            { $inc: { seq: 1 } },
+            { new: true, upsert: true }
+        );
+        const autoReceiptNumber = String(counter.seq);
+
         // Create sale
         const sale = await Sale.create({
             bikeId: bike._id,
@@ -79,7 +86,7 @@ export async function POST(request: NextRequest) {
             taxAmount: taxAmount ? parseFloat(taxAmount) : 0,
             paymentMode: paymentMode || 'CASH',
             bankTransferAmount: parsedBank,
-            receiptNumber
+            receiptNumber: autoReceiptNumber,
         });
 
         // Update bike status

@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
             AdvanceBooking.find({ status: 'PENDING' }).lean(),
             AdvanceBooking.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
             Expense.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
-            Sale.find({ saleDate: { $gte: sevenDaysAgo } }).lean(),
+            Sale.find({ saleDate: { $gte: sevenDaysAgo } }).populate('bikeId').lean(),
         ]);
 
         // 7-day chart data
@@ -98,12 +98,23 @@ export async function GET(request: NextRequest) {
                 day: d.toLocaleDateString('en-PK', { weekday: 'short' }),
                 date: d.toLocaleDateString('en-PK', { day: 'numeric', month: 'short' }),
                 sales: daySales.length,
-                revenue: daySales.reduce((s, sale) => s + Number(sale.price || 0), 0),
+                revenue: daySales.reduce((s, sale) => s + calcSaleMargin(sale).totalProfit, 0),
             };
         });
 
         const advancePendingCount = pendingAdvanceBookings.length;
         const advancePendingMargin = pendingAdvanceBookings.reduce((s: number, b: any) => s + calcAdvanceMargin(b).bikeProfit, 0);
+        const now = new Date();
+        const overdueBookings = (pendingAdvanceBookings as any[])
+            .filter(b => b.expectedDeliveryDate && new Date(b.expectedDeliveryDate) < now)
+            .map(b => ({
+                _id: b._id.toString(),
+                customerName: b.customerName,
+                customerMobile: b.customerMobile || '',
+                bikeModel: b.bikeModel || '',
+                expectedDeliveryDate: b.expectedDeliveryDate,
+                advancePaid: b.advancePaid,
+            }));
 
         // Today's advance bookings cash and margin
         const rangeAdvanceCash = filteredAdvanceBookings.reduce((s: number, b: any) => s + Number(b.advancePaid || 0), 0);
@@ -243,6 +254,7 @@ export async function GET(request: NextRequest) {
             advanceBookings: {
                 pendingCount: advancePendingCount,
                 pendingMargin: advancePendingMargin,
+                overdueBookings,
             },
             chartData,
         });

@@ -6,8 +6,14 @@ import DashboardLayout from '@/components/DashboardLayout';
 import styles from './receipt.module.css';
 import { BIKE_STANDARD_PRICES } from '@/lib/constants';
 
+interface Payment {
+    amount: number;
+    date: string;
+    note?: string;
+}
+
 interface Sale {
-    id: number;
+    id: string;
     saleDate: string;
     price: number;
     advanceAmount?: number | string;
@@ -17,14 +23,13 @@ interface Sale {
     bankTransferAmount?: number;
     paymentMode: string;
     receiptNumber: string | null;
+    payments?: Payment[];
     bike: {
         model: string;
         color: string;
         engineNumber: string;
         chassisNumber: string;
-        deliveryOrder: {
-            doNumber: string;
-        };
+        deliveryOrder: { doNumber: string };
     };
     customer: {
         name: string;
@@ -35,70 +40,157 @@ interface Sale {
     };
 }
 
+const today = () => new Date().toISOString().split('T')[0];
+
 export default function ReceiptPage() {
     const params = useParams();
     const [sale, setSale] = useState<Sale | null>(null);
     const [loading, setLoading] = useState(true);
+    const [payForm, setPayForm] = useState({ amount: '', date: today(), note: '' });
+    const [paying, setPaying] = useState(false);
+    const [payError, setPayError] = useState('');
 
     useEffect(() => {
-        if (params.id) {
-            fetchSale(params.id as string);
-        }
+        if (params.id) fetchSale(params.id as string);
     }, [params.id]);
 
     const fetchSale = async (id: string) => {
         try {
-            const response = await fetch(`/api/sales/${id}`);
-            if (response.ok) {
-                const data = await response.json();
-                setSale(data);
-            }
-        } catch (error) {
-            console.error('Failed to fetch sale:', error);
+            const res = await fetch(`/api/sales/${id}`);
+            if (res.ok) setSale(await res.json());
         } finally {
             setLoading(false);
         }
     };
 
-    if (loading) {
-        return (
-            <DashboardLayout>
-                <div style={{ textAlign: 'center', padding: '3rem' }}>
-                    <div className="spinner" style={{ margin: '0 auto' }}></div>
-                    <p style={{ marginTop: '1rem', color: 'var(--color-text-muted)' }}>Loading receipt...</p>
-                </div>
-            </DashboardLayout>
-        );
-    }
+    const handlePayment = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!sale) return;
+        const amt = Number(payForm.amount);
+        if (!amt || amt <= 0) { setPayError('Enter a valid amount'); return; }
+        if (amt > (sale.balance ?? 0)) { setPayError(`Amount exceeds balance (Rs. ${(sale.balance ?? 0).toLocaleString()})`); return; }
+        setPaying(true); setPayError('');
+        try {
+            const res = await fetch(`/api/sales/${sale.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ addPayment: { amount: amt, date: payForm.date, note: payForm.note } }),
+            });
+            if (res.ok) {
+                setPayForm({ amount: '', date: today(), note: '' });
+                await fetchSale(sale.id);
+            } else {
+                const err = await res.json();
+                setPayError(err.message || 'Failed to record payment');
+            }
+        } finally {
+            setPaying(false);
+        }
+    };
 
-    if (!sale) {
-        return (
-            <DashboardLayout>
-                <div style={{ textAlign: 'center', padding: '3rem' }}>
-                    <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>❌</p>
-                    <p style={{ color: 'var(--color-text-muted)' }}>Sale not found</p>
-                </div>
-            </DashboardLayout>
-        );
-    }
+    if (loading) return (
+        <DashboardLayout>
+            <div style={{ textAlign: 'center', padding: '3rem' }}>
+                <div className="spinner" style={{ margin: '0 auto' }} />
+                <p style={{ marginTop: '1rem', color: 'var(--color-text-muted)' }}>Loading receipt...</p>
+            </div>
+        </DashboardLayout>
+    );
+
+    if (!sale) return (
+        <DashboardLayout>
+            <div style={{ textAlign: 'center', padding: '3rem' }}>
+                <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>❌</p>
+                <p style={{ color: 'var(--color-text-muted)' }}>Sale not found</p>
+            </div>
+        </DashboardLayout>
+    );
+
+    const isCreditWithBalance = sale.paymentMode === 'CREDIT' && (sale.balance ?? 0) > 0;
+    const payments = sale.payments ?? [];
 
     return (
         <DashboardLayout>
             <div className="animate-fade-in">
-                <div className="no-print" style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h1 style={{ fontSize: '2rem', fontWeight: 700 }}>Sale Receipt</h1>
-                    <button onClick={() => window.print()} className="btn btn-primary">
-                        🖨️ Print Receipt
-                    </button>
+
+                {/* ── Top bar ── */}
+                <div className="no-print" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Sale Receipt</h1>
+                    <button onClick={() => window.print()} className="btn btn-primary">🖨️ Print Receipt</button>
                 </div>
 
+                {/* ── Record Payment (credit only, screen only) ── */}
+                {isCreditWithBalance && (
+                    <div className="no-print card" style={{ marginBottom: '1.5rem', padding: '1.25rem', border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.04)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            <div>
+                                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#ef4444' }}>Record Payment</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                    Outstanding balance: <strong style={{ color: '#ef4444' }}>Rs. {(sale.balance ?? 0).toLocaleString()}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <form onSubmit={handlePayment}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: '0.75rem', alignItems: 'end' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.3rem' }}>Amount (Rs.) *</label>
+                                    <input type="text" inputMode="decimal" className="input" placeholder="50,000"
+                                        value={payForm.amount}
+                                        onChange={e => { setPayForm({ ...payForm, amount: e.target.value }); setPayError(''); }} required />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.3rem' }}>Payment Date *</label>
+                                    <input type="date" className="input" value={payForm.date}
+                                        onChange={e => setPayForm({ ...payForm, date: e.target.value })} required />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.3rem' }}>Note (optional)</label>
+                                    <input type="text" className="input" placeholder="e.g. Cash received"
+                                        value={payForm.note}
+                                        onChange={e => setPayForm({ ...payForm, note: e.target.value })} />
+                                </div>
+                                <button type="submit" className="btn btn-primary" disabled={paying} style={{ whiteSpace: 'nowrap' }}>
+                                    {paying ? 'Saving...' : '✓ Record'}
+                                </button>
+                            </div>
+                            {payError && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem' }}>{payError}</p>}
+                        </form>
+                    </div>
+                )}
+
+                {/* ── Payment history (screen only) ── */}
+                {payments.length > 0 && (
+                    <div className="no-print card" style={{ marginBottom: '1.5rem', padding: '1rem' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>
+                            Payment History
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            {payments.map((p, i) => (
+                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '8px', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                    <div>
+                                        <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Rs. {Number(p.amount).toLocaleString()}</span>
+                                        {p.note && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>{p.note}</span>}
+                                    </div>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                        📅 {new Date(p.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                        {(sale.balance ?? 0) === 0 && (
+                            <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(16,185,129,0.1)', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 700, color: '#10b981', textAlign: 'center' }}>
+                                ✓ Fully Paid
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ── Printable receipt ── */}
                 <div className={styles.receipt}>
                     <div className={styles.header}>
                         <div className={styles.logo}>🏍️ HONDA</div>
                         <div className={styles.receiptTitle}>SALE RECEIPT</div>
-                        <div className={styles.receiptNumber}>
-                            {sale.receiptNumber || `#${sale.id}`}
-                        </div>
+                        <div className={styles.receiptNumber}>{sale.receiptNumber || `#${sale.id}`}</div>
                     </div>
 
                     <div className={styles.section}>
@@ -112,22 +204,18 @@ export default function ReceiptPage() {
                                 <span className={styles.value}>{new Date(sale.saleDate).toLocaleDateString()}</span>
                             </div>
                         </div>
-
                         <div className={styles.field}>
                             <span className={styles.label}>Customer's Name:</span>
                             <span className={styles.value}>{sale.customer.name}</span>
                         </div>
-
                         <div className={styles.field}>
                             <span className={styles.label}>Father/Husband Name:</span>
                             <span className={styles.value}>{sale.customer.fatherName || '-'}</span>
                         </div>
-
                         <div className={styles.field}>
                             <span className={styles.label}>Address:</span>
                             <span className={styles.value}>{sale.customer.address || '-'}</span>
                         </div>
-
                         <div className={styles.field}>
                             <span className={styles.label}>Mobile #:</span>
                             <span className={styles.value}>{sale.customer.mobile || '-'}</span>
@@ -138,30 +226,14 @@ export default function ReceiptPage() {
                         <div className={styles.bikeModels}>
                             <span className={styles.modelLabel}>Honda:</span>
                             <div className={styles.models}>
-                                <label className={sale.bike.model === 'CD70' ? styles.checked : ''}>
-                                    <input type="checkbox" checked={sale.bike.model === 'CD70'} readOnly /> CD70
-                                </label>
-                                <label className={sale.bike.model === 'DREAM' ? styles.checked : ''}>
-                                    <input type="checkbox" checked={sale.bike.model === 'DREAM'} readOnly /> DREAM
-                                </label>
-                                <label className={sale.bike.model === 'PRIDOR' ? styles.checked : ''}>
-                                    <input type="checkbox" checked={sale.bike.model === 'PRIDOR'} readOnly /> PRIDOR
-                                </label>
-                                <label className={sale.bike.model === 'CG 125' ? styles.checked : ''}>
-                                    <input type="checkbox" checked={sale.bike.model === 'CG 125'} readOnly /> CG 125
-                                </label>
-                                <label className={sale.bike.model.includes('CG125') ? styles.checked : ''}>
-                                    <input type="checkbox" checked={sale.bike.model.includes('CG125')} readOnly /> CG125S.SE
-                                </label>
-                                <label className={sale.bike.model.includes('CB125') ? styles.checked : ''}>
-                                    <input type="checkbox" checked={sale.bike.model.includes('CB125')} readOnly /> CB125F.SE
-                                </label>
-                                <label className={sale.bike.model === 'CB150F' ? styles.checked : ''}>
-                                    <input type="checkbox" checked={sale.bike.model === 'CB150F'} readOnly /> CB150F
-                                </label>
+                                {['CD70','DREAM','PRIDOR','CG 125','CG125S.SE','CB125F.SE','CB150F'].map(m => (
+                                    <label key={m} className={sale.bike.model === m || (m === 'CG125S.SE' && sale.bike.model.includes('CG125')) || (m === 'CB125F.SE' && sale.bike.model.includes('CB125')) ? styles.checked : ''}>
+                                        <input type="checkbox" readOnly
+                                            checked={sale.bike.model === m || (m === 'CG125S.SE' && sale.bike.model.includes('CG125')) || (m === 'CB125F.SE' && sale.bike.model.includes('CB125'))} /> {m}
+                                    </label>
+                                ))}
                             </div>
                         </div>
-
                         <div className={styles.row}>
                             <div className={styles.field}>
                                 <span className={styles.label}>Model:</span>
@@ -172,12 +244,10 @@ export default function ReceiptPage() {
                                 <span className={styles.value}>{sale.bike.color}</span>
                             </div>
                         </div>
-
                         <div className={styles.field}>
                             <span className={styles.label}>Engine #:</span>
                             <span className={styles.value}>{sale.bike.engineNumber}</span>
                         </div>
-
                         <div className={styles.field}>
                             <span className={styles.label}>Chassis #:</span>
                             <span className={styles.value}>{sale.bike.chassisNumber}</span>
@@ -186,18 +256,11 @@ export default function ReceiptPage() {
 
                     <div className={styles.section}>
                         <div className={styles.paymentModes}>
-                            <label className={sale.paymentMode === 'CASH' ? styles.checked : ''}>
-                                <input type="checkbox" checked={sale.paymentMode === 'CASH'} readOnly /> CASH
-                            </label>
-                            <label className={sale.paymentMode === 'CREDIT' ? styles.checked : ''}>
-                                <input type="checkbox" checked={sale.paymentMode === 'CREDIT'} readOnly /> CREDIT
-                            </label>
-                            <label className={sale.paymentMode === 'LEASE' ? styles.checked : ''}>
-                                <input type="checkbox" checked={sale.paymentMode === 'LEASE'} readOnly /> LEASE
-                            </label>
-                            <label className={sale.paymentMode === 'ONLINE' ? styles.checked : ''}>
-                                <input type="checkbox" checked={sale.paymentMode === 'ONLINE'} readOnly /> ONLINE
-                            </label>
+                            {['CASH','CREDIT','LEASE','ONLINE'].map(m => (
+                                <label key={m} className={sale.paymentMode === m ? styles.checked : ''}>
+                                    <input type="checkbox" readOnly checked={sale.paymentMode === m} /> {m}
+                                </label>
+                            ))}
                         </div>
 
                         <div className={styles.paymentDetails}>
@@ -238,6 +301,19 @@ export default function ReceiptPage() {
                                         {sale.registrationCost ? Number(sale.registrationCost).toLocaleString() : '-'}
                                     </span>
                                 </div>
+
+                                {/* Payment history inside receipt (visible on print) */}
+                                {payments.length > 0 && (
+                                    <div style={{ marginTop: '0.75rem', borderTop: '1px solid #ccc', paddingTop: '0.5rem' }}>
+                                        <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.35rem' }}>Payment History:</div>
+                                        {payments.map((p, i) => (
+                                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '0.2rem' }}>
+                                                <span>{new Date(p.date).toLocaleDateString()}{p.note ? ` — ${p.note}` : ''}</span>
+                                                <strong>Rs. {Number(p.amount).toLocaleString()}</strong>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             <div className={styles.urduSection}>
@@ -259,11 +335,12 @@ export default function ReceiptPage() {
                             <p>📞 Ph: 052-6525001-2 Cell: 0331-8800216, 0334-8179775</p>
                         </div>
                         <div className={styles.signature}>
-                            <div className={styles.signatureLine}></div>
+                            <div className={styles.signatureLine} />
                             <p>Customer Signature</p>
                         </div>
                     </div>
                 </div>
+
             </div>
         </DashboardLayout>
     );

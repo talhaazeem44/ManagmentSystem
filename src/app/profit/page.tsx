@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { MARGIN_PASSWORD } from '@/lib/constants';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line } from 'recharts';
 
 interface Stats {
     range: {
@@ -52,12 +52,6 @@ export default function ProfitPage() {
     };
 
     const rs = stats?.range;
-
-    // Build profit chart data from chartData
-    const profitChartData = stats?.chartData?.map(d => ({
-        ...d,
-        profit: Math.round(d.sales * ((rs?.bikeProfit ?? 0) / Math.max(rs?.sales ?? 1, 1))),
-    })) ?? [];
 
     if (!unlocked) {
         return (
@@ -139,7 +133,7 @@ export default function ProfitPage() {
 
                             {/* Revenue per day */}
                             <div className="card" style={{ padding: '1.25rem' }}>
-                                <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>Revenue — Last 7 Days</div>
+                                <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>Margin — Last 7 Days</div>
                                 <ResponsiveContainer width="100%" height={200}>
                                     <LineChart data={stats?.chartData ?? []} margin={{ top: 0, right: 10, left: -10, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />

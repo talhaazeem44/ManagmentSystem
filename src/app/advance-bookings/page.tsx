@@ -18,6 +18,7 @@ interface AdvanceBooking {
     registrationFee?: number;
     margin?: number;
     notes?: string;
+    expectedDeliveryDate?: string;
     status: 'PENDING' | 'DELIVERED';
     date: string;
 }
@@ -32,6 +33,7 @@ const emptyForm = {
     totalPrice: '',
     registrationFee: '',
     notes: '',
+    expectedDeliveryDate: '',
 };
 
 function printBooking(b: AdvanceBooking) {
@@ -72,6 +74,7 @@ export default function AdvanceBookingsPage() {
                     advancePaid: Number(form.advancePaid),
                     totalPrice: form.totalPrice ? Number(form.totalPrice) : undefined,
                     registrationFee: form.registrationFee ? Number(form.registrationFee) : 0,
+                    expectedDeliveryDate: form.expectedDeliveryDate || undefined,
                 }),
             });
             if (res.ok) {
@@ -172,7 +175,11 @@ export default function AdvanceBookingsPage() {
                                     <label className="label">Registration Fees (PKR)</label>
                                     <input type="text" inputMode="decimal" className="input" value={form.registrationFee} onChange={e => setForm({ ...form, registrationFee: e.target.value })} placeholder="9000" />
                                 </div>
-                                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                                <div className="form-group">
+                                    <label className="label">Expected Delivery Date</label>
+                                    <input type="date" className="input" value={form.expectedDeliveryDate} onChange={e => setForm({ ...form, expectedDeliveryDate: e.target.value })} />
+                                </div>
+                                <div className="form-group">
                                     <label className="label">Notes</label>
                                     <input className="input" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Any special note..." />
                                 </div>
@@ -208,18 +215,21 @@ export default function AdvanceBookingsPage() {
                             {filtered.map(b => {
                                 const remaining = b.totalPrice ? b.totalPrice - b.advancePaid : null;
                                 const isConfirming = confirmDeleteId === b._id;
+                                const isOverdue = b.status === 'PENDING' && b.expectedDeliveryDate && new Date(b.expectedDeliveryDate) < new Date();
                                 return (
-                                    <div key={b._id} style={{ padding: '0.9rem 1rem', border: `1px solid ${isConfirming ? 'rgba(239,68,68,0.4)' : 'var(--color-border)'}`, borderRadius: 'var(--radius-lg)', background: isConfirming ? 'rgba(239,68,68,0.04)' : 'var(--color-bg-elevated)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div key={b._id} style={{ padding: '0.9rem 1rem', border: `1px solid ${isConfirming ? 'rgba(239,68,68,0.4)' : isOverdue ? 'rgba(239,68,68,0.35)' : 'var(--color-border)'}`, borderRadius: 'var(--radius-lg)', background: isConfirming ? 'rgba(239,68,68,0.04)' : isOverdue ? 'rgba(239,68,68,0.04)' : 'var(--color-bg-elevated)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
                                         <div style={{ flex: '1 1 200px' }}>
                                             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
                                                 <strong style={{ fontSize: '0.9rem' }}>{b.customerName}</strong>
                                                 {b.status === 'PENDING' && <span style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>PENDING</span>}
                                                 {b.status === 'DELIVERED' && <span style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>DELIVERED</span>}
+                                                {isOverdue && <span style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>⚠️ OVERDUE</span>}
                                             </div>
                                             <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                                 {b.customerMobile && <span>📞 {b.customerMobile}</span>}
                                                 {b.bikeModel && <span>🏍️ {b.bikeModel}{b.bikeColor ? ` · ${b.bikeColor}` : ''}</span>}
                                                 <span>📅 {new Date(b.date).toLocaleDateString()}</span>
+                                                {b.expectedDeliveryDate && <span style={{ color: isOverdue ? '#ef4444' : 'var(--color-text-muted)', fontWeight: isOverdue ? 700 : 400 }}>🚚 By {new Date(b.expectedDeliveryDate).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}</span>}
                                             </div>
                                             <div style={{ marginTop: '0.35rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.85rem' }}>
                                                 <span>Advance: <strong style={{ color: 'var(--color-success)' }}>Rs. {b.advancePaid.toLocaleString()}</strong></span>

@@ -92,6 +92,12 @@ const CustomerSchema = new Schema<ICustomer>({
 
 export const Customer: Model<ICustomer> = models.Customer || mongoose.model<ICustomer>('Customer', CustomerSchema);
 
+export interface IPayment {
+    amount: number;
+    date: Date;
+    note?: string;
+}
+
 export interface ISale {
     _id?: string;
     bikeId: mongoose.Types.ObjectId | string;
@@ -106,9 +112,16 @@ export interface ISale {
     paymentMode: string;
     bankTransferAmount?: number;
     receiptNumber?: string;
+    payments?: IPayment[];
     createdAt?: Date;
     updatedAt?: Date;
 }
+
+const PaymentSchema = new Schema<IPayment>({
+    amount: { type: Number, required: true },
+    date: { type: Date, default: Date.now },
+    note: { type: String },
+}, { _id: false });
 
 const SaleSchema = new Schema<ISale>({
     bikeId: { type: Schema.Types.ObjectId, ref: 'Bike', required: true, unique: true },
@@ -123,6 +136,7 @@ const SaleSchema = new Schema<ISale>({
     paymentMode: { type: String, default: 'CASH' },
     bankTransferAmount: { type: Number, default: 0 },
     receiptNumber: { type: String },
+    payments: { type: [PaymentSchema], default: [] },
 }, {
     timestamps: true
 });
@@ -218,6 +232,7 @@ export interface IAdvanceBooking {
     registrationFee?: number;
     margin?: number;
     notes?: string;
+    expectedDeliveryDate?: Date;
     status: 'PENDING' | 'DELIVERED';
     date: Date;
     createdAt?: Date;
@@ -235,11 +250,25 @@ const AdvanceBookingSchema = new Schema<IAdvanceBooking>({
     registrationFee: { type: Number, default: 0 },
     margin: { type: Number, default: 0 },
     notes: { type: String },
+    expectedDeliveryDate: { type: Date },
     status: { type: String, enum: ['PENDING', 'DELIVERED'], default: 'PENDING' },
     date: { type: Date, default: Date.now },
 }, { timestamps: true });
 
 export const AdvanceBooking: Model<IAdvanceBooking> = models.AdvanceBooking || mongoose.model<IAdvanceBooking>('AdvanceBooking', AdvanceBookingSchema);
+
+// ── Auto-increment counter ────────────────────────────────────────────────────
+interface ICounter {
+    _id: string;
+    seq: number;
+}
+
+const CounterSchema = new Schema<ICounter>({
+    _id: { type: String, required: true },
+    seq: { type: Number, default: 0 },
+});
+
+export const Counter: Model<ICounter> = models.Counter || mongoose.model<ICounter>('Counter', CounterSchema);
 
 // ── Expense ───────────────────────────────────────────────────────────────────
 export interface IExpense {

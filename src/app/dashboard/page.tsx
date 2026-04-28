@@ -40,7 +40,10 @@ interface Stats {
     };
     allTime: { totalBikes: number; availableBikes: number; soldBikes: number };
     creditSales: CreditSale[];
-    advanceBookings: { pendingCount: number; pendingMargin: number };
+    advanceBookings: {
+        pendingCount: number; pendingMargin: number;
+        overdueBookings: { _id: string; customerName: string; customerMobile: string; bikeModel: string; expectedDeliveryDate: string; advancePaid: number }[];
+    };
     chartData: { day: string; date: string; sales: number; revenue: number }[];
     cashBreakdown: CashBreakdownItem[];
 }
@@ -102,6 +105,32 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
+                {/* ── Overdue Advance Bookings Alert ── */}
+                {(stats?.advanceBookings?.overdueBookings?.length ?? 0) > 0 && (
+                    <div style={{ marginBottom: '1.25rem', padding: '1rem 1.25rem', background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <span style={{ fontSize: '1.1rem' }}>⚠️</span>
+                            <strong style={{ color: '#ef4444', fontSize: '0.9rem' }}>
+                                {stats!.advanceBookings.overdueBookings.length} Advance Booking{stats!.advanceBookings.overdueBookings.length > 1 ? 's' : ''} Overdue
+                            </strong>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                            {stats!.advanceBookings.overdueBookings.map(b => (
+                                <div key={b._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.82rem' }}>
+                                    <span>
+                                        <strong>{b.customerName}</strong>
+                                        {b.bikeModel && <span style={{ color: 'var(--color-text-muted)', marginLeft: '0.4rem' }}>🏍️ {b.bikeModel}</span>}
+                                        {b.customerMobile && <span style={{ color: 'var(--color-text-muted)', marginLeft: '0.4rem' }}>📞 {b.customerMobile}</span>}
+                                    </span>
+                                    <span style={{ color: '#ef4444', fontWeight: 600 }}>
+                                        Due: {new Date(b.expectedDeliveryDate).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* ── 4 KPI Cards ── */}
                 <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
                     <div className="card" style={{ padding: '1.25rem' }}>
@@ -128,7 +157,7 @@ export default function DashboardPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.25rem', marginBottom: '1.5rem' }}>
                     {/* Sales Chart */}
                     <div className="card" style={{ padding: '1.25rem' }}>
-                        <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>Sales — Last 7 Days</div>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>Sales &amp; Margin — Last 7 Days</div>
                         {stats?.chartData ? (
                             <ResponsiveContainer width="100%" height={200}>
                                 <BarChart data={stats.chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -137,7 +166,7 @@ export default function DashboardPage() {
                                     <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
                                     <Tooltip
                                         contentStyle={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '0.8rem' }}
-                                        formatter={(value: any, name: any) => name === 'revenue' ? [`Rs. ${Number(value).toLocaleString()}`, 'Revenue'] : [value, 'Bikes Sold']}
+                                        formatter={(value: any, name: any) => name === 'revenue' ? [`Rs. ${Number(value).toLocaleString()}`, 'Margin'] : [value, 'Bikes Sold']}
                                         labelFormatter={(label) => {
                                             const d = stats.chartData.find(c => c.day === label);
                                             return d?.date || label;

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     try {
         await dbConnect();
         const body = await request.json();
-        const { customerName, customerMobile, cnic, bikeModel, bikeColor, advancePaid, totalPrice, registrationFee, notes } = body;
+        const { customerName, customerMobile, cnic, bikeModel, bikeColor, advancePaid, totalPrice, registrationFee, notes, expectedDeliveryDate } = body;
 
         if (!customerName || advancePaid === undefined) {
             return NextResponse.json({ message: 'Customer name and advance amount are required' }, { status: 400 });
@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
             registrationFee: regFee,
             margin,
             notes,
+            expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate) : undefined,
             status: 'PENDING',
         });
 

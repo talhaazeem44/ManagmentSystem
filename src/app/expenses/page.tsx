@@ -23,11 +23,19 @@ export default function ExpensesPage() {
     const [submitting, setSubmitting] = useState(false);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [filter, setFilter] = useState<'ALL' | 'MARGIN' | 'CASH'>('ALL');
+    const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
 
-    const fetchExpenses = async () => {
+    const fetchExpenses = async (range = dateRange) => {
         setLoading(true);
         try {
-            const res = await fetch('/api/expenses');
+            const params = new URLSearchParams();
+            if (range.startDate) params.set('startDate', range.startDate);
+            if (range.endDate) {
+                const end = new Date(range.endDate);
+                end.setDate(end.getDate() + 1);
+                params.set('endDate', end.toISOString().split('T')[0]);
+            }
+            const res = await fetch(`/api/expenses?${params}`);
             if (res.ok) setExpenses(await res.json());
         } finally {
             setLoading(false);
@@ -48,7 +56,7 @@ export default function ExpensesPage() {
             if (res.ok) {
                 showToast('Expense added', 'success');
                 setForm(emptyForm);
-                fetchExpenses();
+                fetchExpenses(dateRange);
             } else {
                 const err = await res.json();
                 showToast(err.message, 'error');
@@ -63,7 +71,7 @@ export default function ExpensesPage() {
         if (res.ok) {
             showToast('Expense deleted', 'success');
             setConfirmDeleteId(null);
-            fetchExpenses();
+            fetchExpenses(dateRange);
         } else {
             showToast('Delete failed', 'error');
             setConfirmDeleteId(null);
@@ -85,13 +93,48 @@ export default function ExpensesPage() {
                 {/* Summary */}
                 <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
                     <div className="card" style={{ padding: '1.25rem' }}>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Deducted from Cash</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                            Deducted from Cash{(dateRange.startDate || dateRange.endDate) ? ' (filtered)' : ''}
+                        </div>
                         <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#ef4444' }}>Rs. {totalCash.toLocaleString()}</div>
                     </div>
                     <div className="card" style={{ padding: '1.25rem' }}>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Deducted from Margin</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                            Deducted from Margin{(dateRange.startDate || dateRange.endDate) ? ' (filtered)' : ''}
+                        </div>
                         <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#f59e0b' }}>Rs. {totalMargin.toLocaleString()}</div>
                     </div>
+                </div>
+
+                {/* Date Range Filter */}
+                <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.75rem' }}>📅 Filter by Date Range</div>
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                        <div className="form-group" style={{ margin: 0, flex: '1 1 140px' }}>
+                            <label className="label">From</label>
+                            <input type="date" className="input" value={dateRange.startDate}
+                                onChange={e => setDateRange(r => ({ ...r, startDate: e.target.value }))} />
+                        </div>
+                        <div className="form-group" style={{ margin: 0, flex: '1 1 140px' }}>
+                            <label className="label">To</label>
+                            <input type="date" className="input" value={dateRange.endDate}
+                                onChange={e => setDateRange(r => ({ ...r, endDate: e.target.value }))} />
+                        </div>
+                        <button className="btn btn-primary" style={{ padding: '0.45rem 1rem', fontSize: '0.8rem' }}
+                            onClick={() => fetchExpenses(dateRange)}>
+                            Search
+                        </button>
+                        <button className="btn btn-secondary" style={{ padding: '0.45rem 1rem', fontSize: '0.8rem' }}
+                            onClick={() => { const r = { startDate: '', endDate: '' }; setDateRange(r); fetchExpenses(r); }}>
+                            Reset
+                        </button>
+                    </div>
+                    {(dateRange.startDate || dateRange.endDate) && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                            Showing expenses{dateRange.startDate ? ` from ${new Date(dateRange.startDate).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
+                            {dateRange.endDate ? ` to ${new Date(dateRange.endDate).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
+                        </div>
+                    )}
                 </div>
 
                 {/* Add Form */}

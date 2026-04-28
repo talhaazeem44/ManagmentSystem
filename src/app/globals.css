@@ -387,11 +387,16 @@ a {
     color: black !important;
   }
 
-  body * {
+  /* Hide screen-only controls */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Thermal receipt (workshop job card) — hide everything else on that page */
+  body:has(.print-only) * {
     visibility: hidden !important;
   }
 
-  /* Thermal receipt (workshop job card) */
   .print-only {
     display: block !important;
     visibility: visible !important;
@@ -406,10 +411,6 @@ a {
 
   .print-only * {
     visibility: visible !important;
-  }
-
-  .no-print {
-    display: none !important;
   }
 }
 
