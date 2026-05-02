@@ -463,12 +463,6 @@ export default function ReceiveInventoryPage() {
                                     </div>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem' }}>
                                         <div>
-                                            <label className="label" style={{ fontSize: '0.75rem' }}>Order No.</label>
-                                            <input type="text" className="input" value={bike.orderNumber}
-                                                onChange={(e) => updateBike(bike.id, 'orderNumber', e.target.value)}
-                                                placeholder="AHL/MC/2349" />
-                                        </div>
-                                        <div>
                                             <label className="label" style={{ fontSize: '0.75rem' }}>Model *</label>
                                             <select className="select" value={bike.model} required
                                                 onChange={(e) => updateBike(bike.id, 'model', e.target.value)}>

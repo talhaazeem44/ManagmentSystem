@@ -55,7 +55,7 @@ export default function NewSalePage() {
     const [paymentMode, setPaymentMode] = useState('CASH');
     const [bankTransferAmount, setBankTransferAmount] = useState('');
     const [taxAmount] = useState('1000');
-    const [receiptNumber, setReceiptNumber] = useState('');
+    const [receiptNumber, setReceiptNumber] = useState('...');
 
     // Auto-calculate balance for credit sales
     useEffect(() => {
@@ -72,7 +72,20 @@ export default function NewSalePage() {
 
     useEffect(() => {
         fetchAvailableBikes();
+        fetchNextReceiptNumber();
     }, []);
+
+    const fetchNextReceiptNumber = async () => {
+        try {
+            const res = await fetch('/api/counters?id=saleReceipt');
+            if (res.ok) {
+                const data = await res.json();
+                setReceiptNumber(String(data.next));
+            }
+        } catch {
+            // ignore
+        }
+    };
 
     useEffect(() => {
         if (selectedBikeId) {
@@ -461,8 +474,8 @@ export default function NewSalePage() {
                                     type="text"
                                     className="input"
                                     value={receiptNumber}
-                                    onChange={(e) => setReceiptNumber(e.target.value)}
-                                    placeholder="7476"
+                                    readOnly
+                                    style={{ background: 'var(--color-surface-hover, rgba(0,0,0,0.05))', cursor: 'not-allowed' }}
                                 />
                             </div>
                         </div>
