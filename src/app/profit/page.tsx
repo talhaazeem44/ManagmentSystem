@@ -8,7 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 interface Stats {
     range: {
         bikeProfit: number; advanceMargin: number; regProfit: number; workshopProfit: number; profit: number;
-        sales: number; cashReceived: number; cashInHand: number;
+        sales: number; cashReceived: number; cashInHand: number; expenseMargin: number;
     };
     advanceBookings: { pendingCount: number; pendingMargin: number };
     chartData: { day: string; date: string; sales: number; revenue: number }[];
@@ -102,6 +102,23 @@ export default function ProfitPage() {
                             <Card label="Registration Profit" value={rs ? `Rs. ${rs.regProfit.toLocaleString()}` : '-'} color="var(--color-primary)" sub="Charged − actual cost" />
                             <Card label="Total Profit Today" value={rs ? `Rs. ${rs.profit.toLocaleString()}` : '-'} color="#10b981" />
                         </div>
+
+                        {/* ── Bike Margin after Expense Deductions ── */}
+                        {rs && (rs.expenseMargin ?? 0) > 0 && (
+                            <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', borderLeft: '4px solid #ef4444' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                                    <div>
+                                        <div style={{ fontWeight: 700, fontSize: '0.875rem', marginBottom: '0.25rem' }}>Bike Margin After Deductions</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                            Bike Margin &nbsp;<span style={{ color: '#ef4444' }}>− Rs. {(rs.expenseMargin).toLocaleString()} expenses</span>
+                                        </div>
+                                    </div>
+                                    <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ef4444' }}>
+                                        Rs. {((rs.bikeProfit - (rs.advanceMargin ?? 0)) - rs.expenseMargin).toLocaleString()}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* ── Pending Advance Profit ── */}
                         {(stats?.advanceBookings?.pendingMargin ?? 0) > 0 && (

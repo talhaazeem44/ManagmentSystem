@@ -235,6 +235,7 @@ export async function GET(request: NextRequest) {
                 bankTransfer: rangeBankTransfer,
                 cashToDeposit: rangeCashToDeposit,
                 expenseCash: expenseCash,
+                expenseMargin: expenseMargin,
                 cashInHand: rangeCashInHand,
                 startDate: filterStartDate,
                 endDate: filterEndDate,
