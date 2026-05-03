@@ -164,14 +164,15 @@ export default function ReceiveInventoryPage() {
     };
 
     const addBikeRow = () => {
+        const last = bikes[bikes.length - 1];
         setBikes([...bikes, {
             id: Date.now().toString(),
             orderNumber: '',
-            model: '',
-            color: '',
+            model: last?.model || '',
+            color: last?.color || '',
             engineNumber: '',
             chassisNumber: '',
-            purchasePrice: ''
+            purchasePrice: last?.purchasePrice || ''
         }]);
     };
 
@@ -314,6 +315,14 @@ export default function ReceiveInventoryPage() {
         }
     };
 
+    const thStyle: React.CSSProperties = {
+        padding: '0.5rem 0.6rem', textAlign: 'left', fontWeight: 600,
+        fontSize: '0.75rem', color: 'var(--color-text-muted)',
+        textTransform: 'uppercase', letterSpacing: '0.03em',
+        borderBottom: '2px solid var(--color-border)', whiteSpace: 'nowrap'
+    };
+    const tdStyle: React.CSSProperties = { padding: '0.35rem 0.4rem', verticalAlign: 'middle' };
+
     return (
         <DashboardLayout>
             <div className="animate-fade-in">
@@ -438,72 +447,92 @@ export default function ReceiveInventoryPage() {
                         </div>
                     </div>
 
-                    <div className="card" style={{ marginBottom: 'var(--spacing-lg)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-lg)' }}>
-                            <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>
+                    <div className="card" style={{ marginBottom: 'var(--spacing-lg)', padding: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                            <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>
                                 Bikes <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontWeight: 400 }}>({bikes.length})</span>
                             </h2>
-                            <button type="button" onClick={addBikeRow} className="btn btn-secondary">
-                                ➕ Add Bike
+                            <button type="button" onClick={addBikeRow} className="btn btn-secondary" style={{ fontSize: '0.85rem', padding: '0.35rem 0.9rem' }}>
+                                ➕ Add Row
                             </button>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            {bikes.map((bike, idx) => (
-                                <div key={bike.id} style={{ padding: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-elevated)' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                                        <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Bike #{idx + 1}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => removeBikeRow(bike.id)}
-                                            className="btn"
-                                            disabled={bikes.length === 1}
-                                            style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
-                                        >🗑️ Remove</button>
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem' }}>
-                                        <div>
-                                            <label className="label" style={{ fontSize: '0.75rem' }}>Model *</label>
-                                            <select className="select" value={bike.model} required
-                                                onChange={(e) => updateBike(bike.id, 'model', e.target.value)}>
-                                                <option value="">Select Model</option>
-                                                {HONDA_BIKE_MODELS.map(model => (
-                                                    <option key={model} value={model}>{model}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="label" style={{ fontSize: '0.75rem' }}>Color *</label>
-                                            <select className="select" value={bike.color} required
-                                                onChange={(e) => updateBike(bike.id, 'color', e.target.value)}>
-                                                <option value="">Select Color</option>
-                                                {BIKE_COLORS.map(color => (
-                                                    <option key={color} value={color}>{color}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="label" style={{ fontSize: '0.75rem' }}>Engine Number *</label>
-                                            <input type="text" className="input" value={bike.engineNumber}
-                                                onChange={(e) => updateBike(bike.id, 'engineNumber', e.target.value)}
-                                                placeholder="V690222" required />
-                                        </div>
-                                        <div>
-                                            <label className="label" style={{ fontSize: '0.75rem' }}>Chassis Number *</label>
-                                            <input type="text" className="input" value={bike.chassisNumber}
-                                                onChange={(e) => updateBike(bike.id, 'chassisNumber', e.target.value)}
-                                                placeholder="047" required />
-                                        </div>
-                                        <div>
-                                            <label className="label" style={{ fontSize: '0.75rem' }}>Booking Amount *</label>
-                                            <input type="text" inputMode="decimal" className="input" value={bike.purchasePrice}
-                                                onChange={(e) => updateBike(bike.id, 'purchasePrice', e.target.value)}
-                                                placeholder="Purchase Price" required />
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                <thead>
+                                    <tr style={{ background: 'var(--color-bg-elevated)' }}>
+                                        <th style={thStyle}>#</th>
+                                        <th style={thStyle}>Model *</th>
+                                        <th style={thStyle}>Color *</th>
+                                        <th style={{ ...thStyle, minWidth: '160px' }}>Engine Number *</th>
+                                        <th style={{ ...thStyle, minWidth: '160px' }}>Chassis Number *</th>
+                                        <th style={thStyle}>Booking Price *</th>
+                                        <th style={thStyle}></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {bikes.map((bike, idx) => (
+                                        <tr key={bike.id} style={{ borderBottom: '1px solid var(--color-border)', background: idx % 2 === 0 ? 'transparent' : 'var(--color-bg-elevated)' }}>
+                                            <td style={tdStyle}>
+                                                <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>{idx + 1}</span>
+                                            </td>
+                                            <td style={tdStyle}>
+                                                <select className="select" value={bike.model} required
+                                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.82rem', minWidth: '120px' }}
+                                                    onChange={(e) => updateBike(bike.id, 'model', e.target.value)}>
+                                                    <option value="">— Model —</option>
+                                                    {HONDA_BIKE_MODELS.map(m => (
+                                                        <option key={m} value={m}>{m}</option>
+                                                    ))}
+                                                </select>
+                                            </td>
+                                            <td style={tdStyle}>
+                                                <select className="select" value={bike.color} required
+                                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.82rem', minWidth: '100px' }}
+                                                    onChange={(e) => updateBike(bike.id, 'color', e.target.value)}>
+                                                    <option value="">— Color —</option>
+                                                    {BIKE_COLORS.map(c => (
+                                                        <option key={c} value={c}>{c}</option>
+                                                    ))}
+                                                </select>
+                                            </td>
+                                            <td style={tdStyle}>
+                                                <input type="text" className="input" value={bike.engineNumber}
+                                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.82rem', width: '100%' }}
+                                                    onChange={(e) => updateBike(bike.id, 'engineNumber', e.target.value)}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addBikeRow(); } }}
+                                                    placeholder="Engine No" required />
+                                            </td>
+                                            <td style={tdStyle}>
+                                                <input type="text" className="input" value={bike.chassisNumber}
+                                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.82rem', width: '100%' }}
+                                                    onChange={(e) => updateBike(bike.id, 'chassisNumber', e.target.value)}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addBikeRow(); } }}
+                                                    placeholder="Chassis No" required />
+                                            </td>
+                                            <td style={tdStyle}>
+                                                <input type="text" inputMode="decimal" className="input" value={bike.purchasePrice}
+                                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.82rem', width: '100px' }}
+                                                    onChange={(e) => updateBike(bike.id, 'purchasePrice', e.target.value)}
+                                                    placeholder="Price" required />
+                                            </td>
+                                            <td style={tdStyle}>
+                                                <button type="button" onClick={() => removeBikeRow(bike.id)}
+                                                    disabled={bikes.length === 1}
+                                                    style={{ background: 'none', border: 'none', cursor: bikes.length === 1 ? 'not-allowed' : 'pointer', color: '#ef4444', opacity: bikes.length === 1 ? 0.3 : 1, fontSize: '1rem', padding: '0.2rem 0.4rem' }}>
+                                                    🗑️
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
+
+                        <button type="button" onClick={addBikeRow} className="btn btn-secondary"
+                            style={{ marginTop: '0.75rem', fontSize: '0.8rem', padding: '0.3rem 0.8rem', width: '100%', borderStyle: 'dashed' }}>
+                            ➕ Add Another Bike
+                        </button>
                     </div>
 
                     <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>

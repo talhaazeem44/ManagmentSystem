@@ -9,6 +9,7 @@ interface ReportData {
         revenue: number;
         workshopRevenue: number;
         bikeProfit: number;
+        advanceMargin: number;
         regProfit: number;
         workshopProfit: number;
         profit: number;
@@ -18,6 +19,7 @@ interface ReportData {
         bankTransfer: number;
         cashToDeposit: number;
         cashInHand: number;
+        expenseMargin: number;
         startDate: string;
         endDate: string;
     };
@@ -204,9 +206,21 @@ export default function ReportsPage() {
                             {/* Profit Breakdown */}
                             <div className="card">
                                 <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>Profit Breakdown</div>
-                                <StatRow label="Bike Profit" value={`Rs. ${(r?.bikeProfit ?? 0).toLocaleString()}`} color="var(--color-success)" sub="Fixed margin + extra above standard" />
+                                <StatRow label="Bike Margin" value={`Rs. ${((r?.bikeProfit ?? 0) - (r?.advanceMargin ?? 0)).toLocaleString()}`} color="var(--color-success)" sub="Sales only" />
+                                <StatRow label="Advance Booking Margin" value={`Rs. ${(r?.advanceMargin ?? 0).toLocaleString()}`} color="#f59e0b" sub="Today's bookings" />
                                 <StatRow label="Registration Profit" value={`Rs. ${(r?.regProfit ?? 0).toLocaleString()}`} color="var(--color-primary)" sub="Charged minus actual cost" />
                                 <StatRow label="Workshop Profit" value={`Rs. ${(r?.workshopProfit ?? 0).toLocaleString()}`} color="#8b5cf6" sub="Labour + parts margin" />
+                                {(r?.expenseMargin ?? 0) > 0 && (
+                                    <>
+                                        <StatRow label="Expenses Deducted" value={`− Rs. ${(r?.expenseMargin ?? 0).toLocaleString()}`} color="#ef4444" sub="Deducted from margin" />
+                                        <StatRow
+                                            label="Bike Margin After Deductions"
+                                            value={`Rs. ${(((r?.bikeProfit ?? 0) - (r?.advanceMargin ?? 0)) - (r?.expenseMargin ?? 0)).toLocaleString()}`}
+                                            color="#ef4444"
+                                            sub="Bike margin − expenses"
+                                        />
+                                    </>
+                                )}
                                 <div style={{ padding: '0.75rem 0 0' }}>
                                     <StatRow label="Total Profit" value={`Rs. ${(r?.profit ?? 0).toLocaleString()}`} color="#10b981" />
                                 </div>
