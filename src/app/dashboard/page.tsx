@@ -48,10 +48,19 @@ interface Stats {
     cashBreakdown: CashBreakdownItem[];
 }
 
+interface CashDeposit {
+    _id: string;
+    amount: number;
+    collectedAt: string;
+}
+
 export default function DashboardPage() {
     const { toasts, showToast, removeToast } = useToast();
     const [records, setRecords] = useState<SaleRecord[]>([]);
     const [stats, setStats] = useState<Stats | null>(null);
+    const [sinceStats, setSinceStats] = useState<Stats['range'] | null>(null);
+    const [lastDeposit, setLastDeposit] = useState<CashDeposit | null>(null);
+    const [depositing, setDepositing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState(false);
     const [filters, setFilters] = useState({ cnic: '', engineNumber: '', chassisNumber: '', doNumber: '' });
@@ -60,14 +69,45 @@ export default function DashboardPage() {
     const fetchData = async (searchFilters = filters) => {
         setLoading(true);
         try {
-            const [statsRes, recordsRes] = await Promise.all([
+            const now = new Date().toISOString();
+            const [statsRes, recordsRes, cashColRes] = await Promise.all([
                 fetch('/api/reports'),
                 fetch(`/api/sales?${new URLSearchParams(Object.fromEntries(Object.entries(searchFilters).filter(([, v]) => v))).toString()}`),
+                fetch('/api/cash-collections'),
             ]);
             if (statsRes.ok) setStats(await statsRes.json());
             if (recordsRes.ok) setRecords(await recordsRes.json());
+
+            const colData = cashColRes.ok ? await cashColRes.json() : { last: null };
+            setLastDeposit(colData.last);
+
+            const sinceDate = colData.last
+                ? new Date(colData.last.collectedAt).toISOString()
+                : new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+
+            const sinceRes = await fetch(`/api/reports?startDate=${sinceDate}&endDate=${now}`);
+            if (sinceRes.ok) { const d = await sinceRes.json(); setSinceStats(d.range); }
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeposit = async () => {
+        if (!sinceStats) return;
+        const cashInHand = Math.max(0, (sinceStats.totalCashIn ?? 0) - (sinceStats.cashToDeposit ?? 0) - (sinceStats.expenseCash ?? 0));
+        if (!confirm(`Mark Rs. ${cashInHand.toLocaleString()} as deposited to bank? Cash counter resets to zero.`)) return;
+        setDepositing(true);
+        try {
+            await fetch('/api/cash-collections', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: cashInHand }),
+            });
+            showToast('Cash marked as deposited', 'success');
+            await fetchData();
+        } catch {
+            showToast('Failed to save deposit', 'error');
+        } finally {
+            setDepositing(false);
         }
     };
 
@@ -182,26 +222,43 @@ export default function DashboardPage() {
 
                     {/* Right column: Cash summary + Credit */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div className="card" style={{ padding: '1.25rem', flex: 1 }}>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Today's Cash</div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem' }}>
+                        <div className="card" style={{ padding: '1.25rem', flex: 1, borderLeft: '4px solid #f59e0b' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Cash in Hand</div>
+                                {lastDeposit && (
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>
+                                        Last: {new Date(lastDeposit.collectedAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}
+                                    </div>
+                                )}
+                            </div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b', marginBottom: '0.75rem' }}>
+                                Rs. {Math.max(0, (sinceStats?.totalCashIn ?? 0) - (sinceStats?.cashToDeposit ?? 0) - (sinceStats?.expenseCash ?? 0)).toLocaleString()}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.82rem', marginBottom: '0.75rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <span style={{ color: 'var(--color-text-muted)' }}>Received</span>
-                                    <strong style={{ color: '#10b981' }}>Rs. {rs?.cashReceived.toLocaleString() ?? '-'}</strong>
+                                    <strong style={{ color: '#10b981' }}>Rs. {(sinceStats?.cashReceived ?? 0).toLocaleString()}</strong>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <span style={{ color: 'var(--color-text-muted)' }}>Bank Transfer</span>
-                                    <strong style={{ color: '#3b82f6' }}>Rs. {rs?.bankTransfer.toLocaleString() ?? '-'}</strong>
+                                    <strong style={{ color: '#3b82f6' }}>Rs. {(sinceStats?.bankTransfer ?? 0).toLocaleString()}</strong>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <span style={{ color: 'var(--color-text-muted)' }}>Registration</span>
-                                    <strong style={{ color: '#8b5cf6' }}>Rs. {rs?.registrationCollected.toLocaleString() ?? '-'}</strong>
+                                    <strong style={{ color: '#8b5cf6' }}>Rs. {(sinceStats?.registrationCollected ?? 0).toLocaleString()}</strong>
                                 </div>
-                                <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.4rem', display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: 'var(--color-text-muted)' }}>Deposit Honda</span>
-                                    <strong style={{ color: '#ef4444' }}>Rs. {rs?.cashToDeposit.toLocaleString() ?? '-'}</strong>
+                                <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.3rem', display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: 'var(--color-text-muted)' }}>Honda Deposit</span>
+                                    <strong style={{ color: '#ef4444' }}>− Rs. {(sinceStats?.cashToDeposit ?? 0).toLocaleString()}</strong>
                                 </div>
                             </div>
+                            <button
+                                onClick={handleDeposit}
+                                disabled={depositing || (sinceStats?.cashReceived ?? 0) <= 0}
+                                className="btn"
+                                style={{ width: '100%', fontSize: '0.8rem', padding: '0.4rem', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 700, cursor: depositing ? 'not-allowed' : 'pointer', opacity: (sinceStats?.cashReceived ?? 0) <= 0 ? 0.5 : 1 }}>
+                                {depositing ? '⏳ Saving...' : '🏦 Deposit to Bank'}
+                            </button>
                         </div>
 
                         {totalOutstanding > 0 && (
