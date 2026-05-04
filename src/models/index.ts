@@ -304,3 +304,19 @@ const MarginCollectionSchema = new Schema<IMarginCollection>({
 }, { timestamps: true });
 
 export const MarginCollection: Model<IMarginCollection> = models.MarginCollection || mongoose.model<IMarginCollection>('MarginCollection', MarginCollectionSchema);
+
+// ── Cash Collection ───────────────────────────────────────────────────────────
+export interface ICashCollection {
+    _id?: string;
+    amount: number;
+    collectedAt: Date;
+    note?: string;
+}
+
+const CashCollectionSchema = new Schema<ICashCollection>({
+    amount: { type: Number, required: true },
+    collectedAt: { type: Date, default: Date.now },
+    note: { type: String },
+}, { timestamps: true });
+
+export const CashCollection: Model<ICashCollection> = models.CashCollection || mongoose.model<ICashCollection>('CashCollection', CashCollectionSchema);
