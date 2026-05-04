@@ -288,3 +288,19 @@ const ExpenseSchema = new Schema<IExpense>({
 }, { timestamps: true });
 
 export const Expense: Model<IExpense> = models.Expense || mongoose.model<IExpense>('Expense', ExpenseSchema);
+
+// ── Margin Collection ─────────────────────────────────────────────────────────
+export interface IMarginCollection {
+    _id?: string;
+    amount: number;
+    collectedAt: Date;
+    note?: string;
+}
+
+const MarginCollectionSchema = new Schema<IMarginCollection>({
+    amount: { type: Number, required: true },
+    collectedAt: { type: Date, default: Date.now },
+    note: { type: String },
+}, { timestamps: true });
+
+export const MarginCollection: Model<IMarginCollection> = models.MarginCollection || mongoose.model<IMarginCollection>('MarginCollection', MarginCollectionSchema);

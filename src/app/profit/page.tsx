@@ -5,13 +5,21 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { MARGIN_PASSWORD } from '@/lib/constants';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line } from 'recharts';
 
+interface RangeStats {
+    bikeProfit: number; advanceMargin: number; regProfit: number; workshopProfit: number; profit: number;
+    sales: number; cashReceived: number; cashInHand: number; expenseMargin: number;
+}
+
 interface Stats {
-    range: {
-        bikeProfit: number; advanceMargin: number; regProfit: number; workshopProfit: number; profit: number;
-        sales: number; cashReceived: number; cashInHand: number; expenseMargin: number;
-    };
+    range: RangeStats;
     advanceBookings: { pendingCount: number; pendingMargin: number };
     chartData: { day: string; date: string; sales: number; revenue: number }[];
+}
+
+interface LastCollection {
+    _id: string;
+    amount: number;
+    collectedAt: string;
 }
 
 function Card({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
@@ -24,34 +32,90 @@ function Card({ label, value, sub, color }: { label: string; value: string; sub?
     );
 }
 
+function daysBetween(from: Date, to: Date) {
+    return Math.max(1, Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)));
+}
+
 export default function ProfitPage() {
     const [unlocked, setUnlocked] = useState(false);
     const [password, setPassword] = useState('');
     const [error, setError] = useState(false);
     const [stats, setStats] = useState<Stats | null>(null);
+    const [sinceStats, setSinceStats] = useState<RangeStats | null>(null);
+    const [monthStats, setMonthStats] = useState<RangeStats | null>(null);
+    const [lastCollection, setLastCollection] = useState<LastCollection | null>(null);
     const [loading, setLoading] = useState(false);
+    const [collecting, setCollecting] = useState(false);
 
     const handleUnlock = (e: React.FormEvent) => {
         e.preventDefault();
         if (password === MARGIN_PASSWORD) {
             setUnlocked(true); setError(false);
-            fetchStats();
+            fetchAll();
         } else {
             setError(true); setPassword('');
         }
     };
 
-    const fetchStats = async () => {
+    const fetchAll = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/reports');
-            if (res.ok) setStats(await res.json());
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            const nowISO = now.toISOString();
+
+            const [todayRes, collectionRes] = await Promise.all([
+                fetch('/api/reports'),
+                fetch('/api/margin-collections'),
+            ]);
+
+            if (todayRes.ok) setStats(await todayRes.json());
+            const colData = collectionRes.ok ? await collectionRes.json() : { last: null };
+            setLastCollection(colData.last);
+
+            const sinceDate = colData.last ? new Date(colData.last.collectedAt).toISOString() : monthStart;
+
+            const [sinceRes, monthRes] = await Promise.all([
+                fetch(`/api/reports?startDate=${sinceDate}&endDate=${nowISO}`),
+                fetch(`/api/reports?startDate=${monthStart}&endDate=${nowISO}`),
+            ]);
+
+            if (sinceRes.ok) { const d = await sinceRes.json(); setSinceStats(d.range); }
+            if (monthRes.ok) { const d = await monthRes.json(); setMonthStats(d.range); }
         } finally {
             setLoading(false);
         }
     };
 
+    const handleCollect = async () => {
+        if (!sinceStats) return;
+        const netMargin = (sinceStats.bikeProfit - (sinceStats.advanceMargin ?? 0)) - (sinceStats.expenseMargin ?? 0);
+        if (!confirm(`Mark Rs. ${netMargin.toLocaleString()} as collected? This resets the uncollected counter.`)) return;
+        setCollecting(true);
+        try {
+            await fetch('/api/margin-collections', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: netMargin }),
+            });
+            await fetchAll();
+        } finally {
+            setCollecting(false);
+        }
+    };
+
     const rs = stats?.range;
+
+    const sinceDate = lastCollection ? new Date(lastCollection.collectedAt) : (() => {
+        const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); return d;
+    })();
+    const daysUncollected = daysBetween(sinceDate, new Date());
+    const uncollectedNet = sinceStats
+        ? (sinceStats.bikeProfit - (sinceStats.advanceMargin ?? 0)) - (sinceStats.expenseMargin ?? 0)
+        : 0;
+    const monthNet = monthStats
+        ? (monthStats.bikeProfit - (monthStats.advanceMargin ?? 0)) - (monthStats.expenseMargin ?? 0)
+        : 0;
 
     if (!unlocked) {
         return (
@@ -86,7 +150,7 @@ export default function ProfitPage() {
                         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Today — {new Date().toLocaleDateString('en-PK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                     </div>
                     <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }}
-                        onClick={() => { setUnlocked(false); setPassword(''); setStats(null); }}>
+                        onClick={() => { setUnlocked(false); setPassword(''); setStats(null); setSinceStats(null); setMonthStats(null); setLastCollection(null); }}>
                         🔒 Lock
                     </button>
                 </div>
@@ -95,7 +159,59 @@ export default function ProfitPage() {
                     <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>Loading...</div>
                 ) : (
                     <>
-                        {/* ── 4 Profit Cards ── */}
+                        {/* ── Margin Tracker ── */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                            {/* Uncollected */}
+                            <div className="card" style={{ padding: '1.5rem', borderLeft: '4px solid #10b981' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>
+                                    Uncollected Margin
+                                </div>
+                                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#10b981', marginBottom: '0.3rem' }}>
+                                    Rs. {uncollectedNet.toLocaleString()}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+                                    {daysUncollected} {daysUncollected === 1 ? 'day' : 'days'} since last collection
+                                    {lastCollection && (
+                                        <span> · {new Date(lastCollection.collectedAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}</span>
+                                    )}
+                                    {!lastCollection && <span> · no previous collection</span>}
+                                </div>
+                                <button
+                                    onClick={handleCollect}
+                                    disabled={collecting || uncollectedNet <= 0}
+                                    className="btn btn-success"
+                                    style={{ fontSize: '0.82rem', padding: '0.45rem 1.1rem', width: '100%' }}>
+                                    {collecting ? '⏳ Saving...' : '✅ Collect Margin'}
+                                </button>
+                            </div>
+
+                            {/* Month Total */}
+                            <div className="card" style={{ padding: '1.5rem', borderLeft: '4px solid #3b82f6' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>
+                                    {new Date().toLocaleDateString('en-PK', { month: 'long' })} — Total Margin
+                                </div>
+                                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#3b82f6', marginBottom: '0.3rem' }}>
+                                    Rs. {monthNet.toLocaleString()}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
+                                    {monthStats?.sales ?? 0} bikes sold this month
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                    Bike margin after expenses · excludes registration
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── Last collection log ── */}
+                        {lastCollection && (
+                            <div style={{ padding: '0.6rem 1rem', background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                                <span>Last collected on {new Date(lastCollection.collectedAt).toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                <strong style={{ color: '#10b981' }}>Rs. {lastCollection.amount.toLocaleString()}</strong>
+                            </div>
+                        )}
+
+                        {/* ── 4 Today Profit Cards ── */}
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Today</div>
                         <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
                             <Card label="Bike Margin" value={rs ? `Rs. ${((rs.bikeProfit) - (rs.advanceMargin ?? 0)).toLocaleString()}` : '-'} color="var(--color-success)" sub="Sales only" />
                             <Card label="Advance Margin" value={rs ? `Rs. ${(rs.advanceMargin ?? 0).toLocaleString()}` : '-'} color="#f59e0b" sub="Today's bookings" />
@@ -108,7 +224,7 @@ export default function ProfitPage() {
                             <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', borderLeft: '4px solid #ef4444' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                                     <div>
-                                        <div style={{ fontWeight: 700, fontSize: '0.875rem', marginBottom: '0.25rem' }}>Bike Margin After Deductions</div>
+                                        <div style={{ fontWeight: 700, fontSize: '0.875rem', marginBottom: '0.25rem' }}>Bike Margin After Deductions (Today)</div>
                                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                                             Bike Margin &nbsp;<span style={{ color: '#ef4444' }}>− Rs. {(rs.expenseMargin).toLocaleString()} expenses</span>
                                         </div>
@@ -133,7 +249,6 @@ export default function ProfitPage() {
 
                         {/* ── Charts ── */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.5rem' }}>
-                            {/* Sales per day */}
                             <div className="card" style={{ padding: '1.25rem' }}>
                                 <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>Bikes Sold — Last 7 Days</div>
                                 <ResponsiveContainer width="100%" height={200}>
@@ -148,7 +263,6 @@ export default function ProfitPage() {
                                 </ResponsiveContainer>
                             </div>
 
-                            {/* Revenue per day */}
                             <div className="card" style={{ padding: '1.25rem' }}>
                                 <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>Margin — Last 7 Days</div>
                                 <ResponsiveContainer width="100%" height={200}>
@@ -167,7 +281,7 @@ export default function ProfitPage() {
 
                         {/* ── Profit breakdown row ── */}
                         <div className="card" style={{ padding: '1.25rem' }}>
-                            <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>Profit Sources</div>
+                            <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>Profit Sources (Today)</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 {[
                                     { label: 'Bike Margin', value: (rs?.bikeProfit ?? 0) - (rs?.advanceMargin ?? 0), color: 'var(--color-success)', total: rs?.profit ?? 1 },
