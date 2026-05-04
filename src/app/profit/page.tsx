@@ -142,7 +142,10 @@ export default function ProfitPage() {
 
     const uncollectedMargin = sinceStats ? (sinceStats.bikeProfit - (sinceStats.advanceMargin ?? 0)) - (sinceStats.expenseMargin ?? 0) : 0;
     const monthMargin       = monthStats ? (monthStats.bikeProfit - (monthStats.advanceMargin ?? 0)) - (monthStats.expenseMargin ?? 0) : 0;
-    const uncollectedCash   = sinceCashStats?.cashInHand ?? 0;
+    const uncollectedCash   = sinceCashStats
+        ? Math.max(0, (sinceCashStats.totalCashIn ?? 0) - (sinceCashStats.cashToDeposit ?? 0) - (sinceCashStats.expenseCash ?? 0))
+        : 0;
+    const hasCashToDeposit  = (sinceCashStats?.cashReceived ?? 0) > 0 || (sinceCashStats?.registrationCollected ?? 0) > 0;
     const monthCash         = monthCashStats?.cashInHand ?? 0;
 
     if (!unlocked) {
@@ -234,7 +237,7 @@ export default function ProfitPage() {
                                     <span>Honda deposit: − Rs. {(sinceCashStats?.cashToDeposit ?? 0).toLocaleString()}</span>
                                     {(sinceCashStats?.expenseCash ?? 0) > 0 && <span>Expenses: − Rs. {(sinceCashStats?.expenseCash ?? 0).toLocaleString()}</span>}
                                 </div>
-                                <button onClick={handleCollectCash} disabled={collectingCash || uncollectedCash <= 0}
+                                <button onClick={handleCollectCash} disabled={collectingCash || !hasCashToDeposit}
                                     className="btn btn-primary" style={{ fontSize: '0.82rem', padding: '0.45rem 1.1rem', width: '100%', background: '#f59e0b', borderColor: '#f59e0b' }}>
                                     {collectingCash ? '⏳ Saving...' : '💰 Mark as Deposited'}
                                 </button>
