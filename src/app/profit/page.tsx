@@ -123,7 +123,7 @@ export default function ProfitPage() {
 
     const handleCollectCash = async () => {
         if (!sinceCashStats) return;
-        const net = sinceCashStats.cashInHand ?? 0;
+        const net = (sinceCashStats.cashReceived ?? 0) + (sinceCashStats.registrationCollected ?? 0);
         if (!confirm(`Mark Rs. ${net.toLocaleString()} cash as deposited? Counter resets to zero.`)) return;
         setCollectingCash(true);
         try {
@@ -142,11 +142,9 @@ export default function ProfitPage() {
 
     const uncollectedMargin = sinceStats ? (sinceStats.bikeProfit - (sinceStats.advanceMargin ?? 0)) - (sinceStats.expenseMargin ?? 0) : 0;
     const monthMargin       = monthStats ? (monthStats.bikeProfit - (monthStats.advanceMargin ?? 0)) - (monthStats.expenseMargin ?? 0) : 0;
-    const uncollectedCash   = sinceCashStats
-        ? Math.max(0, (sinceCashStats.totalCashIn ?? 0) - (sinceCashStats.cashToDeposit ?? 0) - (sinceCashStats.expenseCash ?? 0))
-        : 0;
-    const hasCashToDeposit  = (sinceCashStats?.cashReceived ?? 0) > 0 || (sinceCashStats?.registrationCollected ?? 0) > 0;
-    const monthCash         = monthCashStats?.cashInHand ?? 0;
+    const uncollectedCash   = (sinceCashStats?.cashReceived ?? 0) + (sinceCashStats?.registrationCollected ?? 0);
+    const hasCashToDeposit  = uncollectedCash > 0;
+    const monthCash         = (monthCashStats?.cashReceived ?? 0) + (monthCashStats?.registrationCollected ?? 0);
 
     if (!unlocked) {
         return (
