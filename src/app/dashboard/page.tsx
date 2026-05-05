@@ -94,7 +94,7 @@ export default function DashboardPage() {
 
     const handleDeposit = async () => {
         if (!sinceStats) return;
-        const cashInHand = (sinceStats.cashReceived ?? 0) + (sinceStats.registrationCollected ?? 0);
+        const cashInHand = sinceStats.cashReceived ?? 0;
         if (!confirm(`Mark Rs. ${cashInHand.toLocaleString()} as deposited to bank? Cash counter resets to zero.`)) return;
         setDepositing(true);
         try {
@@ -232,7 +232,7 @@ export default function DashboardPage() {
                                 )}
                             </div>
                             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b', marginBottom: '0.75rem' }}>
-                                Rs. {((sinceStats?.cashReceived ?? 0) + (sinceStats?.registrationCollected ?? 0)).toLocaleString()}
+                                Rs. {(sinceStats?.cashReceived ?? 0).toLocaleString()}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.82rem', marginBottom: '0.75rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
