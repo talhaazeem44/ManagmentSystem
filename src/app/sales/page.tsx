@@ -55,6 +55,8 @@ export default function SalesPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [page, setPage] = useState(1);
+    const PAGE_SIZE = 25;
 
     useEffect(() => { fetchSales(); }, []);
 
@@ -120,6 +122,8 @@ export default function SalesPage() {
     });
 
     const totalRevenue = filtered.reduce((sum, s) => sum + Number(s.price), 0);
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
     const editInput = (field: keyof EditState, width = '80px') => (
         <input
@@ -164,21 +168,21 @@ export default function SalesPage() {
                         <input type="date" className="input" value={startDate} onChange={e => setStartDate(e.target.value)} />
                         <input type="date" className="input" value={endDate} onChange={e => setEndDate(e.target.value)} />
                         <button className="btn btn-secondary" style={{ fontSize: '0.8rem' }}
-                            onClick={() => { setDoFilter('ALL'); setPaymentFilter('ALL'); setSearchQuery(''); setStartDate(''); setEndDate(''); }}>
+                            onClick={() => { setDoFilter('ALL'); setPaymentFilter('ALL'); setSearchQuery(''); setStartDate(''); setEndDate(''); setPage(1); }}>
                             🔄 Clear
                         </button>
                     </div>
                 </div>
 
                 {/* Table */}
-                <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+                <div className="card" style={{ padding: '0' }}>
                     {loading ? (
                         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>Loading...</div>
                     ) : filtered.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>No sales found</div>
                     ) : (
-                        <div style={{ overflowX: 'auto' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <div style={{ overflowX: 'auto', overflowY: 'visible', width: '100%' }}>
+                            <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
                                     <tr>
                                         {['#','Date','Rcpt','Customer','CNIC','Mobile','Model','Color','Engine No','Chassis No','DO','Mode','Price','Cash Rcvd','Bank Xfer','Reg','Balance','Actions'].map(h => (
@@ -187,12 +191,13 @@ export default function SalesPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filtered.map((sale, idx) => {
+                                    {paginated.map((sale, idx) => {
+                                        const rowNum = (page - 1) * PAGE_SIZE + idx + 1;
                                         const isEditing = editId === sale._id;
                                         const rowBg = idx % 2 === 0 ? 'transparent' : 'var(--color-bg-elevated)';
                                         return (
                                             <tr key={sale._id} style={{ borderBottom: '1px solid var(--color-border)', background: isEditing ? 'rgba(59,130,246,0.05)' : rowBg }}>
-                                                <td style={{ ...tdS, color: 'var(--color-text-muted)', fontWeight: 600 }}>{idx + 1}</td>
+                                                <td style={{ ...tdS, color: 'var(--color-text-muted)', fontWeight: 600 }}>{rowNum}</td>
                                                 <td style={tdS}>{new Date(sale.saleDate).toLocaleDateString('en-PK', { day:'numeric', month:'short', year:'2-digit' })}</td>
                                                 <td style={{ ...tdS, color: 'var(--color-text-muted)' }}>{sale.receiptNumber ?? '—'}</td>
                                                 <td style={{ ...tdS, fontWeight: 600, minWidth: '120px' }}>{sale.customer?.name ?? '—'}</td>
@@ -243,6 +248,39 @@ export default function SalesPage() {
                                     })}
                                 </tbody>
                             </table>
+                        </div>
+                    )}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderTop: '1px solid var(--color-border)', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                Page {page} of {totalPages} · {filtered.length} records
+                            </span>
+                            <div style={{ display: 'flex', gap: '0.35rem' }}>
+                                <button className="btn btn-secondary" style={{ padding: '0.3rem 0.7rem', fontSize: '0.8rem' }}
+                                    disabled={page === 1} onClick={() => setPage(1)}>«</button>
+                                <button className="btn btn-secondary" style={{ padding: '0.3rem 0.7rem', fontSize: '0.8rem' }}
+                                    disabled={page === 1} onClick={() => setPage(p => p - 1)}>‹ Prev</button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                    .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+                                    .reduce<(number | string)[]>((acc, p, i, arr) => {
+                                        if (i > 0 && (p as number) - (arr[i - 1] as number) > 1) acc.push('...');
+                                        acc.push(p); return acc;
+                                    }, [])
+                                    .map((p, i) => typeof p === 'string' ? (
+                                        <span key={`dot-${i}`} style={{ padding: '0.3rem 0.4rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>…</span>
+                                    ) : (
+                                        <button key={p} className="btn" style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem',
+                                            background: page === p ? 'var(--color-primary)' : undefined,
+                                            color: page === p ? '#fff' : undefined }}
+                                            onClick={() => setPage(p)}>{p}</button>
+                                    ))}
+                                <button className="btn btn-secondary" style={{ padding: '0.3rem 0.7rem', fontSize: '0.8rem' }}
+                                    disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Next ›</button>
+                                <button className="btn btn-secondary" style={{ padding: '0.3rem 0.7rem', fontSize: '0.8rem' }}
+                                    disabled={page === totalPages} onClick={() => setPage(totalPages)}>»</button>
+                            </div>
                         </div>
                     )}
                 </div>
