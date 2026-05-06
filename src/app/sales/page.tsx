@@ -12,236 +12,237 @@ interface Sale {
     registrationCost: number | null;
     paymentMode: string;
     receiptNumber: string | null;
+    receivedCash: number;
+    bankTransferAmount: number;
+    balance: number;
     bike: {
         model: string;
         color: string;
         engineNumber: string;
         chassisNumber: string;
-        deliveryOrder: {
-            doNumber: string;
-        };
+        deliveryOrder: { doNumber: string };
     };
-    customer: {
-        name: string;
-        cnic: string;
-        mobile: string | null;
-    };
+    customer: { name: string; cnic: string; mobile: string | null };
 }
+
+interface EditState {
+    price: string;
+    receivedCash: string;
+    bankTransferAmount: string;
+    registrationCost: string;
+    balance: string;
+    paymentMode: string;
+}
+
+const thS: React.CSSProperties = {
+    padding: '0.5rem 0.6rem', textAlign: 'left', fontWeight: 700,
+    fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase',
+    letterSpacing: '0.04em', borderBottom: '2px solid var(--color-border)',
+    whiteSpace: 'nowrap', background: 'var(--color-bg-elevated)',
+};
+const tdS: React.CSSProperties = { padding: '0.4rem 0.6rem', fontSize: '0.82rem', verticalAlign: 'middle', whiteSpace: 'nowrap' };
 
 export default function SalesPage() {
     const [sales, setSales] = useState<Sale[]>([]);
     const [loading, setLoading] = useState(true);
-    const [doFilter, setDoFilter] = useState<string>('ALL');
-    const [paymentFilter, setPaymentFilter] = useState<string>('ALL');
+    const [saving, setSaving] = useState<string | null>(null);
+    const [editId, setEditId] = useState<string | null>(null);
+    const [editState, setEditState] = useState<EditState | null>(null);
+
+    // filters
+    const [doFilter, setDoFilter] = useState('ALL');
+    const [paymentFilter, setPaymentFilter] = useState('ALL');
     const [searchQuery, setSearchQuery] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
-    useEffect(() => {
-        fetchSales();
-    }, []);
+    useEffect(() => { fetchSales(); }, []);
 
     const fetchSales = async () => {
+        setLoading(true);
         try {
-            const response = await fetch('/api/sales');
-            if (response.ok) {
-                const data = await response.json();
-                setSales(data);
-            }
-        } catch (error) {
-            console.error('Failed to fetch sales:', error);
-        } finally {
-            setLoading(false);
-        }
+            const res = await fetch('/api/sales');
+            if (res.ok) setSales(await res.json());
+        } finally { setLoading(false); }
     };
 
-    // Get unique DO numbers and payment modes
-    const uniqueDOs = Array.from(new Set(sales.map(sale => sale.bike?.deliveryOrder?.doNumber).filter(Boolean)));
-    const uniquePaymentModes = Array.from(new Set(sales.map(sale => sale.paymentMode)));
+    const startEdit = (sale: Sale) => {
+        setEditId(sale._id);
+        setEditState({
+            price: String(sale.price),
+            receivedCash: String(sale.receivedCash ?? 0),
+            bankTransferAmount: String(sale.bankTransferAmount ?? 0),
+            registrationCost: String(sale.registrationCost ?? 0),
+            balance: String(sale.balance ?? 0),
+            paymentMode: sale.paymentMode,
+        });
+    };
 
-    const filteredSales = sales.filter(sale => {
-        // DO filter
-        if (doFilter !== 'ALL' && sale.bike?.deliveryOrder?.doNumber !== doFilter) return false;
+    const cancelEdit = () => { setEditId(null); setEditState(null); };
 
-        // Payment mode filter
-        if (paymentFilter !== 'ALL' && sale.paymentMode !== paymentFilter) return false;
+    const saveEdit = async (id: string) => {
+        if (!editState) return;
+        setSaving(id);
+        try {
+            const res = await fetch(`/api/sales/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    price: parseFloat(editState.price) || 0,
+                    receivedCash: parseFloat(editState.receivedCash) || 0,
+                    bankTransferAmount: parseFloat(editState.bankTransferAmount) || 0,
+                    registrationCost: parseFloat(editState.registrationCost) || 0,
+                    balance: parseFloat(editState.balance) || 0,
+                    paymentMode: editState.paymentMode,
+                }),
+            });
+            if (res.ok) { await fetchSales(); cancelEdit(); }
+        } finally { setSaving(null); }
+    };
 
-        // Date range filter
-        if (startDate) {
-            const saleDate = new Date(sale.saleDate);
-            const start = new Date(startDate);
-            if (saleDate < start) return false;
-        }
-        if (endDate) {
-            const saleDate = new Date(sale.saleDate);
-            const end = new Date(endDate);
-            end.setHours(23, 59, 59, 999);
-            if (saleDate > end) return false;
-        }
+    const uniqueDOs = Array.from(new Set(sales.map(s => s.bike?.deliveryOrder?.doNumber).filter(Boolean)));
+    const uniqueModes = Array.from(new Set(sales.map(s => s.paymentMode)));
 
-        // Search query (customer name, CNIC, bike model)
+    const filtered = sales.filter(s => {
+        if (doFilter !== 'ALL' && s.bike?.deliveryOrder?.doNumber !== doFilter) return false;
+        if (paymentFilter !== 'ALL' && s.paymentMode !== paymentFilter) return false;
+        if (startDate && new Date(s.saleDate) < new Date(startDate)) return false;
+        if (endDate) { const e = new Date(endDate); e.setHours(23,59,59,999); if (new Date(s.saleDate) > e) return false; }
         if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            const matchesName = sale.customer?.name?.toLowerCase().includes(query);
-            const matchesCnic = sale.customer?.cnic?.toLowerCase().includes(query);
-            const matchesModel = sale.bike?.model?.toLowerCase().includes(query);
-            if (!matchesName && !matchesCnic && !matchesModel) return false;
+            const q = searchQuery.toLowerCase();
+            if (!s.customer?.name?.toLowerCase().includes(q) &&
+                !s.customer?.cnic?.toLowerCase().includes(q) &&
+                !s.bike?.model?.toLowerCase().includes(q) &&
+                !s.bike?.engineNumber?.toLowerCase().includes(q) &&
+                !s.bike?.chassisNumber?.toLowerCase().includes(q)) return false;
         }
-
         return true;
     });
 
-    const totalRevenue = filteredSales.reduce((sum, sale) => sum + Number(sale.price), 0);
+    const totalRevenue = filtered.reduce((sum, s) => sum + Number(s.price), 0);
+
+    const editInput = (field: keyof EditState, width = '80px') => (
+        <input
+            type={field === 'paymentMode' ? 'text' : 'number'}
+            value={editState?.[field] ?? ''}
+            onChange={e => setEditState(prev => prev ? { ...prev, [field]: e.target.value } : prev)}
+            style={{ width, padding: '0.2rem 0.4rem', fontSize: '0.8rem', border: '1px solid var(--color-primary)', borderRadius: '4px', background: 'var(--color-bg)', color: 'var(--color-text)' }}
+        />
+    );
+
+    const modeSelect = () => (
+        <select value={editState?.paymentMode ?? ''} onChange={e => setEditState(prev => prev ? { ...prev, paymentMode: e.target.value } : prev)}
+            style={{ padding: '0.2rem 0.4rem', fontSize: '0.8rem', border: '1px solid var(--color-primary)', borderRadius: '4px', background: 'var(--color-bg)', color: 'var(--color-text)' }}>
+            {['CASH','CREDIT','BANK','LEASE','ONLINE'].map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+    );
 
     return (
         <DashboardLayout>
             <div className="animate-fade-in">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                     <div>
-                        <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>Sales History</h1>
-                        <p style={{ color: 'var(--color-text-muted)' }}>
-                            View all completed sales
-                        </p>
+                        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Sales History</h1>
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>{filtered.length} of {sales.length} records · Rs. {totalRevenue.toLocaleString()}</p>
                     </div>
-                    <Link href="/sales/new" className="btn btn-success">
-                        ➕ New Sale
-                    </Link>
+                    <Link href="/sales/new" className="btn btn-success" style={{ fontSize: '0.85rem' }}>➕ New Sale</Link>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--spacing-lg)', marginBottom: '2rem' }}>
-                    <div className="card" style={{ padding: 'var(--spacing-lg)' }}>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Sales</p>
-                        <p style={{ fontSize: '2rem', fontWeight: 700 }}>{filteredSales.length}</p>
-                    </div>
-                    <div className="card" style={{ padding: 'var(--spacing-lg)' }}>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Revenue</p>
-                        <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-success)' }}>
-                            {totalRevenue.toLocaleString()} PKR
-                        </p>
+                {/* Filters */}
+                <div className="card" style={{ padding: '1rem', marginBottom: '1.25rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                        <input type="text" className="input" placeholder="Name / CNIC / Model / Engine / Chassis"
+                            value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                        <select className="select" value={doFilter} onChange={e => setDoFilter(e.target.value)}>
+                            <option value="ALL">All DOs</option>
+                            {uniqueDOs.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                        <select className="select" value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)}>
+                            <option value="ALL">All Payment Modes</option>
+                            {uniqueModes.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                        <input type="date" className="input" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                        <input type="date" className="input" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                        <button className="btn btn-secondary" style={{ fontSize: '0.8rem' }}
+                            onClick={() => { setDoFilter('ALL'); setPaymentFilter('ALL'); setSearchQuery(''); setStartDate(''); setEndDate(''); }}>
+                            🔄 Clear
+                        </button>
                     </div>
                 </div>
 
-                <div className="card">
-                    <div style={{ marginBottom: 'var(--spacing-lg)' }}>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: 'var(--spacing-lg)' }}>Filters</h2>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-lg)' }}>
-                            <div>
-                                <label className="label">Search</label>
-                                <input
-                                    type="text"
-                                    className="input"
-                                    placeholder="Customer name, CNIC, Model..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="label">DO Number</label>
-                                <select
-                                    className="select"
-                                    value={doFilter}
-                                    onChange={(e) => setDoFilter(e.target.value)}
-                                >
-                                    <option value="ALL">All DOs</option>
-                                    {uniqueDOs.map(doNum => (
-                                        <option key={doNum} value={doNum}>{doNum}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="label">Payment Mode</label>
-                                <select
-                                    className="select"
-                                    value={paymentFilter}
-                                    onChange={(e) => setPaymentFilter(e.target.value)}
-                                >
-                                    <option value="ALL">All Modes</option>
-                                    {uniquePaymentModes.map(mode => (
-                                        <option key={mode} value={mode}>{mode}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="label">Start Date</label>
-                                <input
-                                    type="date"
-                                    className="input"
-                                    value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="label">End Date</label>
-                                <input
-                                    type="date"
-                                    className="input"
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
-                                />
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: 'var(--spacing-sm)', alignItems: 'center' }}>
-                            <button
-                                onClick={() => {
-                                    setDoFilter('ALL');
-                                    setPaymentFilter('ALL');
-                                    setSearchQuery('');
-                                    setStartDate('');
-                                    setEndDate('');
-                                }}
-                                className="btn btn-secondary"
-                                style={{ padding: 'var(--spacing-sm) var(--spacing-md)', fontSize: '0.875rem' }}
-                            >
-                                🔄 Clear Filters
-                            </button>
-                            <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-                                Showing {filteredSales.length} of {sales.length} sales
-                            </span>
-                        </div>
-                    </div>
-
+                {/* Table */}
+                <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
                     {loading ? (
-                        <div style={{ textAlign: 'center', padding: '3rem' }}>
-                            <div className="spinner" style={{ margin: '0 auto' }}></div>
-                            <p style={{ marginTop: '1rem', color: 'var(--color-text-muted)' }}>Loading sales...</p>
-                        </div>
-                    ) : filteredSales.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>
-                            <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>💰</p>
-                            <p>No sales found matching your filters.</p>
-                        </div>
+                        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>Loading...</div>
+                    ) : filtered.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>No sales found</div>
                     ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                            {filteredSales.map((sale) => (
-                                <div key={sale._id} style={{ padding: '0.75rem 1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-elevated)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <div style={{ flex: '1 1 200px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
-                                            <strong style={{ fontSize: '0.9rem' }}>{sale.customer?.name || 'N/A'}</strong>
-                                            <span className={`badge ${sale.paymentMode === 'CASH' ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
-                                                {sale.paymentMode}
-                                            </span>
-                                        </div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                            <span>{sale.customer?.cnic || ''}</span>
-                                            <span>· {sale.bike?.model} {sale.bike?.color}</span>
-                                            <span>· DO: {sale.bike?.deliveryOrder?.doNumber || 'N/A'}</span>
-                                            <span>· {new Date(sale.saleDate).toLocaleDateString()}</span>
-                                        </div>
-                                        <div style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: '0.2rem' }}>
-                                            {Number(sale.price).toLocaleString()} PKR
-                                        </div>
-                                    </div>
-                                    <Link href={`/sales/${sale._id}`} className="btn btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', flexShrink: 0 }}>
-                                        View Receipt
-                                    </Link>
-                                </div>
-                            ))}
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr>
+                                        {['#','Date','Rcpt','Customer','CNIC','Mobile','Model','Color','Engine No','Chassis No','DO','Mode','Price','Cash Rcvd','Bank Xfer','Reg','Balance','Actions'].map(h => (
+                                            <th key={h} style={thS}>{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filtered.map((sale, idx) => {
+                                        const isEditing = editId === sale._id;
+                                        const rowBg = idx % 2 === 0 ? 'transparent' : 'var(--color-bg-elevated)';
+                                        return (
+                                            <tr key={sale._id} style={{ borderBottom: '1px solid var(--color-border)', background: isEditing ? 'rgba(59,130,246,0.05)' : rowBg }}>
+                                                <td style={{ ...tdS, color: 'var(--color-text-muted)', fontWeight: 600 }}>{idx + 1}</td>
+                                                <td style={tdS}>{new Date(sale.saleDate).toLocaleDateString('en-PK', { day:'numeric', month:'short', year:'2-digit' })}</td>
+                                                <td style={{ ...tdS, color: 'var(--color-text-muted)' }}>{sale.receiptNumber ?? '—'}</td>
+                                                <td style={{ ...tdS, fontWeight: 600, minWidth: '120px' }}>{sale.customer?.name ?? '—'}</td>
+                                                <td style={{ ...tdS, color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>{sale.customer?.cnic ?? '—'}</td>
+                                                <td style={{ ...tdS, color: 'var(--color-text-muted)' }}>{sale.customer?.mobile ?? '—'}</td>
+                                                <td style={{ ...tdS, fontWeight: 600 }}>{sale.bike?.model ?? '—'}</td>
+                                                <td style={tdS}>{sale.bike?.color ?? '—'}</td>
+                                                <td style={{ ...tdS, fontSize: '0.75rem', fontFamily: 'monospace' }}>{sale.bike?.engineNumber ?? '—'}</td>
+                                                <td style={{ ...tdS, fontSize: '0.75rem', fontFamily: 'monospace' }}>{sale.bike?.chassisNumber ?? '—'}</td>
+                                                <td style={{ ...tdS, color: 'var(--color-text-muted)' }}>{sale.bike?.deliveryOrder?.doNumber ?? '—'}</td>
+
+                                                {/* Editable fields */}
+                                                <td style={tdS}>{isEditing ? modeSelect() : (
+                                                    <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 700,
+                                                        background: sale.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : sale.paymentMode === 'CASH' ? 'rgba(16,185,129,0.12)' : 'rgba(59,130,246,0.12)',
+                                                        color: sale.paymentMode === 'CREDIT' ? '#ef4444' : sale.paymentMode === 'CASH' ? '#10b981' : '#3b82f6' }}>
+                                                        {sale.paymentMode}
+                                                    </span>
+                                                )}</td>
+                                                <td style={{ ...tdS, fontWeight: 700, color: 'var(--color-success)' }}>{isEditing ? editInput('price', '90px') : `Rs. ${Number(sale.price).toLocaleString()}`}</td>
+                                                <td style={{ ...tdS, color: '#10b981' }}>{isEditing ? editInput('receivedCash', '90px') : `Rs. ${Number(sale.receivedCash ?? 0).toLocaleString()}`}</td>
+                                                <td style={{ ...tdS, color: '#3b82f6' }}>{isEditing ? editInput('bankTransferAmount', '90px') : (sale.bankTransferAmount > 0 ? `Rs. ${Number(sale.bankTransferAmount).toLocaleString()}` : '—')}</td>
+                                                <td style={{ ...tdS, color: '#8b5cf6' }}>{isEditing ? editInput('registrationCost', '80px') : (sale.registrationCost ? `Rs. ${Number(sale.registrationCost).toLocaleString()}` : '—')}</td>
+                                                <td style={{ ...tdS, color: (sale.balance ?? 0) > 0 ? '#ef4444' : 'var(--color-text-muted)' }}>{isEditing ? editInput('balance', '80px') : ((sale.balance ?? 0) > 0 ? `Rs. ${Number(sale.balance).toLocaleString()}` : '—')}</td>
+
+                                                <td style={{ ...tdS, minWidth: '110px' }}>
+                                                    <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                                        {isEditing ? (
+                                                            <>
+                                                                <button className="btn btn-success" style={{ padding: '0.25rem 0.5rem', fontSize: '0.72rem' }}
+                                                                    disabled={saving === sale._id} onClick={() => saveEdit(sale._id)}>
+                                                                    {saving === sale._id ? '⏳' : '💾 Save'}
+                                                                </button>
+                                                                <button className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.72rem' }}
+                                                                    onClick={cancelEdit}>✕</button>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <button className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.72rem' }}
+                                                                    onClick={() => startEdit(sale)}>✏️ Edit</button>
+                                                                <Link href={`/sales/${sale._id}`} className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.72rem' }}>🖨️</Link>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
                     )}
                 </div>
