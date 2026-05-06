@@ -36,7 +36,7 @@ interface Stats {
         sales: number; revenue: number; workshopRevenue: number; workshopProfit: number;
         bikeProfit: number; regProfit: number; profit: number; cashReceived: number;
         registrationCollected: number; totalCashIn: number; cashToDeposit: number;
-        expenseCash: number; cashInHand: number; bankTransfer: number;
+        expenseCash: number; cashInHand: number; bankTransfer: number; cashDepositOnly: number;
     };
     allTime: { totalBikes: number; availableBikes: number; soldBikes: number };
     creditSales: CreditSale[];
@@ -249,7 +249,7 @@ export default function DashboardPage() {
                                 </div>
                                 <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.3rem', display: 'flex', justifyContent: 'space-between' }}>
                                     <span style={{ color: 'var(--color-text-muted)' }}>Honda Deposit</span>
-                                    <strong style={{ color: '#ef4444' }}>− Rs. {(sinceStats?.cashToDeposit ?? 0).toLocaleString()}</strong>
+                                    <strong style={{ color: '#ef4444' }}>− Rs. {(sinceStats?.cashDepositOnly ?? 0).toLocaleString()}</strong>
                                 </div>
                             </div>
                             <button

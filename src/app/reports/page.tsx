@@ -20,6 +20,7 @@ interface ReportData {
         cashToDeposit: number;
         cashInHand: number;
         expenseMargin: number;
+        cashDepositOnly: number;
         startDate: string;
         endDate: string;
     };
@@ -199,7 +200,7 @@ export default function ReportsPage() {
                                 <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>Cash Tracking</div>
                                 <StatRow label="Bike Cash Received" value={`Rs. ${(r?.cashReceived ?? 0).toLocaleString()}`} color="var(--color-success)" />
                                 <StatRow label="Bank Transfer" value={`Rs. ${(r?.bankTransfer ?? 0).toLocaleString()}`} color="#3b82f6" />
-                                <StatRow label="Deposit to Honda" value={`Rs. ${(r?.cashToDeposit ?? 0).toLocaleString()}`} color="#ef4444" sub="Book price of bikes" />
+                                <StatRow label="Deposit to Honda" value={`Rs. ${(r?.cashDepositOnly ?? 0).toLocaleString()}`} color="#ef4444" sub="Cash sales only" />
                                 <StatRow label="Cash in Hand" value={`Rs. ${(r?.cashInHand ?? 0).toLocaleString()}`} color="#10b981" sub="After Honda deposit" />
                             </div>
 

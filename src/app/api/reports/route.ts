@@ -153,6 +153,12 @@ export async function GET(request: NextRequest) {
             const model = sale.bikeId?.model || '';
             return s + Number(sale.bikeId?.purchasePrice || BIKE_BOOK_PRICES[model] || 0);
         }, 0);
+        // Honda deposit only for sales where cash was actually received
+        const rangeCashDepositOnly = filteredSales.reduce((s, sale: any) => {
+            if (Number(sale.receivedCash || 0) <= 0) return s;
+            const model = sale.bikeId?.model || '';
+            return s + Number(sale.bikeId?.purchasePrice || BIKE_BOOK_PRICES[model] || 0);
+        }, 0);
         const rangeCashInHand = Math.max(0, rangeTotalCashIn - rangeCashToDeposit - expenseCash);
 
         const rangeBikeProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).bikeProfit, 0) + rangeAdvanceMargin;
@@ -237,6 +243,7 @@ export async function GET(request: NextRequest) {
                 expenseCash: expenseCash,
                 expenseMargin: expenseMargin,
                 cashInHand: rangeCashInHand,
+                cashDepositOnly: rangeCashDepositOnly,
                 startDate: filterStartDate,
                 endDate: filterEndDate,
             },

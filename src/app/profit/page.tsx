@@ -8,7 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 interface RangeStats {
     bikeProfit: number; advanceMargin: number; regProfit: number; workshopProfit: number; profit: number;
     sales: number; cashReceived: number; cashInHand: number; expenseMargin: number;
-    registrationCollected: number; totalCashIn: number; bankTransfer: number; cashToDeposit: number; expenseCash: number;
+    registrationCollected: number; totalCashIn: number; bankTransfer: number; cashToDeposit: number; expenseCash: number; cashDepositOnly: number;
 }
 
 interface Stats {
@@ -232,7 +232,7 @@ export default function ProfitPage() {
                                 <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
                                     <span>Cash received: Rs. {(sinceCashStats?.cashReceived ?? 0).toLocaleString()}</span>
                                     <span>Registration: Rs. {(sinceCashStats?.registrationCollected ?? 0).toLocaleString()}</span>
-                                    <span>Honda deposit: − Rs. {(sinceCashStats?.cashToDeposit ?? 0).toLocaleString()}</span>
+                                    <span>Honda deposit: − Rs. {(sinceCashStats?.cashDepositOnly ?? 0).toLocaleString()}</span>
                                     {(sinceCashStats?.expenseCash ?? 0) > 0 && <span>Expenses: − Rs. {(sinceCashStats?.expenseCash ?? 0).toLocaleString()}</span>}
                                 </div>
                                 <button onClick={handleCollectCash} disabled={collectingCash || !hasCashToDeposit}
@@ -247,7 +247,7 @@ export default function ProfitPage() {
                                     <span>Cash from sales: Rs. {(monthCashStats?.cashReceived ?? 0).toLocaleString()}</span>
                                     <span>Registration collected: Rs. {(monthCashStats?.registrationCollected ?? 0).toLocaleString()}</span>
                                     <span>Bank transfers: Rs. {(monthCashStats?.bankTransfer ?? 0).toLocaleString()}</span>
-                                    <span>Honda deposit: − Rs. {(monthCashStats?.cashToDeposit ?? 0).toLocaleString()}</span>
+                                    <span>Honda deposit: − Rs. {(monthCashStats?.cashDepositOnly ?? 0).toLocaleString()}</span>
                                     {(monthCashStats?.expenseCash ?? 0) > 0 && <span>Cash expenses: − Rs. {(monthCashStats?.expenseCash ?? 0).toLocaleString()}</span>}
                                 </div>
                             </div>
