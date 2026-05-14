@@ -181,8 +181,8 @@ export default function SalesPage() {
                     ) : filtered.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>No sales found</div>
                     ) : (
-                        <div style={{ overflowX: 'auto', overflowY: 'visible', width: '100%' }}>
-                            <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse' }}>
+                        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
+                            <table style={{ width: 'max-content', minWidth: '100%', maxWidth: 'none', borderCollapse: 'collapse' }}>
                                 <thead>
                                     <tr>
                                         {['#','Date','Rcpt','Customer','CNIC','Mobile','Model','Color','Engine No','Chassis No','DO','Mode','Price','Cash Rcvd','Bank Xfer','Reg','Balance','Actions'].map(h => (
