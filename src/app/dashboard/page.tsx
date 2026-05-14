@@ -61,10 +61,13 @@ export default function DashboardPage() {
     const [sinceStats, setSinceStats] = useState<Stats['range'] | null>(null);
     const [lastDeposit, setLastDeposit] = useState<CashDeposit | null>(null);
     const [depositing, setDepositing] = useState(false);
+    const [manualCash, setManualCash] = useState('');
     const [loading, setLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState(false);
     const [filters, setFilters] = useState({ cnic: '', engineNumber: '', chassisNumber: '', doNumber: '' });
     const [showBreakdown, setShowBreakdown] = useState(false);
+    const [yesterdayStats, setYesterdayStats] = useState<Stats | null>(null);
+    const [showYesterdayBreakdown, setShowYesterdayBreakdown] = useState(false);
 
     const fetchData = async (searchFilters = filters) => {
         setLoading(true);
@@ -87,6 +90,13 @@ export default function DashboardPage() {
 
             const sinceRes = await fetch(`/api/reports?startDate=${sinceDate}&endDate=${now}`);
             if (sinceRes.ok) { const d = await sinceRes.json(); setSinceStats(d.range); }
+
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yStart = new Date(yesterday); yStart.setHours(0, 0, 0, 0);
+            const yEnd = new Date(yesterday); yEnd.setHours(23, 59, 59, 999);
+            const yRes = await fetch(`/api/reports?startDate=${yStart.toISOString()}&endDate=${yEnd.toISOString()}`);
+            if (yRes.ok) setYesterdayStats(await yRes.json());
         } finally {
             setLoading(false);
         }
@@ -94,7 +104,8 @@ export default function DashboardPage() {
 
     const handleDeposit = async () => {
         if (!sinceStats) return;
-        const cashInHand = sinceStats.cashReceived ?? 0;
+        const extra = Number(manualCash) || 0;
+        const cashInHand = (sinceStats.cashReceived ?? 0) + extra;
         if (!confirm(`Mark Rs. ${cashInHand.toLocaleString()} as deposited to bank? Cash counter resets to zero.`)) return;
         setDepositing(true);
         try {
@@ -103,6 +114,7 @@ export default function DashboardPage() {
                 body: JSON.stringify({ amount: cashInHand }),
             });
             showToast('Cash marked as deposited', 'success');
+            setManualCash('');
             await fetchData();
         } catch {
             showToast('Failed to save deposit', 'error');
@@ -232,7 +244,7 @@ export default function DashboardPage() {
                                 )}
                             </div>
                             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b', marginBottom: '0.75rem' }}>
-                                Rs. {(sinceStats?.cashReceived ?? 0).toLocaleString()}
+                                Rs. {((sinceStats?.cashReceived ?? 0) + (Number(manualCash) || 0)).toLocaleString()}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.82rem', marginBottom: '0.75rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -251,10 +263,27 @@ export default function DashboardPage() {
                                     <span style={{ color: 'var(--color-text-muted)' }}>Honda Deposit</span>
                                     <strong style={{ color: '#ef4444' }}>− Rs. {(sinceStats?.cashDepositOnly ?? 0).toLocaleString()}</strong>
                                 </div>
+                                {(Number(manualCash) || 0) > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#f59e0b' }}>Manual Addition</span>
+                                        <strong style={{ color: '#f59e0b' }}>+ Rs. {(Number(manualCash)).toLocaleString()}</strong>
+                                    </div>
+                                )}
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    placeholder="Add extra cash (optional)"
+                                    value={manualCash}
+                                    onChange={e => setManualCash(e.target.value)}
+                                    style={{ flex: 1, fontSize: '0.8rem', padding: '0.35rem 0.6rem' }}
+                                    min="0"
+                                />
                             </div>
                             <button
                                 onClick={handleDeposit}
-                                disabled={depositing || (sinceStats?.cashReceived ?? 0) <= 0}
+                                disabled={depositing || ((sinceStats?.cashReceived ?? 0) + (Number(manualCash) || 0)) <= 0}
                                 className="btn"
                                 style={{ width: '100%', fontSize: '0.8rem', padding: '0.4rem', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 700, cursor: depositing ? 'not-allowed' : 'pointer', opacity: (sinceStats?.cashReceived ?? 0) <= 0 ? 0.5 : 1 }}>
                                 {depositing ? '⏳ Saving...' : '🏦 Deposit to Bank'}
@@ -290,21 +319,23 @@ export default function DashboardPage() {
                     </div>
                 )}
 
-                {/* ── Cash Breakdown Debug Table ── */}
-                {(stats?.cashBreakdown?.length ?? 0) > 0 && (
-                    <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showBreakdown ? '0.75rem' : 0 }}>
+                {/* ── Cash Breakdown Tables ── */}
+                {[
+                    { label: 'Today', data: stats?.cashBreakdown, show: showBreakdown, toggle: () => setShowBreakdown(p => !p) },
+                    { label: 'Yesterday', data: yesterdayStats?.cashBreakdown, show: showYesterdayBreakdown, toggle: () => setShowYesterdayBreakdown(p => !p) },
+                ].map(({ label, data, show, toggle }) => (data?.length ?? 0) > 0 && (
+                    <div key={label} className="card" style={{ marginBottom: '1.25rem', padding: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: show ? '0.75rem' : 0 }}>
                             <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)' }}>
-                                Cash &amp; Margin Breakdown ({stats!.cashBreakdown.length} entries)
+                                {label} — Cash &amp; Margin Breakdown ({data!.length} sales)
                             </div>
-                            <button className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-                                onClick={() => setShowBreakdown(p => !p)}>
-                                {showBreakdown ? 'Hide ▲' : 'Show ▼'}
+                            <button className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }} onClick={toggle}>
+                                {show ? 'Hide ▲' : 'Show ▼'}
                             </button>
                         </div>
-                        {showBreakdown && (
+                        {show && (
                             <div style={{ overflowX: 'auto' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                                <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
                                     <thead>
                                         <tr style={{ background: 'var(--color-bg-elevated)' }}>
                                             {['#', 'Model', 'Mode', 'Sale Price', 'Std Price', 'Rcvd Cash', 'Bank Xfer', 'Base Margin', 'Extra', 'Bike Profit', 'Reg Profit', 'Total Profit'].map(h => (
@@ -313,9 +344,8 @@ export default function DashboardPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {stats!.cashBreakdown.map((row, i) => {
-                                            const totalRcvd = row.receivedCash + row.bankTransferAmount;
-                                            const extra = Math.max(0, totalRcvd - row.standardPrice);
+                                        {data!.map((row, i) => {
+                                            const extra = Math.max(0, row.receivedCash + row.bankTransferAmount - row.standardPrice);
                                             return (
                                                 <tr key={i} style={{ borderBottom: '1px solid var(--color-border)', background: i % 2 === 0 ? 'transparent' : 'var(--color-bg-elevated)' }}>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-text-muted)' }}>{i + 1}</td>
@@ -343,34 +373,20 @@ export default function DashboardPage() {
                                     <tfoot>
                                         <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 700, background: 'var(--color-bg-elevated)' }}>
                                             <td colSpan={5} style={{ padding: '0.5rem 0.6rem', textAlign: 'right', fontSize: '0.8rem' }}>TOTALS</td>
-                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#10b981' }}>
-                                                {stats!.cashBreakdown.reduce((s, r) => s + r.receivedCash, 0).toLocaleString()}
-                                            </td>
-                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#3b82f6' }}>
-                                                {stats!.cashBreakdown.reduce((s, r) => s + r.bankTransferAmount, 0).toLocaleString()}
-                                            </td>
-                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>
-                                                {stats!.cashBreakdown.reduce((s, r) => s + r.baseMargin, 0).toLocaleString()}
-                                            </td>
-                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>
-                                                {stats!.cashBreakdown.reduce((s, r) => s + Math.max(0, (r.receivedCash + r.bankTransferAmount) - r.standardPrice), 0).toLocaleString()}
-                                            </td>
-                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: 'var(--color-success)' }}>
-                                                {stats!.cashBreakdown.reduce((s, r) => s + r.bikeProfit, 0).toLocaleString()}
-                                            </td>
-                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: 'var(--color-primary)' }}>
-                                                {stats!.cashBreakdown.reduce((s, r) => s + r.regProfit, 0).toLocaleString()}
-                                            </td>
-                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#10b981' }}>
-                                                {stats!.cashBreakdown.reduce((s, r) => s + r.totalProfit, 0).toLocaleString()}
-                                            </td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#10b981' }}>{data!.reduce((s, r) => s + r.receivedCash, 0).toLocaleString()}</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#3b82f6' }}>{data!.reduce((s, r) => s + r.bankTransferAmount, 0).toLocaleString()}</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>{data!.reduce((s, r) => s + r.baseMargin, 0).toLocaleString()}</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>{data!.reduce((s, r) => s + Math.max(0, r.receivedCash + r.bankTransferAmount - r.standardPrice), 0).toLocaleString()}</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: 'var(--color-success)' }}>{data!.reduce((s, r) => s + r.bikeProfit, 0).toLocaleString()}</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: 'var(--color-primary)' }}>{data!.reduce((s, r) => s + r.regProfit, 0).toLocaleString()}</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#10b981' }}>{data!.reduce((s, r) => s + r.totalProfit, 0).toLocaleString()}</td>
                                         </tr>
                                     </tfoot>
                                 </table>
                             </div>
                         )}
                     </div>
-                )}
+                ))}
 
                 {/* ── Search ── */}
                 <div className="card" style={{ marginBottom: '1.25rem', padding: '1rem' }}>
