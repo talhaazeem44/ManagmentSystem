@@ -73,9 +73,13 @@ export default function DashboardPage() {
         setLoading(true);
         try {
             const now = new Date().toISOString();
+            const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+            const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+            const dateParams = { startDate: todayStart.toISOString(), endDate: todayEnd.toISOString() };
+            const searchParams = new URLSearchParams({ ...dateParams, ...Object.fromEntries(Object.entries(searchFilters).filter(([, v]) => v)) });
             const [statsRes, recordsRes, cashColRes] = await Promise.all([
                 fetch('/api/reports'),
-                fetch(`/api/sales?${new URLSearchParams(Object.fromEntries(Object.entries(searchFilters).filter(([, v]) => v))).toString()}`),
+                fetch(`/api/sales?${searchParams}`),
                 fetch('/api/cash-collections'),
             ]);
             if (statsRes.ok) setStats(await statsRes.json());
@@ -211,7 +215,8 @@ export default function DashboardPage() {
                     <div className="card" style={{ padding: '1.25rem' }}>
                         <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>Sales &amp; Margin — Last 7 Days</div>
                         {stats?.chartData ? (
-                            <ResponsiveContainer width="100%" height={200}>
+                            <div style={{ width: '100%', height: 200 }}>
+                            <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={stats.chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                                     <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
@@ -227,6 +232,7 @@ export default function DashboardPage() {
                                     <Bar dataKey="sales" fill="hsl(0,85%,45%)" radius={[4, 4, 0, 0]} name="sales" />
                                 </BarChart>
                             </ResponsiveContainer>
+                            </div>
                         ) : (
                             <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>Loading chart...</div>
                         )}
@@ -416,7 +422,7 @@ export default function DashboardPage() {
 
                 {/* ── Sale Records ── */}
                 <div className="card" style={{ padding: '1rem' }}>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.75rem' }}>Sale Records</div>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.75rem' }}>Today's Sales</div>
                     {loading ? (
                         <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>Loading...</div>
                     ) : records.length === 0 ? (

@@ -456,6 +456,7 @@ a {
 
   /* Force any inline grid with 2+ columns to stack */
   [style*="grid-template-columns: 1fr 2fr"],
+  [style*="grid-template-columns: 2fr 1fr"],
   [style*="grid-template-columns: 2fr 3fr"],
   [style*="grid-template-columns: 1fr 1fr"],
   [style*="grid-template-columns: repeat(3, 1fr)"],

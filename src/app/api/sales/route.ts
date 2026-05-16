@@ -131,6 +131,8 @@ export async function GET(request: NextRequest) {
         const engineNumber = searchParams.get('engineNumber');
         const chassisNumber = searchParams.get('chassisNumber');
         const doNumber = searchParams.get('doNumber');
+        const startDate = searchParams.get('startDate');
+        const endDate = searchParams.get('endDate');
 
         // Build filters
         let bikeFilter: any = {};
@@ -162,6 +164,11 @@ export async function GET(request: NextRequest) {
         let saleFilter: any = {};
         if (Object.keys(bikeFilter).length > 0) saleFilter.bikeId = { $in: bikeIds };
         if (Object.keys(customerFilter).length > 0) saleFilter.customerId = { $in: customerIds };
+        if (startDate || endDate) {
+            saleFilter.saleDate = {};
+            if (startDate) saleFilter.saleDate.$gte = new Date(startDate);
+            if (endDate) saleFilter.saleDate.$lte = new Date(endDate);
+        }
 
         const sales = await Sale.find(saleFilter).sort({ saleDate: -1 }).lean();
 
