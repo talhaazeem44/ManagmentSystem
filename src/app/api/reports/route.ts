@@ -28,7 +28,7 @@ const calcSaleMargin = (sale: any) => {
     const baseMargin = BIKE_UNIT_MARGINS[model] || 0;
     // Bank transfer counts the same as received cash
     const totalReceived = (Number(sale.receivedCash || 0) + Number(sale.bankTransferAmount || 0)) || Number(sale.price || 0);
-    const extraCash = Math.max(0, totalReceived - standardPrice);
+    const extraCash = totalReceived - standardPrice;
     const bikeProfit = baseMargin + extraCash;
 
     const regCharged = Number(sale.registrationCost || 0);
