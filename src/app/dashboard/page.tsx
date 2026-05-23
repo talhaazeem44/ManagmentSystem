@@ -68,6 +68,10 @@ export default function DashboardPage() {
     const [showBreakdown, setShowBreakdown] = useState(false);
     const [yesterdayStats, setYesterdayStats] = useState<Stats | null>(null);
     const [showYesterdayBreakdown, setShowYesterdayBreakdown] = useState(false);
+    const [customDate, setCustomDate] = useState('');
+    const [customDateStats, setCustomDateStats] = useState<Stats | null>(null);
+    const [showCustomBreakdown, setShowCustomBreakdown] = useState(false);
+    const [loadingCustom, setLoadingCustom] = useState(false);
 
     const fetchData = async (searchFilters = filters) => {
         setLoading(true);
@@ -124,6 +128,21 @@ export default function DashboardPage() {
             showToast('Failed to save deposit', 'error');
         } finally {
             setDepositing(false);
+        }
+    };
+
+    const fetchCustomDateBreakdown = async (date: string) => {
+        if (!date) { setCustomDateStats(null); return; }
+        setLoadingCustom(true);
+        try {
+            const d = new Date(date);
+            const start = new Date(d); start.setHours(0, 0, 0, 0);
+            const end = new Date(d); end.setHours(23, 59, 59, 999);
+            const res = await fetch(`/api/reports?startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
+            if (res.ok) setCustomDateStats(await res.json());
+            else setCustomDateStats(null);
+        } finally {
+            setLoadingCustom(false);
         }
     };
 
@@ -324,6 +343,95 @@ export default function DashboardPage() {
                         </div>
                     </div>
                 )}
+
+                {/* ── Cash & Margin Breakdown Date Filter ── */}
+                <div className="card" style={{ marginBottom: '1.25rem', padding: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                            Cash &amp; Margin — Filter by Date
+                        </span>
+                        <input
+                            type="date"
+                            className="input"
+                            style={{ fontSize: '0.8rem', padding: '0.35rem 0.6rem', maxWidth: '180px' }}
+                            value={customDate}
+                            max={new Date().toISOString().split('T')[0]}
+                            onChange={e => {
+                                setCustomDate(e.target.value);
+                                setShowCustomBreakdown(true);
+                                fetchCustomDateBreakdown(e.target.value);
+                            }}
+                        />
+                        {customDate && !loadingCustom && (
+                            <button className="btn btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
+                                onClick={() => { setCustomDate(''); setCustomDateStats(null); setShowCustomBreakdown(false); }}>
+                                Clear
+                            </button>
+                        )}
+                        {loadingCustom && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Loading...</span>}
+                        {customDate && !loadingCustom && (customDateStats?.cashBreakdown?.length ?? 0) === 0 && (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>No sales on this date</span>
+                        )}
+                    </div>
+
+                    {showCustomBreakdown && (customDateStats?.cashBreakdown?.length ?? 0) > 0 && (
+                        <div style={{ marginTop: '1rem' }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
+                                {new Date(customDate).toLocaleDateString('en-PK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} — {customDateStats!.cashBreakdown.length} sale{customDateStats!.cashBreakdown.length !== 1 ? 's' : ''}
+                            </div>
+                            <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                                    <thead>
+                                        <tr style={{ background: 'var(--color-bg-elevated)' }}>
+                                            {['#', 'Model', 'Mode', 'Sale Price', 'Std Price', 'Rcvd Cash', 'Bank Xfer', 'Base Margin', 'Extra', 'Bike Profit', 'Reg Profit', 'Total Profit'].map(h => (
+                                                <th key={h} style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 700, color: 'var(--color-text-muted)', whiteSpace: 'nowrap', borderBottom: '1px solid var(--color-border)' }}>{h}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {customDateStats!.cashBreakdown.map((row, i) => {
+                                            const extra = row.receivedCash + row.bankTransferAmount - row.standardPrice;
+                                            return (
+                                                <tr key={i} style={{ borderBottom: '1px solid var(--color-border)', background: i % 2 === 0 ? 'transparent' : 'var(--color-bg-elevated)' }}>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-text-muted)' }}>{i + 1}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 600 }}>{row.bikeModel}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right' }}>
+                                                        <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px',
+                                                            background: row.paymentMode === 'ADVANCE' ? 'rgba(245,158,11,0.15)' : row.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)',
+                                                            color: row.paymentMode === 'ADVANCE' ? '#f59e0b' : row.paymentMode === 'CREDIT' ? '#ef4444' : '#10b981' }}>
+                                                            {row.paymentMode}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right' }}>{row.price.toLocaleString()}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-text-muted)' }}>{row.standardPrice.toLocaleString()}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: '#10b981' }}>{row.receivedCash.toLocaleString()}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: '#3b82f6' }}>{row.bankTransferAmount > 0 ? row.bankTransferAmount.toLocaleString() : '-'}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-text-muted)' }}>{row.baseMargin.toLocaleString()}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: extra > 0 ? '#10b981' : extra < 0 ? '#ef4444' : 'var(--color-text-muted)' }}>{extra > 0 ? `+${extra.toLocaleString()}` : extra < 0 ? extra.toLocaleString() : '-'}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 700, color: 'var(--color-success)' }}>{row.bikeProfit.toLocaleString()}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-primary)' }}>{row.regProfit > 0 ? row.regProfit.toLocaleString() : '-'}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 700, color: '#10b981' }}>{row.totalProfit.toLocaleString()}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 700, background: 'var(--color-bg-elevated)' }}>
+                                            <td colSpan={5} style={{ padding: '0.5rem 0.6rem', textAlign: 'right', fontSize: '0.8rem' }}>TOTALS</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#10b981' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.receivedCash, 0).toLocaleString()}</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#3b82f6' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.bankTransferAmount, 0).toLocaleString()}</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.baseMargin, 0).toLocaleString()}</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + (r.receivedCash + r.bankTransferAmount - r.standardPrice), 0).toLocaleString()}</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: 'var(--color-success)' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.bikeProfit, 0).toLocaleString()}</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: 'var(--color-primary)' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.regProfit, 0).toLocaleString()}</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#10b981' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.totalProfit, 0).toLocaleString()}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 {/* ── Cash Breakdown Tables ── */}
                 {[
