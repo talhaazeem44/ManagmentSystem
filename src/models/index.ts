@@ -275,7 +275,7 @@ export interface IExpense {
     _id?: string;
     amount: number;
     description: string;
-    deductFrom: 'MARGIN' | 'CASH';
+    deductFrom: 'MARGIN' | 'CASH' | 'WORKSHOP';
     date: Date;
     createdAt?: Date;
 }
@@ -283,7 +283,7 @@ export interface IExpense {
 const ExpenseSchema = new Schema<IExpense>({
     amount: { type: Number, required: true },
     description: { type: String, required: true },
-    deductFrom: { type: String, enum: ['MARGIN', 'CASH'], required: true },
+    deductFrom: { type: String, enum: ['MARGIN', 'CASH', 'WORKSHOP'], required: true },
     date: { type: Date, default: Date.now },
 }, { timestamps: true });
 
@@ -320,3 +320,20 @@ const CashCollectionSchema = new Schema<ICashCollection>({
 }, { timestamps: true });
 
 export const CashCollection: Model<ICashCollection> = models.CashCollection || mongoose.model<ICashCollection>('CashCollection', CashCollectionSchema);
+
+// ── Workshop Deposit ──────────────────────────────────────────────────────────
+export interface IWorkshopDeposit {
+    _id?: string;
+    amount: number;
+    note?: string;
+    date: Date;
+    createdAt?: Date;
+}
+
+const WorkshopDepositSchema = new Schema<IWorkshopDeposit>({
+    amount: { type: Number, required: true },
+    note: { type: String },
+    date: { type: Date, default: Date.now },
+}, { timestamps: true });
+
+export const WorkshopDeposit: Model<IWorkshopDeposit> = models.WorkshopDeposit || mongoose.model<IWorkshopDeposit>('WorkshopDeposit', WorkshopDepositSchema);
