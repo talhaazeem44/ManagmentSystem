@@ -70,22 +70,6 @@ function getRangeDates(filter: QuickFilter): { start: Date; end: Date } {
     return { start, end: new Date(now) };
 }
 
-function Row({ label, value, color, bold }: { label: string; value: string; color?: string; bold?: boolean }) {
-    return (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0', borderBottom: '1px solid var(--color-border)' }}>
-            <span style={{ fontSize: '0.875rem' }}>{label}</span>
-            <span style={{ fontWeight: bold ? 800 : 700, fontSize: '0.95rem', color: color || 'inherit' }}>{value}</span>
-        </div>
-    );
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-    return (
-        <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '0.6rem', letterSpacing: '0.06em' }}>
-            {children}
-        </div>
-    );
-}
 
 export default function ReportsPage() {
     const [data, setData] = useState<ReportData | null>(null);
@@ -126,7 +110,6 @@ export default function ReportsPage() {
     };
 
     const r = data?.range;
-    const a = data?.allTime;
 
     const rangeLabel = (() => {
         if (activeFilter === 'today') return `Today — ${new Date().toLocaleDateString('en-PK', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}`;
@@ -137,50 +120,18 @@ export default function ReportsPage() {
     })();
 
     const exportCSV = () => {
-        if (!r || !a) return;
+        if (!r) return;
         const rows: (string | number)[][] = [
             ['Naeem Autos — Honda DMS Report'],
             ['Period', rangeLabel],
             ['Generated', new Date().toLocaleString('en-PK')],
             [],
-            ['=== SALES & REVENUE ==='],
-            ['Item', 'Value (Rs.)'],
-            ['Bikes Sold', r.sales],
-            ['Bike Revenue', r.revenue],
-            ['Workshop Revenue', r.workshopRevenue],
-            ['Registration Collected', r.registrationCollected],
-            [],
-            ['=== CASH TRACKING ==='],
-            ['Item', 'Value (Rs.)'],
-            ['Cash Received', r.cashReceived],
-            ['Bank Transfer', r.bankTransfer],
-            ['Total Cash In', r.cashReceived + r.bankTransfer + r.registrationCollected],
-            [],
-            ['=== PROFIT BREAKDOWN ==='],
-            ['Item', 'Value (Rs.)'],
-            ['Bike Margin (Sales)', r.bikeProfit - r.advanceMargin],
-            ['Advance Booking Margin', r.advanceMargin],
-            ['Registration Profit', r.regProfit],
-            ['Workshop Profit', r.workshopProfit],
-            ...(r.expenseMargin > 0 ? [['Expenses Deducted', -r.expenseMargin]] : []),
-            ['TOTAL PROFIT', r.profit],
-            [],
-            ['=== ALL-TIME ==='],
             ['Item', 'Value'],
-            ['Total Bikes Sold', a.soldBikes],
-            ['Available in Stock', a.availableBikes],
-            ['Total Revenue (Rs.)', a.totalRevenue],
-            ['Workshop Revenue (Rs.)', a.totalWorkshopRevenue],
-            ['Total Profit (Rs.)', a.totalProfit],
+            ['Bikes Sold', r.sales],
+            ['Bike Margin', r.bikeProfit - r.advanceMargin],
+            ['Registration Margin', r.regProfit],
+            ['Workshop Sale', r.workshopRevenue],
         ];
-
-        if (data?.deliveryOrders?.length) {
-            rows.push([], ['=== DELIVERY ORDERS ==='], ['DO Number', 'Date', 'Dealer', 'Total Bikes', 'Sold', 'Remaining', '% Sold']);
-            data.deliveryOrders.forEach(d => {
-                const pct = d.totalBikes > 0 ? ((d.soldBikes / d.totalBikes) * 100).toFixed(0) + '%' : '0%';
-                rows.push([d.doNumber, new Date(d.date).toLocaleDateString('en-PK'), d.dealerName, d.totalBikes, d.soldBikes, d.remainingBikes, pct]);
-            });
-        }
 
         const csv = rows.map(row =>
             row.map(cell => (typeof cell === 'string' && (cell.includes(',') || cell.includes('"')) ? `"${cell.replace(/"/g, '""')}"` : String(cell ?? ''))).join(',')
@@ -251,107 +202,35 @@ export default function ReportsPage() {
                     </div>
                 ) : (
                     <>
-                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '1rem', letterSpacing: '0.05em' }}>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '1.25rem', letterSpacing: '0.05em' }}>
                             {rangeLabel}
                         </div>
 
-                        <div className="grid-2" style={{ marginBottom: '1.25rem' }}>
-
-                            {/* Sales & Revenue */}
-                            <div className="card">
-                                <SectionTitle>Sales & Revenue</SectionTitle>
-                                <Row label="Bikes Sold" value={String(r?.sales ?? 0)} color="var(--color-success)" bold />
-                                <Row label="Bike Revenue" value={`Rs. ${(r?.revenue ?? 0).toLocaleString()}`} />
-                                <Row label="Workshop Revenue" value={`Rs. ${(r?.workshopRevenue ?? 0).toLocaleString()}`} color="#f59e0b" />
-                                <Row label="Registration Collected" value={`Rs. ${(r?.registrationCollected ?? 0).toLocaleString()}`} color="#8b5cf6" />
+                        <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
+                            <div className="card" style={{ padding: '1.5rem', borderLeft: '4px solid var(--color-success)' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.5rem' }}>Bikes Sold</div>
+                                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-success)', lineHeight: 1 }}>{r?.sales ?? 0}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.4rem' }}>bikes</div>
                             </div>
 
-                            {/* Cash Tracking — no Honda deposit */}
-                            <div className="card">
-                                <SectionTitle>Cash Tracking</SectionTitle>
-                                <Row label="Cash Received" value={`Rs. ${(r?.cashReceived ?? 0).toLocaleString()}`} color="var(--color-success)" />
-                                <Row label="Bank Transfer" value={`Rs. ${(r?.bankTransfer ?? 0).toLocaleString()}`} color="#3b82f6" />
-                                <Row label="Registration Collected" value={`Rs. ${(r?.registrationCollected ?? 0).toLocaleString()}`} color="#8b5cf6" />
-                                <Row
-                                    label="Total Cash In"
-                                    value={`Rs. ${((r?.cashReceived ?? 0) + (r?.bankTransfer ?? 0) + (r?.registrationCollected ?? 0)).toLocaleString()}`}
-                                    color="#10b981"
-                                    bold
-                                />
+                            <div className="card" style={{ padding: '1.5rem', borderLeft: '4px solid #10b981' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.5rem' }}>Bike Margin</div>
+                                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#10b981', lineHeight: 1 }}>Rs. {((r?.bikeProfit ?? 0) - (r?.advanceMargin ?? 0)).toLocaleString()}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.4rem' }}>from bike sales</div>
                             </div>
 
-                            {/* Profit Breakdown */}
-                            <div className="card">
-                                <SectionTitle>Profit Breakdown</SectionTitle>
-                                <Row label="Bike Margin" value={`Rs. ${((r?.bikeProfit ?? 0) - (r?.advanceMargin ?? 0)).toLocaleString()}`} color="var(--color-success)" />
-                                <Row label="Advance Booking Margin" value={`Rs. ${(r?.advanceMargin ?? 0).toLocaleString()}`} color="#f59e0b" />
-                                <Row label="Registration Profit" value={`Rs. ${(r?.regProfit ?? 0).toLocaleString()}`} color="var(--color-primary)" />
-                                <Row label="Workshop Profit" value={`Rs. ${(r?.workshopProfit ?? 0).toLocaleString()}`} color="#8b5cf6" />
-                                {(r?.expenseMargin ?? 0) > 0 && (
-                                    <Row label="Expenses Deducted" value={`− Rs. ${(r?.expenseMargin ?? 0).toLocaleString()}`} color="#ef4444" />
-                                )}
-                                <div style={{ paddingTop: '0.5rem' }}>
-                                    <Row label="Total Profit" value={`Rs. ${(r?.profit ?? 0).toLocaleString()}`} color="#10b981" bold />
-                                </div>
+                            <div className="card" style={{ padding: '1.5rem', borderLeft: '4px solid #8b5cf6' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.5rem' }}>Registration Margin</div>
+                                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#8b5cf6', lineHeight: 1 }}>Rs. {(r?.regProfit ?? 0).toLocaleString()}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.4rem' }}>from registration</div>
                             </div>
 
-                            {/* All-Time */}
-                            <div className="card">
-                                <SectionTitle>All-Time</SectionTitle>
-                                <Row label="Total Bikes Sold" value={String(a?.soldBikes ?? 0)} color="var(--color-success)" />
-                                <Row label="Available in Stock" value={String(a?.availableBikes ?? 0)} />
-                                <Row label="Total Revenue" value={`Rs. ${(a?.totalRevenue ?? 0).toLocaleString()}`} color="var(--color-primary)" />
-                                <Row label="Workshop Revenue" value={`Rs. ${(a?.totalWorkshopRevenue ?? 0).toLocaleString()}`} color="#f59e0b" />
-                                <div style={{ paddingTop: '0.5rem' }}>
-                                    <Row label="Total Profit" value={`Rs. ${(a?.totalProfit ?? 0).toLocaleString()}`} color="#10b981" bold />
-                                </div>
+                            <div className="card" style={{ padding: '1.5rem', borderLeft: '4px solid #f59e0b' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.5rem' }}>Workshop Sale</div>
+                                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#f59e0b', lineHeight: 1 }}>Rs. {(r?.workshopRevenue ?? 0).toLocaleString()}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.4rem' }}>from workshop</div>
                             </div>
                         </div>
-
-                        {/* Delivery Orders */}
-                        {(data?.deliveryOrders?.length ?? 0) > 0 && (
-                            <>
-                                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem', letterSpacing: '0.06em' }}>
-                                    Delivery Orders
-                                </div>
-                                <div className="card" style={{ marginBottom: '1.5rem' }}>
-                                    <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
-                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
-                                            <thead>
-                                                <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
-                                                    {['DO Number', 'Date', 'Dealer', 'Total', 'Sold', 'Remaining', 'Progress'].map(h => (
-                                                        <th key={h} style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: 700, fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
-                                                    ))}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {data!.deliveryOrders.map((d, i) => {
-                                                    const pct = d.totalBikes > 0 ? (d.soldBikes / d.totalBikes) * 100 : 0;
-                                                    return (
-                                                        <tr key={d.doNumber} style={{ borderBottom: '1px solid var(--color-border)', background: i % 2 ? 'var(--color-bg-elevated)' : 'transparent' }}>
-                                                            <td style={{ padding: '0.5rem 0.75rem', fontWeight: 700 }}>{d.doNumber}</td>
-                                                            <td style={{ padding: '0.5rem 0.75rem', color: 'var(--color-text-muted)' }}>{new Date(d.date).toLocaleDateString('en-PK')}</td>
-                                                            <td style={{ padding: '0.5rem 0.75rem' }}>{d.dealerName}</td>
-                                                            <td style={{ padding: '0.5rem 0.75rem', textAlign: 'center', fontWeight: 700 }}>{d.totalBikes}</td>
-                                                            <td style={{ padding: '0.5rem 0.75rem', textAlign: 'center', color: '#ef4444', fontWeight: 700 }}>{d.soldBikes}</td>
-                                                            <td style={{ padding: '0.5rem 0.75rem', textAlign: 'center', color: '#22c55e', fontWeight: 700 }}>{d.remainingBikes}</td>
-                                                            <td style={{ padding: '0.5rem 0.75rem', minWidth: '120px' }}>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                    <div style={{ flex: 1, height: '6px', background: 'var(--color-border)', borderRadius: '3px', overflow: 'hidden' }}>
-                                                                        <div style={{ width: `${pct}%`, height: '100%', background: pct === 100 ? '#ef4444' : '#f59e0b' }} />
-                                                                    </div>
-                                                                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', minWidth: '30px' }}>{pct.toFixed(0)}%</span>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </>
-                        )}
                     </>
                 )}
             </div>
