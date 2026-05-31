@@ -65,7 +65,7 @@ export default function DashboardPage() {
     const [manualCash, setManualCash] = useState('');
     const [loading, setLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [filters, setFilters] = useState({ cnic: '', engineNumber: '', chassisNumber: '', doNumber: '' });
+    const [filters, setFilters] = useState({ cnic: '', engineNumber: '', chassisNumber: '', doNumber: '', startDate: '', endDate: '' });
     const [showBreakdown, setShowBreakdown] = useState(false);
     const [yesterdayStats, setYesterdayStats] = useState<Stats | null>(null);
     const [showYesterdayBreakdown, setShowYesterdayBreakdown] = useState(false);
@@ -81,7 +81,16 @@ export default function DashboardPage() {
             const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
             const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
             const dateParams = { startDate: todayStart.toISOString(), endDate: todayEnd.toISOString() };
-            const searchParams = new URLSearchParams({ ...dateParams, ...Object.fromEntries(Object.entries(searchFilters).filter(([, v]) => v)) });
+            const hasActiveSearch = Object.entries(searchFilters).some(([k, v]) => k !== 'startDate' && k !== 'endDate' && v);
+            const customStart = searchFilters.startDate ? new Date(searchFilters.startDate).toISOString() : '';
+            const customEnd = searchFilters.endDate ? new Date(searchFilters.endDate + 'T23:59:59').toISOString() : '';
+            const resolvedDates = hasActiveSearch
+                ? (customStart ? { startDate: customStart, endDate: customEnd || new Date().toISOString() } : {})
+                : (customStart ? { startDate: customStart, endDate: customEnd || new Date().toISOString() } : dateParams);
+            const searchParams = new URLSearchParams({
+                ...resolvedDates,
+                ...Object.fromEntries(Object.entries(searchFilters).filter(([k, v]) => v && k !== 'startDate' && k !== 'endDate')),
+            });
             const [statsRes, recordsRes, cashColRes] = await Promise.all([
                 fetch('/api/reports'),
                 fetch(`/api/sales?${searchParams}`),
@@ -513,20 +522,30 @@ export default function DashboardPage() {
                     <form onSubmit={e => { e.preventDefault(); fetchData(); }}>
                         <div className="grid-4" style={{ marginBottom: '0.75rem' }}>
                             {[
-                                { label: 'CNIC', key: 'cnic', ph: '34601-XXXXXXX-X' },
-                                { label: 'Engine #', key: 'engineNumber', ph: 'Engine number' },
-                                { label: 'Chassis #', key: 'chassisNumber', ph: 'Chassis number' },
-                                { label: 'DO #', key: 'doNumber', ph: 'Delivery order #' },
+                                { key: 'cnic', ph: 'CNIC' },
+                                { key: 'engineNumber', ph: 'Engine #' },
+                                { key: 'chassisNumber', ph: 'Chassis #' },
+                                { key: 'doNumber', ph: 'DO #' },
                             ].map(f => (
                                 <input key={f.key} type="text" className="input" placeholder={f.ph}
                                     value={(filters as any)[f.key]}
                                     onChange={e => setFilters({ ...filters, [f.key]: e.target.value })} />
                             ))}
                         </div>
+                        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Date Range:</span>
+                            <input type="date" className="input" style={{ maxWidth: '160px', fontSize: '0.8rem' }}
+                                value={filters.startDate}
+                                onChange={e => setFilters({ ...filters, startDate: e.target.value })} />
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>to</span>
+                            <input type="date" className="input" style={{ maxWidth: '160px', fontSize: '0.8rem' }}
+                                value={filters.endDate}
+                                onChange={e => setFilters({ ...filters, endDate: e.target.value })} />
+                        </div>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                             <button type="submit" className="btn btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>Search</button>
                             <button type="button" className="btn btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}
-                                onClick={() => { const r = { cnic: '', engineNumber: '', chassisNumber: '', doNumber: '' }; setFilters(r); fetchData(r); }}>
+                                onClick={() => { const r = { cnic: '', engineNumber: '', chassisNumber: '', doNumber: '', startDate: '', endDate: '' }; setFilters(r); fetchData(r); }}>
                                 Reset
                             </button>
                         </div>
