@@ -188,9 +188,14 @@ export default function ReceiptPage() {
                 {/* ── Printable receipt ── */}
                 <div className={styles.receipt}>
                     <div className={styles.header}>
-                        <div className={styles.logo}>🏍️ HONDA</div>
+                        <div className={styles.logo}>
+                            <span style={{ fontSize: '1.5rem', fontWeight: 900, letterSpacing: '0.05em' }}>HONDA</span>
+                        </div>
                         <div className={styles.receiptTitle}>SALE RECEIPT</div>
-                        <div className={styles.receiptNumber}>{sale.receiptNumber || `#${sale.id}`}</div>
+                        <div className={styles.receiptNumber}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.2rem' }}>3S SALES SERVICE SPARE PARTS</div>
+                            <div>{sale.receiptNumber || `#${sale.id}`}</div>
+                        </div>
                     </div>
 
                     <div className={styles.section}>

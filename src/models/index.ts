@@ -277,6 +277,7 @@ export interface IExpense {
     _id?: string;
     amount: number;
     description: string;
+    category: string;
     deductFrom: 'MARGIN' | 'CASH' | 'WORKSHOP';
     date: Date;
     createdAt?: Date;
@@ -285,6 +286,7 @@ export interface IExpense {
 const ExpenseSchema = new Schema<IExpense>({
     amount: { type: Number, required: true },
     description: { type: String, required: true },
+    category: { type: String, default: 'Other' },
     deductFrom: { type: String, enum: ['MARGIN', 'CASH', 'WORKSHOP'], required: true },
     date: { type: Date, default: Date.now },
 }, { timestamps: true });

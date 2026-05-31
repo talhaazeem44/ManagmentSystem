@@ -73,10 +73,13 @@ export default function AdvanceBookingReceiptPage() {
 
                 <div className={styles.receipt}>
                     <div className={styles.header}>
-                        <div className={styles.logo}>🏍️ HONDA</div>
+                        <div className={styles.logo}>
+                            <span style={{ fontSize: '1.5rem', fontWeight: 900, letterSpacing: '0.05em' }}>HONDA</span>
+                        </div>
                         <div className={styles.receiptTitle}>ADVANCE BOOKING</div>
                         <div className={styles.receiptNumber}>
-                            {new Date(booking.date).toLocaleDateString()}
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.2rem' }}>3S SALES SERVICE SPARE PARTS</div>
+                            <div>{new Date(booking.date).toLocaleDateString()}</div>
                         </div>
                     </div>
 

@@ -42,7 +42,7 @@ const calcSaleMargin = (sale: any) => {
     const actualRegCost = REGISTRATION_ACTUAL_COST_BY_MODEL[model] ?? REGISTRATION_ACTUAL_COST;
     const regProfit = regCharged > 0 ? regCharged - actualRegCost : 0;
 
-    return { bikeProfit, regProfit, totalProfit: bikeProfit + regProfit };
+    return { bikeProfit, regProfit, totalProfit: bikeProfit + regProfit, extraCash, discount };
 };
 
 export async function GET(request: NextRequest) {
@@ -212,6 +212,8 @@ export async function GET(request: NextRequest) {
                     totalProfit: m.totalProfit,
                     standardPrice: BIKE_STANDARD_PRICES[sale.bikeId?.model || ''] || 0,
                     baseMargin: BIKE_UNIT_MARGINS[sale.bikeId?.model || ''] || 0,
+                    extra: m.extraCash,
+                    discount: m.discount,
                 };
             }),
             ...filteredAdvanceBookings.map((b: any) => {
@@ -228,6 +230,8 @@ export async function GET(request: NextRequest) {
                     totalProfit: am.bikeProfit,
                     standardPrice: am.standardPrice,
                     baseMargin: am.baseMargin,
+                    extra: am.bikeProfit - am.baseMargin,
+                    discount: 0,
                 };
             }),
         ];
