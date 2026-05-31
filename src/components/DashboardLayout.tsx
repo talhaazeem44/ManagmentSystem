@@ -29,6 +29,7 @@ export default function DashboardLayout({
     const workshopNavItems = [
         { href: '/workshop', label: 'Workshop', icon: '🛠️' },
         { href: '/workshop/stock', label: 'W. Stock', icon: '🔩' },
+        { href: '/workshop/tracker', label: 'W. Cash', icon: '💵' },
     ];
 
     let navItems;

@@ -151,6 +151,19 @@ export async function GET(request: NextRequest) {
         // ── Expenses ───────────────────────────────────────────────────────────
         const expenseCash = filteredExpenses.reduce((s: number, e: any) => e.deductFrom === 'CASH' ? s + Number(e.amount || 0) : s, 0);
         const expenseMargin = filteredExpenses.reduce((s: number, e: any) => e.deductFrom === 'MARGIN' ? s + Number(e.amount || 0) : s, 0);
+        const expenseWorkshop = filteredExpenses.reduce((s: number, e: any) => e.deductFrom === 'WORKSHOP' ? s + Number(e.amount || 0) : s, 0);
+        const expensesByCategory: Record<string, number> = {};
+        for (const e of filteredExpenses as any[]) {
+            const cat = e.category || 'Other';
+            expensesByCategory[cat] = (expensesByCategory[cat] || 0) + Number(e.amount || 0);
+        }
+        const expenseList = (filteredExpenses as any[]).map(e => ({
+            date: e.date,
+            description: e.description,
+            category: e.category || 'Other',
+            deductFrom: e.deductFrom,
+            amount: Number(e.amount || 0),
+        }));
 
         const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || 0), 0) + rangeAdvanceCash;
         const rangeRegistration = filteredSales.reduce((s, sale: any) => s + Number(sale.registrationCost || 0), 0);
@@ -201,6 +214,7 @@ export async function GET(request: NextRequest) {
             ...filteredSales.map((sale: any) => {
                 const m = calcSaleMargin(sale);
                 return {
+                    saleDate: sale.saleDate,
                     bikeModel: sale.bikeId?.model || '?',
                     paymentMode: sale.paymentMode || 'CASH',
                     price: Number(sale.price || 0),
@@ -253,11 +267,14 @@ export async function GET(request: NextRequest) {
                 cashToDeposit: rangeCashToDeposit,
                 expenseCash: expenseCash,
                 expenseMargin: expenseMargin,
+                expenseWorkshop: expenseWorkshop,
+                expensesByCategory,
                 cashInHand: rangeCashInHand,
                 cashDepositOnly: rangeCashDepositOnly,
                 startDate: filterStartDate,
                 endDate: filterEndDate,
             },
+            expenseList,
             cashBreakdown,
             allTime: {
                 totalBikes: totalBikesCount,

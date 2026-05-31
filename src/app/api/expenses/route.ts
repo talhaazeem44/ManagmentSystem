@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         await dbConnect();
-        const { amount, description, deductFrom, date } = await request.json();
+        const { amount, description, category, deductFrom, date } = await request.json();
 
         if (!amount || !description || !deductFrom) {
             return NextResponse.json({ message: 'Amount, description and deduct from are required' }, { status: 400 });
@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
         const expense = await Expense.create({
             amount: Number(amount),
             description,
+            category: category || 'Other',
             deductFrom,
             date: date ? new Date(date) : new Date(),
         });

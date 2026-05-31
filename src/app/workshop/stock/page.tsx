@@ -31,6 +31,7 @@ export default function WorkshopStockPage() {
     const [loading, setLoading] = useState(false);
     const [showQrScanner, setShowQrScanner] = useState(false);
     const [page, setPage] = useState(1);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => { fetchStock(); }, []);
 
@@ -134,8 +135,11 @@ export default function WorkshopStockPage() {
 
     const totalValue = stock.reduce((sum, s) => sum + s.retailPrice * s.quantity, 0);
     const totalSellingValue = stock.reduce((sum, s) => sum + s.customerPrice * s.quantity, 0);
-    const paged = stock.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-    const totalPages = Math.ceil(stock.length / PAGE_SIZE);
+    const filtered = searchQuery.trim()
+        ? stock.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.category.toLowerCase().includes(searchQuery.toLowerCase()))
+        : stock;
+    const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
 
     return (
         <DashboardLayout>
@@ -227,10 +231,17 @@ export default function WorkshopStockPage() {
 
                 {/* Stock Inventory List */}
                 <div className="card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                         <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Stock Inventory</h2>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{stock.length} items</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{filtered.length} of {stock.length} items</span>
                     </div>
+                    <input
+                        className="input"
+                        placeholder="Search by name or category..."
+                        value={searchQuery}
+                        onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
+                        style={{ marginBottom: '1rem', fontSize: '0.9rem' }}
+                    />
 
                     {stock.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>No stock items yet. Add one above.</div>
