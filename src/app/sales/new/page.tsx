@@ -54,6 +54,7 @@ export default function NewSalePage() {
     const [registrationCost, setRegistrationCost] = useState('');
     const [paymentMode, setPaymentMode] = useState('CASH');
     const [bankTransferAmount, setBankTransferAmount] = useState('');
+    const [discount, setDiscount] = useState('');
     const [taxAmount] = useState('1000');
     const [receiptNumber, setReceiptNumber] = useState('...');
 
@@ -178,6 +179,7 @@ export default function NewSalePage() {
                     taxAmount: taxAmount || 0,
                     paymentMode,
                     bankTransferAmount: bankTransferAmount || 0,
+                    discount: discount || 0,
                     receiptNumber
                 })
             });
@@ -468,6 +470,21 @@ export default function NewSalePage() {
                                     placeholder="0"
                                 />
                             </div>
+                            <div className="form-group">
+                                <label className="label">Less / Discount (PKR)</label>
+                                <input
+                                    type="text"
+                                    inputMode="decimal"
+                                    className="input"
+                                    value={discount}
+                                    onChange={(e) => setDiscount(e.target.value)}
+                                    placeholder="0"
+                                    style={discount ? { borderColor: '#f59e0b', background: 'rgba(245,158,11,0.05)' } : undefined}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
                             <div className="form-group">
                                 <label className="label">Receipt Number</label>
                                 <input

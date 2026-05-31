@@ -20,16 +20,23 @@ const calcAdvanceMargin = (booking: any) => {
 };
 
 // Profit per sale:
-// - Bike profit  = fixed margin (8k/11k/20k) + extra received above standard price
+// - Bike profit  = fixed margin + extra above standard price − discount given
+// - For credit sales with outstanding balance, use full sale price (not partial cash received)
 // - Reg profit   = registration charged to customer − actual government cost
 const calcSaleMargin = (sale: any) => {
     const model = sale.bikeId?.model || '';
     const standardPrice = BIKE_STANDARD_PRICES[model] || Number(sale.price || 0);
     const baseMargin = BIKE_UNIT_MARGINS[model] || 0;
-    // Bank transfer counts the same as received cash
-    const totalReceived = (Number(sale.receivedCash || 0) + Number(sale.bankTransferAmount || 0)) || Number(sale.price || 0);
+
+    // Credit sales with balance still owed: margin is based on agreed price, not partial cash received
+    const hasBalance = Number(sale.balance || 0) > 0;
+    const totalReceived = hasBalance
+        ? Number(sale.price || 0)
+        : (Number(sale.receivedCash || 0) + Number(sale.bankTransferAmount || 0)) || Number(sale.price || 0);
+
     const extraCash = totalReceived - standardPrice;
-    const bikeProfit = baseMargin + extraCash;
+    const discount = Number(sale.discount || 0);
+    const bikeProfit = baseMargin + extraCash - discount;
 
     const regCharged = Number(sale.registrationCost || 0);
     const actualRegCost = REGISTRATION_ACTUAL_COST_BY_MODEL[model] ?? REGISTRATION_ACTUAL_COST;

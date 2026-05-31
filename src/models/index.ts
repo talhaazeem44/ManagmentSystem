@@ -111,6 +111,7 @@ export interface ISale {
     taxAmount?: number;
     paymentMode: string;
     bankTransferAmount?: number;
+    discount?: number;
     receiptNumber?: string;
     payments?: IPayment[];
     createdAt?: Date;
@@ -135,6 +136,7 @@ const SaleSchema = new Schema<ISale>({
     taxAmount: { type: Number, default: 0 },
     paymentMode: { type: String, default: 'CASH' },
     bankTransferAmount: { type: Number, default: 0 },
+    discount: { type: Number, default: 0 },
     receiptNumber: { type: String },
     payments: { type: [PaymentSchema], default: [] },
 }, {
