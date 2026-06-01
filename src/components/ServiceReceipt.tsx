@@ -32,23 +32,10 @@ const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service, onDone }) => {
     const partsTotal = items.reduce((s, i) => s + i.customerPrice * i.quantity, 0);
     const receiptRef = useRef<HTMLDivElement>(null);
 
-    const prizes = [{ code: 'T', weight: 20 }, { code: 'R', weight: 45 }];
-    const totalW = prizes.reduce((s, p) => s + p.weight, 0);
-    let rand = Math.floor(Math.random() * totalW);
-    let prizeCode = 'R';
-    for (const p of prizes) { if (rand < p.weight) { prizeCode = p.code; break; } rand -= p.weight; }
-
     const dateStr = new Date(service.date).toLocaleString('en-PK', {
         day: '2-digit', month: 'short', year: 'numeric',
         hour: '2-digit', minute: '2-digit', hour12: true,
     });
-
-    const scratchUrl = typeof window !== 'undefined'
-        ? `${window.location.origin}/scratch?p=${prizeCode}`
-        : '';
-    const qrUrl = scratchUrl
-        ? `https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(scratchUrl)}`
-        : '';
 
     const handlePrint = () => {
         const content = receiptRef.current;
@@ -102,8 +89,6 @@ html,body {
         bold:    { fontWeight: 900 },
         totalRow:{ display: 'flex', justifyContent: 'space-between', fontSize: '11pt', fontWeight: 900, margin: '3px 0' },
         secTitle:{ fontSize: '7.5pt', fontWeight: 900, marginBottom: '2px', textTransform: 'uppercase' as const },
-        scratch: { marginTop: '4px', border: '1.5px dashed #000', borderRadius: '3px', padding: '3px', textAlign: 'center' },
-        hint:    { fontSize: '6.5pt', color: '#444' },
     };
 
     return (
@@ -181,16 +166,6 @@ html,body {
                             <div>Honda Authorized Dealer</div>
                         </div>
 
-                        {qrUrl && (
-                            <div style={s.scratch}>
-                                <div style={{ fontSize: '8pt', fontWeight: 900, marginBottom: '2px' }}>&#9733; LUCKY SCRATCH CARD &#9733;</div>
-                                <div style={s.hint}>Scan QR with phone to reveal prize!</div>
-                                <div style={{ margin: '3px 0' }}>
-                                    <img src={qrUrl} width={90} height={90} alt="QR" style={{ display: 'block', margin: '0 auto' }} />
-                                </div>
-                                <div style={s.hint}>Valid 30 days &bull; One per customer</div>
-                            </div>
-                        )}
                     </div>
                 </div>
 
