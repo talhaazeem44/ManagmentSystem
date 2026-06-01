@@ -34,9 +34,10 @@ const calcSaleMargin = (sale: any) => {
         ? Number(sale.price || 0)
         : (Number(sale.receivedCash || 0) + Number(sale.bankTransferAmount || 0)) || Number(sale.price || 0);
 
-    const extraCash = totalReceived - standardPrice;
+    // Only add bonus for selling above standard price — never reduce margin for selling below
+    const extraCash = Math.max(0, totalReceived - standardPrice);
     const discount = Number(sale.discount || 0);
-    const bikeProfit = baseMargin + extraCash - discount;
+    const bikeProfit = Math.max(0, baseMargin + extraCash - discount);
 
     const regCharged = Number(sale.registrationCost || 0);
     const actualRegCost = REGISTRATION_ACTUAL_COST_BY_MODEL[model] ?? REGISTRATION_ACTUAL_COST;
