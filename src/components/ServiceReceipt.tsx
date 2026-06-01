@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useRef } from 'react';
 
 interface BillItem {
     name: string;
@@ -26,155 +26,199 @@ interface ServiceReceiptProps {
 }
 
 const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service, onDone }) => {
-    const total = service.totalAmount ?? service.amount ?? 0;
-    const serviceCharges = service.serviceCharges ?? service.amount ?? 0;
-    const items = service.items ?? [];
+    const total      = service.totalAmount ?? service.amount ?? 0;
+    const labour     = service.serviceCharges ?? service.amount ?? 0;
+    const items      = service.items ?? [];
     const partsTotal = items.reduce((s, i) => s + i.customerPrice * i.quantity, 0);
+    const receiptRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        // Build prize code
-        const prizes = [
-            { code: 'T', weight: 20 },
-            { code: 'R', weight: 45 },
-        ];
-        const total_weight = prizes.reduce((s, p) => s + p.weight, 0);
-        let rand = Math.floor(Math.random() * total_weight);
-        let prizeCode = 'R';
-        for (const p of prizes) { if (rand < p.weight) { prizeCode = p.code; break; } rand -= p.weight; }
+    const prizes = [{ code: 'T', weight: 20 }, { code: 'R', weight: 45 }];
+    const totalW = prizes.reduce((s, p) => s + p.weight, 0);
+    let rand = Math.floor(Math.random() * totalW);
+    let prizeCode = 'R';
+    for (const p of prizes) { if (rand < p.weight) { prizeCode = p.code; break; } rand -= p.weight; }
 
-        const scratchUrl = `${window.location.origin}/scratch?p=${prizeCode}`;
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(scratchUrl)}`;
+    const dateStr = new Date(service.date).toLocaleString('en-PK', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: true,
+    });
 
-        const dateStr = new Date(service.date).toLocaleString('en-PK', {
-            day: '2-digit', month: 'short', year: 'numeric',
-            hour: '2-digit', minute: '2-digit', hour12: true,
-        });
+    const scratchUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}/scratch?p=${prizeCode}`
+        : '';
+    const qrUrl = scratchUrl
+        ? `https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(scratchUrl)}`
+        : '';
 
-        const itemsHtml = items.length > 0 ? `
-            <div class="divider"></div>
-            <div class="section-title">PARTS &amp; ITEMS</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width:52%;text-align:left">Item</th>
-                        <th style="width:10%;text-align:center">Qty</th>
-                        <th style="width:38%;text-align:right">Amt</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${items.map(item => `
-                    <tr>
-                        <td style="text-align:left">
-                            <div>${item.name}</div>
-                            ${item.productCode ? `<div style="font-size:6.5pt;color:#555">${item.productCode}</div>` : ''}
-                        </td>
-                        <td style="text-align:center">${item.quantity}</td>
-                        <td style="text-align:right">Rs.${(item.customerPrice * item.quantity).toLocaleString()}</td>
-                    </tr>`).join('')}
-                </tbody>
-            </table>
-            <div class="divider" style="border-style:dotted"></div>
-            <div class="row"><span>Labour</span><span>Rs.${serviceCharges.toLocaleString()}</span></div>
-            <div class="row"><span>Parts</span><span>Rs.${partsTotal.toLocaleString()}</span></div>
-        ` : '';
+    const handlePrint = () => {
+        const content = receiptRef.current;
+        if (!content) return;
 
-        const receiptHTML = `<!DOCTYPE html>
+        const win = window.open('', '_blank', 'width=320,height=700,toolbar=0,menubar=0,scrollbars=1');
+        if (!win) { alert('Allow popups to print receipts.'); return; }
+
+        win.document.write(`<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
+<title>Receipt</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-@page {
-    size: 58mm auto;
-    margin: 2mm 1mm;
+* { margin:0; padding:0; box-sizing:border-box; }
+@page { size:58mm auto; margin:1mm; }
+html,body {
+    width:56mm;
+    font-family:'Courier New',Courier,monospace;
+    font-size:8pt;
+    color:#000;
+    background:#fff;
+    line-height:1.4;
 }
-html, body {
-    width: 56mm;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 8pt;
-    color: #000;
-    background: #fff;
-    line-height: 1.35;
-}
-.center { text-align: center; }
-.bold { font-weight: 900; }
-.divider { border-top: 1px dashed #000; margin: 2mm 0; }
-.row { display: flex; justify-content: space-between; margin-bottom: 0.8mm; font-size: 8pt; }
-.shop-name { font-size: 13pt; font-weight: 900; letter-spacing: 0.5px; }
-.shop-sub { font-size: 7.5pt; font-weight: 700; }
-.section-title { font-size: 7.5pt; font-weight: 900; margin-bottom: 1mm; text-transform: uppercase; }
-.total-row { display: flex; justify-content: space-between; font-size: 11pt; font-weight: 900; margin: 1.5mm 0; }
-table { width: 100%; border-collapse: collapse; font-size: 7.5pt; }
-th { border-bottom: 1px solid #000; font-weight: 700; padding: 0.5mm 0; }
-td { padding: 0.4mm 0; vertical-align: top; }
-.footer { text-align: center; font-size: 7pt; margin-top: 2mm; }
-.scratch-section {
-    margin-top: 3mm;
-    border: 1.5px dashed #000;
-    border-radius: 3px;
-    padding: 2mm 1.5mm;
-    text-align: center;
-}
-.scratch-title { font-size: 8pt; font-weight: 900; letter-spacing: 0.5px; margin-bottom: 1mm; }
-.scratch-hint { font-size: 6.5pt; color: #444; margin-top: 0.5mm; }
 </style>
 </head>
-<body>
-<div class="center">
-    <div class="shop-name">NAEEM AUTOS</div>
-    <div class="shop-sub">Honda Authorized Dealer</div>
-    <div style="font-size:7pt;margin-top:0.5mm">JOB CARD</div>
-    <div style="font-size:7pt;margin-top:0.5mm">${dateStr}</div>
-</div>
-<div class="divider"></div>
-<div class="row"><span>Customer:</span><span class="bold">${service.customerName}</span></div>
-${service.customerMobile ? `<div class="row"><span>Mobile:</span><span>${service.customerMobile}</span></div>` : ''}
-${service.bikeNumber ? `<div class="row"><span>Bike No:</span><span class="bold">${service.bikeNumber}</span></div>` : ''}
-<div class="divider"></div>
-<div class="row"><span class="bold">${service.serviceType}</span><span>Rs.${serviceCharges.toLocaleString()}</span></div>
-${service.description ? `<div style="font-size:7pt;font-style:italic;margin-top:0.5mm">Note: ${service.description}</div>` : ''}
-${itemsHtml}
-<div class="divider"></div>
-<div class="total-row"><span>TOTAL:</span><span>Rs.${total.toLocaleString()}</span></div>
-<div class="divider"></div>
-<div class="footer">
-    <div>Thank you for visiting Naeem Autos!</div>
-    <div style="margin-top:0.5mm">Honda Authorized Dealer</div>
-</div>
-<div class="scratch-section">
-    <div class="scratch-title">&#9733; LUCKY SCRATCH CARD &#9733;</div>
-    <div class="scratch-hint">Scan QR with phone to reveal prize!</div>
-    <div style="margin:1.5mm 0">
-        <img src="${qrUrl}" width="90" height="90" style="display:block;margin:0 auto" />
-    </div>
-    <div class="scratch-hint">Valid 30 days &bull; One per customer</div>
-</div>
-</body>
-</html>`;
-
-        const win = window.open('', '_blank', 'width=300,height=500');
-        if (!win) {
-            alert('Please allow popups for this site to print receipts.');
-            onDone?.();
-            return;
-        }
-        win.document.write(receiptHTML);
+<body>${content.innerHTML}</body>
+</html>`);
         win.document.close();
 
-        // Wait for QR image to load before printing
         const img = win.document.querySelector('img');
+        const doPrint = () => { win.focus(); win.print(); };
         if (img && !img.complete) {
-            img.onload = () => setTimeout(() => { win.focus(); win.print(); }, 200);
-            img.onerror = () => setTimeout(() => { win.focus(); win.print(); }, 200);
-            setTimeout(() => { win.focus(); win.print(); }, 2000); // fallback
+            const t = setTimeout(doPrint, 2500);
+            img.onload  = () => { clearTimeout(t); setTimeout(doPrint, 150); };
+            img.onerror = () => { clearTimeout(t); setTimeout(doPrint, 150); };
         } else {
-            setTimeout(() => { win.focus(); win.print(); }, 600);
+            setTimeout(doPrint, 400);
         }
+    };
 
-        onDone?.();
-    }, []);
+    /* ── inline styles for the receipt body (used both on screen and in print) ── */
+    const s: Record<string, React.CSSProperties> = {
+        wrap:    { fontFamily: "'Courier New', Courier, monospace", fontSize: '8pt', color: '#000', background: '#fff', width: '228px', lineHeight: 1.4, padding: '6px 4px' },
+        center:  { textAlign: 'center' },
+        shopName:{ fontSize: '13pt', fontWeight: 900 },
+        sub:     { fontSize: '7.5pt', fontWeight: 700 },
+        small:   { fontSize: '7pt' },
+        divider: { borderTop: '1px dashed #000', margin: '3px 0' },
+        row:     { display: 'flex', justifyContent: 'space-between', marginBottom: '1.5px', fontSize: '8pt' },
+        bold:    { fontWeight: 900 },
+        totalRow:{ display: 'flex', justifyContent: 'space-between', fontSize: '11pt', fontWeight: 900, margin: '3px 0' },
+        secTitle:{ fontSize: '7.5pt', fontWeight: 900, marginBottom: '2px', textTransform: 'uppercase' as const },
+        scratch: { marginTop: '4px', border: '1.5px dashed #000', borderRadius: '3px', padding: '3px', textAlign: 'center' },
+        hint:    { fontSize: '6.5pt', color: '#444' },
+    };
 
-    return null;
+    return (
+        <>
+            {/* Backdrop */}
+            <div style={{
+                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+                zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexDirection: 'column', gap: '12px',
+            }}>
+                {/* Receipt preview */}
+                <div style={{ background: '#fff', borderRadius: '6px', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+                    {/* The receipt content — this exact HTML is copied into the print window */}
+                    <div ref={receiptRef} style={s.wrap}>
+                        <div style={s.center}>
+                            <div style={s.shopName}>NAEEM AUTOS</div>
+                            <div style={s.sub}>Honda Authorized Dealer</div>
+                            <div style={s.small}>JOB CARD</div>
+                            <div style={s.small}>{dateStr}</div>
+                        </div>
+
+                        <div style={s.divider} />
+
+                        <div style={s.row}><span>Customer:</span><span style={s.bold}>{service.customerName}</span></div>
+                        {service.customerMobile && <div style={s.row}><span>Mobile:</span><span>{service.customerMobile}</span></div>}
+                        {service.bikeNumber && <div style={s.row}><span>Bike No:</span><span style={s.bold}>{service.bikeNumber}</span></div>}
+
+                        <div style={s.divider} />
+
+                        <div style={s.row}>
+                            <span style={s.bold}>{service.serviceType}</span>
+                            <span>Rs.{labour.toLocaleString()}</span>
+                        </div>
+                        {service.description && (
+                            <div style={{ fontSize: '7pt', fontStyle: 'italic', marginTop: '1px' }}>Note: {service.description}</div>
+                        )}
+
+                        {items.length > 0 && (
+                            <>
+                                <div style={s.divider} />
+                                <div style={s.secTitle}>Parts &amp; Items</div>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '7.5pt' }}>
+                                    <thead>
+                                        <tr>
+                                            <th style={{ textAlign: 'left', width: '55%', borderBottom: '1px solid #000', padding: '1px 0', fontWeight: 700 }}>Item</th>
+                                            <th style={{ textAlign: 'center', width: '10%', borderBottom: '1px solid #000', padding: '1px 0', fontWeight: 700 }}>Qty</th>
+                                            <th style={{ textAlign: 'right', width: '35%', borderBottom: '1px solid #000', padding: '1px 0', fontWeight: 700 }}>Amt</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {items.map((it, idx) => (
+                                            <tr key={idx}>
+                                                <td style={{ textAlign: 'left', verticalAlign: 'top', padding: '1px 0' }}>
+                                                    <div>{it.name}</div>
+                                                    {it.productCode && <div style={{ fontSize: '6pt', color: '#555' }}>{it.productCode}</div>}
+                                                </td>
+                                                <td style={{ textAlign: 'center', verticalAlign: 'top', padding: '1px 0' }}>{it.quantity}</td>
+                                                <td style={{ textAlign: 'right', verticalAlign: 'top', padding: '1px 0' }}>Rs.{(it.customerPrice * it.quantity).toLocaleString()}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                <div style={{ ...s.divider, borderStyle: 'dotted' }} />
+                                <div style={s.row}><span>Labour</span><span>Rs.{labour.toLocaleString()}</span></div>
+                                <div style={s.row}><span>Parts</span><span>Rs.{partsTotal.toLocaleString()}</span></div>
+                            </>
+                        )}
+
+                        <div style={s.divider} />
+                        <div style={s.totalRow}><span>TOTAL:</span><span>Rs.{total.toLocaleString()}</span></div>
+                        <div style={s.divider} />
+
+                        <div style={{ ...s.center, fontSize: '7pt' }}>
+                            <div>Thank you for visiting Naeem Autos!</div>
+                            <div>Honda Authorized Dealer</div>
+                        </div>
+
+                        {qrUrl && (
+                            <div style={s.scratch}>
+                                <div style={{ fontSize: '8pt', fontWeight: 900, marginBottom: '2px' }}>&#9733; LUCKY SCRATCH CARD &#9733;</div>
+                                <div style={s.hint}>Scan QR with phone to reveal prize!</div>
+                                <div style={{ margin: '3px 0' }}>
+                                    <img src={qrUrl} width={90} height={90} alt="QR" style={{ display: 'block', margin: '0 auto' }} />
+                                </div>
+                                <div style={s.hint}>Valid 30 days &bull; One per customer</div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Tip + buttons */}
+                <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 14px', maxWidth: '300px', textAlign: 'center' }}>
+                    <div style={{ color: '#facc15', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>
+                        ⚠ Printer Setup
+                    </div>
+                    <div style={{ color: '#ddd', fontSize: '0.72rem', lineHeight: 1.5 }}>
+                        In the print dialog: select <strong style={{ color: '#fff' }}>BlackCopper</strong> printer → More settings → Paper size → <strong style={{ color: '#fff' }}>58mm</strong> (or Thermal Roll)
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                        onClick={handlePrint}
+                        style={{ padding: '10px 28px', background: '#22c55e', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer' }}>
+                        🖨️ Print
+                    </button>
+                    <button
+                        onClick={() => onDone?.()}
+                        style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', fontSize: '0.95rem', cursor: 'pointer' }}>
+                        Close
+                    </button>
+                </div>
+            </div>
+        </>
+    );
 };
 
 export default ServiceReceipt;
