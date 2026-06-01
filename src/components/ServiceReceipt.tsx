@@ -152,14 +152,13 @@ const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service, onDone }) => {
 
     useEffect(() => {
         const win = window.open('', '_blank', 'width=400,height=600');
-        if (!win) return;
+        if (!win) { alert('Please allow popups for this site to print receipts.'); onDone?.(); return; }
         win.document.write(receiptHTML);
         win.document.close();
-        win.onload = () => {
+        setTimeout(() => {
             win.focus();
             win.print();
-            win.close();
-        };
+        }, 500);
         onDone?.();
     }, []);
 
