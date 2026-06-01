@@ -6,9 +6,19 @@ import ServiceReceipt from '@/components/ServiceReceipt';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 
+interface StockItem {
+    _id: string;
+    name: string;
+    productCode?: string;
+    retailPrice: number;
+    customerPrice: number;
+    quantity: number;
+}
+
 interface BillItem {
     stockId: string;
     name: string;
+    productCode?: string;
     quantity: number;
     retailPrice: number;
     customerPrice: number;
@@ -35,7 +45,9 @@ export default function WorkshopPage() {
     const [loading, setLoading] = useState(false);
     const [printingService, setPrintingService] = useState<ServiceRecord | null>(null);
     const [billItems, setBillItems] = useState<BillItem[]>([]);
-    const [manualItem, setManualItem] = useState({ name: '', price: '', qty: '1' });
+    const [manualItem, setManualItem] = useState({ name: '', productCode: '', price: '', qty: '1' });
+    const [stockList, setStockList] = useState<StockItem[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
     const [formData, setFormData] = useState({
         customerName: '',
         customerMobile: '',
@@ -45,13 +57,40 @@ export default function WorkshopPage() {
         serviceCharges: '',
     });
 
-    useEffect(() => { fetchHistory(); }, []);
+    useEffect(() => {
+        fetchHistory();
+        fetchStock();
+    }, []);
 
     const fetchHistory = async () => {
         try {
             const res = await fetch('/api/workshop');
             if (res.ok) setHistory(await res.json());
         } catch { }
+    };
+
+    const fetchStock = async () => {
+        try {
+            const res = await fetch('/api/workshop/stock');
+            if (res.ok) setStockList(await res.json());
+        } catch { }
+    };
+
+    const suggestions = manualItem.name.trim().length >= 1
+        ? stockList.filter(s =>
+            s.name.toLowerCase().includes(manualItem.name.toLowerCase()) ||
+            (s.productCode && s.productCode.toLowerCase().includes(manualItem.name.toLowerCase()))
+          ).slice(0, 8)
+        : [];
+
+    const selectSuggestion = (item: StockItem) => {
+        setManualItem({
+            name: item.name,
+            productCode: item.productCode ?? '',
+            price: String(item.customerPrice),
+            qty: '1',
+        });
+        setShowSuggestions(false);
     };
 
     const removeItem = (idx: number) => {
@@ -139,15 +178,69 @@ export default function WorkshopPage() {
                                     onChange={e => setFormData({ ...formData, serviceCharges: e.target.value })} />
                             </div>
 
-                            {/* Parts / Manual Entry */}
+                            {/* Parts / Items with autocomplete */}
                             <div style={{ marginBottom: '1rem', padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
                                 <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
                                     Parts / Items
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.5rem' }}>
-                                    <input className="input" placeholder="Item name (e.g. CD70 Oil)"
-                                        value={manualItem.name}
-                                        onChange={e => setManualItem({ ...manualItem, name: e.target.value })} />
+                                    {/* Name with autocomplete */}
+                                    <div style={{ position: 'relative' }}>
+                                        <input
+                                            className="input"
+                                            placeholder="Search by name or product code…"
+                                            value={manualItem.name}
+                                            autoComplete="off"
+                                            onChange={e => {
+                                                setManualItem({ ...manualItem, name: e.target.value, productCode: '', price: '' });
+                                                setShowSuggestions(true);
+                                            }}
+                                            onFocus={() => setShowSuggestions(true)}
+                                            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                                        />
+                                        {showSuggestions && suggestions.length > 0 && (
+                                            <div style={{
+                                                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                                                background: 'var(--color-bg-card)', border: '1px solid var(--color-border)',
+                                                borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                                                maxHeight: '220px', overflowY: 'auto',
+                                            }}>
+                                                {suggestions.map(s => (
+                                                    <div
+                                                        key={s._id}
+                                                        onMouseDown={() => selectSuggestion(s)}
+                                                        style={{
+                                                            padding: '0.5rem 0.75rem', cursor: 'pointer',
+                                                            borderBottom: '1px solid rgba(255,255,255,0.05)',
+                                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                        }}
+                                                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
+                                                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                                                    >
+                                                        <div>
+                                                            <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{s.name}</div>
+                                                            {s.productCode && (
+                                                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{s.productCode}</div>
+                                                            )}
+                                                        </div>
+                                                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                                                            Rs.{s.customerPrice.toLocaleString()}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Product code (read-only if from stock, editable if manual) */}
+                                    <input
+                                        className="input"
+                                        placeholder="Product code (optional)"
+                                        value={manualItem.productCode}
+                                        onChange={e => setManualItem({ ...manualItem, productCode: e.target.value })}
+                                        style={{ fontSize: '0.8rem' }}
+                                    />
+
                                     <div style={{ display: 'flex', gap: '0.4rem' }}>
                                         <input type="text" inputMode="decimal" className="input" placeholder="Price"
                                             value={manualItem.price}
@@ -158,8 +251,15 @@ export default function WorkshopPage() {
                                         <button type="button" className="btn btn-secondary"
                                             onClick={() => {
                                                 if (!manualItem.name || !manualItem.price) return;
-                                                setBillItems([...billItems, { stockId: '', name: manualItem.name, quantity: Number(manualItem.qty) || 1, retailPrice: Number(manualItem.price), customerPrice: Number(manualItem.price) }]);
-                                                setManualItem({ name: '', price: '', qty: '1' });
+                                                setBillItems([...billItems, {
+                                                    stockId: '',
+                                                    name: manualItem.name,
+                                                    productCode: manualItem.productCode,
+                                                    quantity: Number(manualItem.qty) || 1,
+                                                    retailPrice: Number(manualItem.price),
+                                                    customerPrice: Number(manualItem.price),
+                                                }]);
+                                                setManualItem({ name: '', productCode: '', price: '', qty: '1' });
                                             }}
                                             disabled={!manualItem.name || !manualItem.price}>Add</button>
                                     </div>
@@ -179,7 +279,12 @@ export default function WorkshopPage() {
                                         <tbody>
                                             {billItems.map((item, idx) => (
                                                 <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                                    <td style={{ padding: '4px' }}>{item.name}</td>
+                                                    <td style={{ padding: '4px' }}>
+                                                        <div>{item.name}</div>
+                                                        {item.productCode && (
+                                                            <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>{item.productCode}</div>
+                                                        )}
+                                                    </td>
                                                     <td style={{ textAlign: 'right', padding: '4px' }}>{item.quantity}</td>
                                                     <td style={{ textAlign: 'right', padding: '4px' }}>Rs.{item.customerPrice.toLocaleString()}</td>
                                                     <td style={{ textAlign: 'right', padding: '4px' }}>Rs.{(item.customerPrice * item.quantity).toLocaleString()}</td>

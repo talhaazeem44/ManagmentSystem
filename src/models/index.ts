@@ -149,6 +149,7 @@ export const Sale: Model<ISale> = models.Sale || mongoose.model<ISale>('Sale', S
 export interface IWorkshopStock {
     _id?: string;
     name: string;
+    productCode?: string;
     category: string;
     retailPrice: number;
     customerPrice: number;
@@ -159,6 +160,7 @@ export interface IWorkshopStock {
 
 const WorkshopStockSchema = new Schema<IWorkshopStock>({
     name: { type: String, required: true },
+    productCode: { type: String, default: '' },
     category: { type: String, default: 'Other' },
     retailPrice: { type: Number, required: true },
     customerPrice: { type: Number, required: true },
