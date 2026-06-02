@@ -451,6 +451,7 @@ export default function NewSalePage() {
                                     required
                                 >
                                     <option value="CASH">Cash</option>
+                                    <option value="BANK_TRANSFER">Bank Transfer</option>
                                     <option value="CREDIT">Credit</option>
                                     <option value="LEASE">Lease</option>
                                     <option value="ONLINE">Online</option>

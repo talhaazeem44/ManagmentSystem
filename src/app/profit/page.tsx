@@ -204,22 +204,6 @@ export default function ProfitPage() {
                                     className="btn btn-success" style={{ fontSize: '0.82rem', padding: '0.45rem 1.1rem', width: '100%' }}>
                                     {collecting ? '⏳ Saving...' : '✅ Collect Margin'}
                                 </button>
-                                <button
-                                    disabled={collecting}
-                                    onClick={async () => {
-                                        if (!confirm('Reset uncollected margin to zero? This clears the counter without recording any collection.')) return;
-                                        setCollecting(true);
-                                        try {
-                                            await fetch('/api/margin-collections', {
-                                                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ amount: 0, note: 'Manual reset to zero' }),
-                                            });
-                                            await fetchAll();
-                                        } finally { setCollecting(false); }
-                                    }}
-                                    style={{ marginTop: '6px', fontSize: '0.78rem', padding: '0.35rem 1rem', width: '100%', background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '8px', cursor: 'pointer' }}>
-                                    🔄 Reset to Zero
-                                </button>
                             </div>
                             <div className="card" style={{ padding: '1.5rem', borderLeft: '4px solid #3b82f6' }}>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>{monthName} — Total Margin</div>

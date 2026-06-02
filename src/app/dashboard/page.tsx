@@ -407,8 +407,8 @@ export default function DashboardPage() {
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 600 }}>{row.bikeModel}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right' }}>
                                                         <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px',
-                                                            background: row.paymentMode === 'ADVANCE' ? 'rgba(245,158,11,0.15)' : row.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)',
-                                                            color: row.paymentMode === 'ADVANCE' ? '#f59e0b' : row.paymentMode === 'CREDIT' ? '#ef4444' : '#10b981' }}>
+                                                            background: row.paymentMode === 'ADVANCE' ? 'rgba(245,158,11,0.15)' : row.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : row.paymentMode === 'BANK_TRANSFER' ? 'rgba(59,130,246,0.12)' : 'rgba(16,185,129,0.12)',
+                                                            color: row.paymentMode === 'ADVANCE' ? '#f59e0b' : row.paymentMode === 'CREDIT' ? '#ef4444' : row.paymentMode === 'BANK_TRANSFER' ? '#3b82f6' : '#10b981' }}>
                                                             {row.paymentMode}
                                                         </span>
                                                     </td>
@@ -478,8 +478,8 @@ export default function DashboardPage() {
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 600 }}>{row.bikeModel}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right' }}>
                                                         <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px',
-                                                            background: row.paymentMode === 'ADVANCE' ? 'rgba(245,158,11,0.15)' : row.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)',
-                                                            color: row.paymentMode === 'ADVANCE' ? '#f59e0b' : row.paymentMode === 'CREDIT' ? '#ef4444' : '#10b981' }}>
+                                                            background: row.paymentMode === 'ADVANCE' ? 'rgba(245,158,11,0.15)' : row.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : row.paymentMode === 'BANK_TRANSFER' ? 'rgba(59,130,246,0.12)' : 'rgba(16,185,129,0.12)',
+                                                            color: row.paymentMode === 'ADVANCE' ? '#f59e0b' : row.paymentMode === 'CREDIT' ? '#ef4444' : row.paymentMode === 'BANK_TRANSFER' ? '#3b82f6' : '#10b981' }}>
                                                             {row.paymentMode}
                                                         </span>
                                                     </td>
