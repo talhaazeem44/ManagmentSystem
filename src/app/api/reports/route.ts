@@ -20,30 +20,22 @@ const calcAdvanceMargin = (booking: any) => {
 };
 
 // Profit per sale:
-// - Bike profit  = fixed margin + extra above standard price − discount given
-// - For credit sales with outstanding balance, use full sale price (not partial cash received)
+// - Bike profit  = fixed margin (8k/11k/20k) + extra received above standard price
 // - Reg profit   = registration charged to customer − actual government cost
 const calcSaleMargin = (sale: any) => {
     const model = sale.bikeId?.model || '';
     const standardPrice = BIKE_STANDARD_PRICES[model] || Number(sale.price || 0);
     const baseMargin = BIKE_UNIT_MARGINS[model] || 0;
-
-    // Credit sales with balance still owed: margin is based on agreed price, not partial cash received
-    const hasBalance = Number(sale.balance || 0) > 0;
-    const totalReceived = hasBalance
-        ? Number(sale.price || 0)
-        : (Number(sale.receivedCash || 0) + Number(sale.bankTransferAmount || 0)) || Number(sale.price || 0);
-
-    // Only add bonus for selling above standard price — never reduce margin for selling below
+    // Bank transfer counts the same as received cash
+    const totalReceived = (Number(sale.receivedCash || 0) + Number(sale.bankTransferAmount || 0)) || Number(sale.price || 0);
     const extraCash = Math.max(0, totalReceived - standardPrice);
-    const discount = Number(sale.discount || 0);
-    const bikeProfit = Math.max(0, baseMargin + extraCash - discount);
+    const bikeProfit = baseMargin + extraCash;
 
     const regCharged = Number(sale.registrationCost || 0);
     const actualRegCost = REGISTRATION_ACTUAL_COST_BY_MODEL[model] ?? REGISTRATION_ACTUAL_COST;
     const regProfit = regCharged > 0 ? regCharged - actualRegCost : 0;
 
-    return { bikeProfit, regProfit, totalProfit: bikeProfit + regProfit, extraCash, discount };
+    return { bikeProfit, regProfit, totalProfit: bikeProfit + regProfit };
 };
 
 export async function GET(request: NextRequest) {
@@ -152,19 +144,6 @@ export async function GET(request: NextRequest) {
         // ── Expenses ───────────────────────────────────────────────────────────
         const expenseCash = filteredExpenses.reduce((s: number, e: any) => e.deductFrom === 'CASH' ? s + Number(e.amount || 0) : s, 0);
         const expenseMargin = filteredExpenses.reduce((s: number, e: any) => e.deductFrom === 'MARGIN' ? s + Number(e.amount || 0) : s, 0);
-        const expenseWorkshop = filteredExpenses.reduce((s: number, e: any) => e.deductFrom === 'WORKSHOP' ? s + Number(e.amount || 0) : s, 0);
-        const expensesByCategory: Record<string, number> = {};
-        for (const e of filteredExpenses as any[]) {
-            const cat = e.category || 'Other';
-            expensesByCategory[cat] = (expensesByCategory[cat] || 0) + Number(e.amount || 0);
-        }
-        const expenseList = (filteredExpenses as any[]).map(e => ({
-            date: e.date,
-            description: e.description,
-            category: e.category || 'Other',
-            deductFrom: e.deductFrom,
-            amount: Number(e.amount || 0),
-        }));
 
         const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || 0), 0) + rangeAdvanceCash;
         const rangeRegistration = filteredSales.reduce((s, sale: any) => s + Number(sale.registrationCost || 0), 0);
@@ -215,7 +194,6 @@ export async function GET(request: NextRequest) {
             ...filteredSales.map((sale: any) => {
                 const m = calcSaleMargin(sale);
                 return {
-                    saleDate: sale.saleDate,
                     bikeModel: sale.bikeId?.model || '?',
                     paymentMode: sale.paymentMode || 'CASH',
                     price: Number(sale.price || 0),
@@ -227,8 +205,6 @@ export async function GET(request: NextRequest) {
                     totalProfit: m.totalProfit,
                     standardPrice: BIKE_STANDARD_PRICES[sale.bikeId?.model || ''] || 0,
                     baseMargin: BIKE_UNIT_MARGINS[sale.bikeId?.model || ''] || 0,
-                    extra: m.extraCash,
-                    discount: m.discount,
                 };
             }),
             ...filteredAdvanceBookings.map((b: any) => {
@@ -245,8 +221,6 @@ export async function GET(request: NextRequest) {
                     totalProfit: am.bikeProfit,
                     standardPrice: am.standardPrice,
                     baseMargin: am.baseMargin,
-                    extra: am.bikeProfit - am.baseMargin,
-                    discount: 0,
                 };
             }),
         ];
@@ -268,14 +242,11 @@ export async function GET(request: NextRequest) {
                 cashToDeposit: rangeCashToDeposit,
                 expenseCash: expenseCash,
                 expenseMargin: expenseMargin,
-                expenseWorkshop: expenseWorkshop,
-                expensesByCategory,
                 cashInHand: rangeCashInHand,
                 cashDepositOnly: rangeCashDepositOnly,
                 startDate: filterStartDate,
                 endDate: filterEndDate,
             },
-            expenseList,
             cashBreakdown,
             allTime: {
                 totalBikes: totalBikesCount,

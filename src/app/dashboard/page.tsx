@@ -400,7 +400,7 @@ export default function DashboardPage() {
                                     </thead>
                                     <tbody>
                                         {customDateStats!.cashBreakdown.map((row, i) => {
-                                            const extra = row.extra ?? 0;
+                                            const extra = Math.max(0, (row.receivedCash ?? 0) + (row.bankTransferAmount ?? 0) - (row.standardPrice ?? 0));
                                             return (
                                                 <tr key={i} style={{ borderBottom: '1px solid var(--color-border)', background: i % 2 === 0 ? 'transparent' : 'var(--color-bg-elevated)' }}>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-text-muted)' }}>{i + 1}</td>
@@ -471,7 +471,7 @@ export default function DashboardPage() {
                                     </thead>
                                     <tbody>
                                         {data!.map((row, i) => {
-                                            const extra = row.extra ?? 0;
+                                            const extra = Math.max(0, (row.receivedCash ?? 0) + (row.bankTransferAmount ?? 0) - (row.standardPrice ?? 0));
                                             return (
                                                 <tr key={i} style={{ borderBottom: '1px solid var(--color-border)', background: i % 2 === 0 ? 'transparent' : 'var(--color-bg-elevated)' }}>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-text-muted)' }}>{i + 1}</td>
