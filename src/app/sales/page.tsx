@@ -32,7 +32,6 @@ interface EditState {
     registrationCost: string;
     balance: string;
     paymentMode: string;
-    discount: string;
 }
 
 const thS: React.CSSProperties = {
@@ -78,7 +77,6 @@ export default function SalesPage() {
             registrationCost: String(sale.registrationCost ?? 0),
             balance: String(sale.balance ?? 0),
             paymentMode: sale.paymentMode,
-            discount: String((sale as any).discount ?? 0),
         });
     };
 
@@ -98,7 +96,6 @@ export default function SalesPage() {
                     registrationCost: parseFloat(editState.registrationCost) || 0,
                     balance: parseFloat(editState.balance) || 0,
                     paymentMode: editState.paymentMode,
-                    discount: parseFloat(editState.discount) || 0,
                 }),
             });
             if (res.ok) { await fetchSales(); cancelEdit(); }
@@ -188,7 +185,7 @@ export default function SalesPage() {
                             <table style={{ width: 'max-content', minWidth: '100%', maxWidth: 'none', borderCollapse: 'collapse' }}>
                                 <thead>
                                     <tr>
-                                        {['#','Date','Rcpt','Customer','CNIC','Mobile','Model','Color','Engine No','Chassis No','DO','Mode','Price','Cash Rcvd','Bank Xfer','Reg','Less','Balance','Actions'].map(h => (
+                                        {['#','Date','Rcpt','Customer','CNIC','Mobile','Model','Color','Engine No','Chassis No','DO','Mode','Price','Cash Rcvd','Bank Xfer','Reg','Balance','Actions'].map(h => (
                                             <th key={h} style={thS}>{h}</th>
                                         ))}
                                     </tr>
@@ -224,7 +221,6 @@ export default function SalesPage() {
                                                 <td style={{ ...tdS, color: '#10b981' }}>{isEditing ? editInput('receivedCash', '90px') : `Rs. ${Number(sale.receivedCash ?? 0).toLocaleString()}`}</td>
                                                 <td style={{ ...tdS, color: '#3b82f6' }}>{isEditing ? editInput('bankTransferAmount', '90px') : (sale.bankTransferAmount > 0 ? `Rs. ${Number(sale.bankTransferAmount).toLocaleString()}` : '—')}</td>
                                                 <td style={{ ...tdS, color: '#8b5cf6' }}>{isEditing ? editInput('registrationCost', '80px') : (sale.registrationCost ? `Rs. ${Number(sale.registrationCost).toLocaleString()}` : '—')}</td>
-                                                <td style={{ ...tdS, color: '#f59e0b' }}>{isEditing ? editInput('discount', '75px') : ((sale as any).discount > 0 ? `Rs. ${Number((sale as any).discount).toLocaleString()}` : '—')}</td>
                                                 <td style={{ ...tdS, color: (sale.balance ?? 0) > 0 ? '#ef4444' : 'var(--color-text-muted)' }}>{isEditing ? editInput('balance', '80px') : ((sale.balance ?? 0) > 0 ? `Rs. ${Number(sale.balance).toLocaleString()}` : '—')}</td>
 
                                                 <td style={{ ...tdS, minWidth: '110px' }}>
