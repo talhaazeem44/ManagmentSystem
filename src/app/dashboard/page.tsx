@@ -29,7 +29,6 @@ interface CashBreakdownItem {
     receivedCash: number; bankTransferAmount: number; counted: number;
     bikeProfit: number; regProfit: number; totalProfit: number;
     standardPrice: number; baseMargin: number;
-    extra: number; discount: number;
 }
 
 interface Stats {
@@ -393,7 +392,7 @@ export default function DashboardPage() {
                                 <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
                                     <thead>
                                         <tr style={{ background: 'var(--color-bg-elevated)' }}>
-                                            {['#', 'Model', 'Mode', 'Sale Price', 'Std Price', 'Rcvd Cash', 'Bank Xfer', 'Base Margin', 'Extra', 'Less', 'Bike Profit', 'Reg Profit', 'Total Profit'].map(h => (
+                                            {['#', 'Model', 'Mode', 'Sale Price', 'Std Price', 'Rcvd Cash', 'Bank Xfer', 'Base Margin', 'Extra', 'Bike Profit', 'Reg Profit', 'Total Profit'].map(h => (
                                                 <th key={h} style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 700, color: 'var(--color-text-muted)', whiteSpace: 'nowrap', borderBottom: '1px solid var(--color-border)' }}>{h}</th>
                                             ))}
                                         </tr>
@@ -417,8 +416,7 @@ export default function DashboardPage() {
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: '#10b981' }}>{row.receivedCash.toLocaleString()}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: '#3b82f6' }}>{row.bankTransferAmount > 0 ? row.bankTransferAmount.toLocaleString() : '-'}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-text-muted)' }}>{row.baseMargin.toLocaleString()}</td>
-                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: extra > 0 ? '#10b981' : extra < 0 ? '#ef4444' : 'var(--color-text-muted)' }}>{extra > 0 ? `+${extra.toLocaleString()}` : extra < 0 ? extra.toLocaleString() : '-'}</td>
-                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: '#f59e0b' }}>{(row.discount ?? 0) > 0 ? `-${(row.discount ?? 0).toLocaleString()}` : '-'}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: extra > 0 ? '#10b981' : 'var(--color-text-muted)' }}>{extra > 0 ? `+${extra.toLocaleString()}` : '-'}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 700, color: 'var(--color-success)' }}>{row.bikeProfit.toLocaleString()}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-primary)' }}>{row.regProfit > 0 ? row.regProfit.toLocaleString() : '-'}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 700, color: '#10b981' }}>{row.totalProfit.toLocaleString()}</td>
@@ -432,8 +430,7 @@ export default function DashboardPage() {
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#10b981' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.receivedCash, 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#3b82f6' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.bankTransferAmount, 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.baseMargin, 0).toLocaleString()}</td>
-                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + (r.extra ?? 0), 0).toLocaleString()}</td>
-                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#f59e0b' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + (r.discount ?? 0), 0) > 0 ? `-${customDateStats!.cashBreakdown.reduce((s, r) => s + (r.discount ?? 0), 0).toLocaleString()}` : '-'}</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + Math.max(0, r.receivedCash + r.bankTransferAmount - r.standardPrice), 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: 'var(--color-success)' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.bikeProfit, 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: 'var(--color-primary)' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.regProfit, 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#10b981' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.totalProfit, 0).toLocaleString()}</td>
@@ -464,7 +461,7 @@ export default function DashboardPage() {
                                 <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
                                     <thead>
                                         <tr style={{ background: 'var(--color-bg-elevated)' }}>
-                                            {['#', 'Model', 'Mode', 'Sale Price', 'Std Price', 'Rcvd Cash', 'Bank Xfer', 'Base Margin', 'Extra', 'Less', 'Bike Profit', 'Reg Profit', 'Total Profit'].map(h => (
+                                            {['#', 'Model', 'Mode', 'Sale Price', 'Std Price', 'Rcvd Cash', 'Bank Xfer', 'Base Margin', 'Extra', 'Bike Profit', 'Reg Profit', 'Total Profit'].map(h => (
                                                 <th key={h} style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 700, color: 'var(--color-text-muted)', whiteSpace: 'nowrap', borderBottom: '1px solid var(--color-border)' }}>{h}</th>
                                             ))}
                                         </tr>
@@ -488,8 +485,7 @@ export default function DashboardPage() {
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: '#10b981' }}>{row.receivedCash.toLocaleString()}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: '#3b82f6' }}>{row.bankTransferAmount > 0 ? row.bankTransferAmount.toLocaleString() : '-'}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-text-muted)' }}>{row.baseMargin.toLocaleString()}</td>
-                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: extra > 0 ? '#10b981' : extra < 0 ? '#ef4444' : 'var(--color-text-muted)' }}>{extra > 0 ? `+${extra.toLocaleString()}` : extra < 0 ? extra.toLocaleString() : '-'}</td>
-                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: '#f59e0b' }}>{(row.discount ?? 0) > 0 ? `-${(row.discount ?? 0).toLocaleString()}` : '-'}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: extra > 0 ? '#10b981' : 'var(--color-text-muted)' }}>{extra > 0 ? `+${extra.toLocaleString()}` : '-'}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 700, color: 'var(--color-success)' }}>{row.bikeProfit.toLocaleString()}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-primary)' }}>{row.regProfit > 0 ? row.regProfit.toLocaleString() : '-'}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 700, color: '#10b981' }}>{row.totalProfit.toLocaleString()}</td>
@@ -503,8 +499,7 @@ export default function DashboardPage() {
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#10b981' }}>{data!.reduce((s, r) => s + r.receivedCash, 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#3b82f6' }}>{data!.reduce((s, r) => s + r.bankTransferAmount, 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>{data!.reduce((s, r) => s + r.baseMargin, 0).toLocaleString()}</td>
-                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>{data!.reduce((s, r) => s + (r.extra ?? 0), 0).toLocaleString()}</td>
-                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#f59e0b' }}>{data!.reduce((s, r) => s + (r.discount ?? 0), 0) > 0 ? `-${data!.reduce((s, r) => s + (r.discount ?? 0), 0).toLocaleString()}` : '-'}</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>{data!.reduce((s, r) => s + Math.max(0, r.receivedCash + r.bankTransferAmount - r.standardPrice), 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: 'var(--color-success)' }}>{data!.reduce((s, r) => s + r.bikeProfit, 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: 'var(--color-primary)' }}>{data!.reduce((s, r) => s + r.regProfit, 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#10b981' }}>{data!.reduce((s, r) => s + r.totalProfit, 0).toLocaleString()}</td>
