@@ -26,8 +26,10 @@ const calcSaleMargin = (sale: any) => {
     const model = sale.bikeId?.model || '';
     const standardPrice = BIKE_STANDARD_PRICES[model] || Number(sale.price || 0);
     const baseMargin = BIKE_UNIT_MARGINS[model] || 0;
-    // Bank transfer counts the same as received cash
-    const totalReceived = (Number(sale.receivedCash || 0) + Number(sale.bankTransferAmount || 0)) || Number(sale.price || 0);
+    // For CREDIT sales use the agreed price (balance collected later); for cash/bank use actual received
+    const totalReceived = sale.paymentMode === 'CREDIT'
+        ? Number(sale.price || 0)
+        : (Number(sale.receivedCash || 0) + Number(sale.bankTransferAmount || 0)) || Number(sale.price || 0);
     // Positive diff = extra earned above standard; negative diff = loss below standard (reduces base margin)
     const bikeProfit = baseMargin + (totalReceived - standardPrice);
 
