@@ -1,0 +1,23 @@
+0 verbose cli /usr/local/bin/node /usr/local/lib/node_modules/npm/bin/npm-cli.js
+1 info using npm@11.4.2
+2 info using node@v22.15.1
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/talhaazeem/Documents/managementSystem/.npmrc
+5 silly config load:file:/Users/talhaazeem/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm exec plugins add vercel/vercel-plugin
+8 verbose argv "exec" "--" "plugins" "add" "vercel/vercel-plugin"
+9 verbose logfile logs-max:10 dir:/Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-06-08T09_09_26_789Z-
+10 verbose logfile /Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-06-08T09_09_26_789Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly logfile done cleaning log files
+13 silly packumentCache heap:2197815296 maxSize:549453824 maxEntrySize:274726912
+14 http fetch GET 200 https://registry.npmjs.org/plugins 445ms (cache revalidated)
+15 silly packumentCache heap:2197815296 maxSize:549453824 maxEntrySize:274726912
+16 silly packumentCache heap:2197815296 maxSize:549453824 maxEntrySize:274726912
+17 verbose cwd /Users/talhaazeem/Documents/managementSystem
+18 verbose os Darwin 24.5.0
+19 verbose node v22.15.1
+20 verbose npm  v11.4.2
+21 verbose exit 0
+22 info ok
