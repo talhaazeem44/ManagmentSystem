@@ -30,8 +30,8 @@ interface RangeData {
     bankTransfer: number;
     expenseCash: number;
     expenseMargin: number;
-    expenseWorkshop: number;
     expensesByCategory: Record<string, number>;
+    expenseList: ExpenseItem[];
     startDate: string;
     endDate: string;
 }
@@ -177,7 +177,7 @@ export default function ReportsPage() {
         const XLSX = await import('xlsx');
 
         const profitBeforeExp = (r.bikeProfit ?? 0) + (r.regProfit ?? 0) + (r.workshopProfit ?? 0);
-        const totalAllExp = (r.expenseCash ?? 0) + (r.expenseMargin ?? 0) + (r.expenseWorkshop ?? 0);
+        const totalAllExp = (r.expenseCash ?? 0) + (r.expenseMargin ?? 0);
 
         // Sheet 1: Summary
         const summaryRows: (string | number)[][] = [
@@ -195,7 +195,6 @@ export default function ReportsPage() {
             ['Total Profit (before expenses)', profitBeforeExp],
             ['Expenses — from Margin', r.expenseMargin],
             ['Expenses — from Cash', r.expenseCash],
-            ['Expenses — Workshop', r.expenseWorkshop],
             ['Total Expenses', totalAllExp],
             [],
             ['Net Profit (after margin expenses)', r.profit],
@@ -262,7 +261,7 @@ export default function ReportsPage() {
     };
 
     const profitBeforeExp = (r?.bikeProfit ?? 0) + (r?.regProfit ?? 0) + (r?.workshopProfit ?? 0);
-    const totalAllExp = (r?.expenseCash ?? 0) + (r?.expenseMargin ?? 0) + (r?.expenseWorkshop ?? 0);
+    const totalAllExp = (r?.expenseCash ?? 0) + (r?.expenseMargin ?? 0);
 
     if (!unlocked) {
         return (
@@ -397,27 +396,88 @@ export default function ReportsPage() {
                             </div>
                         </div>
 
-                        {/* ── Expense Breakdown by Category ── */}
-                        {r?.expensesByCategory && Object.keys(r.expensesByCategory).length > 0 && (
-                            <div className="card" style={{ marginBottom: '1.25rem' }}>
-                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-                                    Expense Breakdown by Category
+                        {/* ── Margin Tracker ── */}
+                        <div className="card" style={{ marginBottom: '1.25rem', padding: '1.25rem' }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+                                Margin Tracker
+                            </div>
+                            {/* Summary rows */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+                                {[
+                                    { label: 'Bike Sales Margin', value: (r?.bikeProfit ?? 0) - (r?.advanceMargin ?? 0), color: '#10b981' },
+                                    { label: 'Advance Bookings Margin', value: r?.advanceMargin ?? 0, color: '#10b981' },
+                                    { label: 'Registration Profit', value: r?.regProfit ?? 0, color: '#8b5cf6' },
+                                    { label: 'Workshop Profit', value: r?.workshopProfit ?? 0, color: '#f59e0b' },
+                                ].map(({ label, value, color }) => (
+                                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'var(--color-bg-elevated)', borderRadius: '8px' }}>
+                                        <span style={{ fontSize: '0.82rem' }}>{label}</span>
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color }}>{value >= 0 ? '+' : ''}Rs. {value.toLocaleString()}</span>
+                                    </div>
+                                ))}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.75rem', background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)', borderRadius: '8px' }}>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>Gross Margin (before expenses)</span>
+                                    <span style={{ fontSize: '1rem', fontWeight: 800, color: '#06b6d4' }}>Rs. {profitBeforeExp.toLocaleString()}</span>
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '0.6rem' }}>
-                                    {Object.entries(r.expensesByCategory)
-                                        .sort(([, a], [, b]) => b - a)
-                                        .map(([cat, amount]) => (
-                                            <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.85rem', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '10px' }}>
-                                                <span style={{ fontSize: '1.2rem' }}>{CATEGORY_ICONS[cat] ?? '📌'}</span>
-                                                <div>
-                                                    <div style={{ fontSize: '0.75rem', fontWeight: 600 }}>{cat}</div>
-                                                    <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ef4444' }}>Rs. {amount.toLocaleString()}</div>
-                                                </div>
-                                            </div>
-                                        ))}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'rgba(239,68,68,0.06)', borderRadius: '8px' }}>
+                                    <span style={{ fontSize: '0.82rem', color: '#ef4444' }}>Less: Margin Expenses</span>
+                                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#ef4444' }}>- Rs. {(r?.expenseMargin ?? 0).toLocaleString()}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.75rem', background: (r?.profit ?? 0) >= 0 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${(r?.profit ?? 0) >= 0 ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`, borderRadius: '8px' }}>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>Net Margin (after expenses)</span>
+                                    <span style={{ fontSize: '1rem', fontWeight: 800, color: (r?.profit ?? 0) >= 0 ? '#10b981' : '#ef4444' }}>Rs. {(r?.profit ?? 0).toLocaleString()}</span>
                                 </div>
                             </div>
-                        )}
+
+                            {/* Expense category pills + list */}
+                            {r?.expensesByCategory && Object.keys(r.expensesByCategory).length > 0 && (<>
+                                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.6rem' }}>Expenses by Category</div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+                                    {Object.entries(r.expensesByCategory).sort(([, a], [, b]) => b - a).map(([cat, amount]) => (
+                                        <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '20px' }}>
+                                            <span>{CATEGORY_ICONS[cat] ?? '📌'}</span>
+                                            <span style={{ fontSize: '0.78rem', fontWeight: 600 }}>{cat}</span>
+                                            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#ef4444' }}>Rs. {amount.toLocaleString()}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>)}
+
+                            {/* Individual expense list */}
+                            {(r?.expenseList ?? []).length > 0 && (
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                                                {['Date', 'Category', 'Description', 'From', 'Amount'].map(h => (
+                                                    <th key={h} style={{ padding: '6px 8px', textAlign: h === 'Amount' ? 'right' : 'left', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {(r?.expenseList ?? []).map((e, i) => (
+                                                <tr key={i} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                                    <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', color: 'var(--color-text-muted)' }}>{new Date(e.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}</td>
+                                                    <td style={{ padding: '6px 8px' }}>{CATEGORY_ICONS[e.category] ?? '📌'} {e.category}</td>
+                                                    <td style={{ padding: '6px 8px', color: 'var(--color-text-muted)' }}>{e.description || '—'}</td>
+                                                    <td style={{ padding: '6px 8px' }}>
+                                                        <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, background: e.deductFrom === 'MARGIN' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)', color: e.deductFrom === 'MARGIN' ? '#ef4444' : '#f59e0b' }}>
+                                                            {e.deductFrom}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: '#ef4444' }}>Rs. {e.amount.toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 700, background: 'var(--color-bg-elevated)' }}>
+                                                <td colSpan={4} style={{ padding: '6px 8px', color: 'var(--color-text-muted)' }}>Total Expenses</td>
+                                                <td style={{ padding: '6px 8px', textAlign: 'right', color: '#ef4444' }}>Rs. {totalAllExp.toLocaleString()}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
 
                         {/* ── Bike Sales Table ── */}
                         {(data?.cashBreakdown ?? []).length > 0 && (

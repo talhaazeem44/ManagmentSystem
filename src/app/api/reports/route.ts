@@ -146,6 +146,18 @@ export async function GET(request: NextRequest) {
         // ── Expenses ───────────────────────────────────────────────────────────
         const expenseCash = filteredExpenses.reduce((s: number, e: any) => e.deductFrom === 'CASH' ? s + Number(e.amount || 0) : s, 0);
         const expenseMargin = filteredExpenses.reduce((s: number, e: any) => e.deductFrom === 'MARGIN' ? s + Number(e.amount || 0) : s, 0);
+        const expensesByCategory = filteredExpenses.reduce((acc: Record<string, number>, e: any) => {
+            const cat = e.category || 'Other';
+            acc[cat] = (acc[cat] || 0) + Number(e.amount || 0);
+            return acc;
+        }, {});
+        const expenseList = filteredExpenses.map((e: any) => ({
+            date: e.date,
+            description: e.description || '',
+            category: e.category || 'Other',
+            deductFrom: e.deductFrom,
+            amount: Number(e.amount || 0),
+        }));
 
         const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || 0), 0) + rangeAdvanceCash;
         const rangeRegistration = filteredSales.reduce((s, sale: any) => s + Number(sale.registrationCost || 0), 0);
@@ -244,6 +256,8 @@ export async function GET(request: NextRequest) {
                 cashToDeposit: rangeCashToDeposit,
                 expenseCash: expenseCash,
                 expenseMargin: expenseMargin,
+                expensesByCategory,
+                expenseList,
                 cashInHand: rangeCashInHand,
                 cashDepositOnly: rangeCashDepositOnly,
                 startDate: filterStartDate,

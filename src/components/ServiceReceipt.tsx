@@ -51,9 +51,9 @@ const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service, onDone }) => {
 <title>Receipt</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-@page { size:58mm auto; margin:1mm; }
+@page { size:80mm auto; margin:1mm; }
 html,body {
-    width:56mm;
+    width:78mm;
     font-family:'Courier New',Courier,monospace;
     font-size:8pt;
     color:#000;
@@ -79,7 +79,7 @@ html,body {
 
     /* ── inline styles for the receipt body (used both on screen and in print) ── */
     const s: Record<string, React.CSSProperties> = {
-        wrap:    { fontFamily: "'Courier New', Courier, monospace", fontSize: '8pt', color: '#000', background: '#fff', width: '228px', lineHeight: 1.4, padding: '6px 4px' },
+        wrap:    { fontFamily: "'Courier New', Courier, monospace", fontSize: '8pt', color: '#000', background: '#fff', width: '302px', lineHeight: 1.4, padding: '6px 4px' },
         center:  { textAlign: 'center' },
         shopName:{ fontSize: '13pt', fontWeight: 900 },
         sub:     { fontSize: '7.5pt', fontWeight: 700 },
@@ -175,7 +175,7 @@ html,body {
                         ⚠ Printer Setup
                     </div>
                     <div style={{ color: '#ddd', fontSize: '0.72rem', lineHeight: 1.5 }}>
-                        In the print dialog: select <strong style={{ color: '#fff' }}>BlackCopper</strong> printer → More settings → Paper size → <strong style={{ color: '#fff' }}>58mm</strong> (or Thermal Roll)
+                        In the print dialog: select <strong style={{ color: '#fff' }}>BlackCopper</strong> printer → More settings → Paper size → <strong style={{ color: '#fff' }}>80mm</strong> (or Thermal Roll)
                     </div>
                 </div>
 
