@@ -9,7 +9,7 @@
     overflow: hidden;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
 }
 
 /* ═══════════════════════════════════════════════
@@ -265,7 +265,7 @@
 .cardOuter {
     position: relative;
     z-index: 10;
-    margin-left: clamp(3rem, 5vw, 6rem);
+    margin-left: 0;
     width: clamp(340px, 28vw, 430px);
     opacity: 0;
     transition: opacity 1s ease 0.15s;
