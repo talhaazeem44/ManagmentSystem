@@ -3,7 +3,6 @@
 import { signIn, getSession } from 'next-auth/react';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import styles from './login.module.css';
 
 export default function LoginPage() {
@@ -97,19 +96,20 @@ export default function LoginPage() {
                 ))}
             </div>
 
-            {/* ── Bike hero ───────────────────────────────── */}
-            <div className={`${styles.bikeWrap} ${ready ? styles.bikeIn : ''}`} aria-hidden>
-                <div className={styles.bikeGlow} />
-                <Image
-                    src="/honda-bike.png"
-                    alt="Honda"
-                    width={940}
-                    height={580}
-                    className={styles.bikeImg}
-                    priority
-                    unoptimized
-                />
-                <div className={styles.groundShadow} />
+            {/* ── Abstract speed art (right side) ─────────── */}
+            <div className={`${styles.deco} ${ready ? styles.decoIn : ''}`} aria-hidden>
+                <div className={styles.decoGlow} />
+                <div className={styles.decoRing3} />
+                <div className={styles.decoRing1} />
+                <div className={styles.decoRing2} />
+                {Array.from({ length: 28 }, (_, i) => (
+                    <div key={i} className={styles.decoTick} style={{ '--ti': i } as React.CSSProperties} />
+                ))}
+                <div className={styles.decoCenter} />
+                <div className={styles.decoMonogram}>
+                    <span className={styles.decoN}>N</span>
+                    <span className={styles.decoA}>A</span>
+                </div>
             </div>
 
             {/* ── Login card ──────────────────────────────── */}

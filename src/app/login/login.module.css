@@ -140,62 +140,123 @@
 }
 
 /* ═══════════════════════════════════════════════
-   BIKE HERO
+   ABSTRACT SPEED ART (right side)
 ═══════════════════════════════════════════════ */
-.bikeWrap {
+.deco {
     position: absolute;
-    right: -4%;
-    bottom: 0;
-    width: 64%;
+    right: -5%;
+    top: 50%;
+    transform: translateY(-50%);
+    width: min(580px, 48vw);
+    height: min(580px, 48vw);
     z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     opacity: 0;
-    transform: translateX(120px);
-    transition: opacity 1.3s cubic-bezier(0.16,1,0.3,1) 0.5s,
-                transform 1.3s cubic-bezier(0.16,1,0.3,1) 0.5s;
+    transition: opacity 1.6s ease 0.7s;
 }
-.bikeIn {
-    opacity: 1;
-    transform: translateX(0);
-}
-.bikeGlow {
+.decoIn { opacity: 1; }
+
+/* ambient glow behind rings */
+.decoGlow {
     position: absolute;
-    top: 45%; left: 35%;
+    inset: 8%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(220,38,38,0.13) 0%, transparent 65%);
+    filter: blur(40px);
+    animation: decoGlowPulse 4s ease-in-out infinite;
+}
+@keyframes decoGlowPulse {
+    0%,100% { opacity:.5; transform:scale(1); }
+    50%      { opacity:1;  transform:scale(1.15); }
+}
+
+/* rings */
+.decoRing1, .decoRing2, .decoRing3 {
+    position: absolute;
+    top: 50%; left: 50%;
+    border-radius: 50%;
     transform: translate(-50%,-50%);
-    width: 55%; height: 55%;
-    background: radial-gradient(circle, rgba(220,38,38,0.16) 0%, transparent 70%);
-    filter: blur(50px);
-    animation: glowBreath 4s ease-in-out infinite;
 }
-@keyframes glowBreath {
-    0%,100% { opacity:.6; transform:translate(-50%,-50%) scale(1); }
-    50%      { opacity:1;  transform:translate(-50%,-50%) scale(1.25); }
+.decoRing1 {
+    width: 72%; height: 72%;
+    border: 1px dashed rgba(220,38,38,0.22);
+    animation: ringSpin 22s linear infinite;
 }
-.bikeImg {
-    width: 100%;
-    height: auto;
-    display: block;
-    filter:
-        drop-shadow(0 0 50px rgba(255,255,255,0.04))
-        drop-shadow(-25px 0 70px rgba(220,38,38,0.09))
-        brightness(1.06)
-        contrast(1.04);
-    animation: levitate 5s ease-in-out infinite;
+.decoRing2 {
+    width: 52%; height: 52%;
+    border: 1px solid rgba(220,38,38,0.14);
+    animation: ringSpin 14s linear infinite reverse;
 }
-@keyframes levitate {
-    0%,100% { transform: translateY(0px); }
-    50%      { transform: translateY(-14px); }
+.decoRing3 {
+    width: 92%; height: 92%;
+    border: 1px solid rgba(255,255,255,0.04);
+    animation: ringSpin 40s linear infinite;
 }
-.groundShadow {
+@keyframes ringSpin {
+    to { transform: translate(-50%,-50%) rotate(360deg); }
+}
+
+/* tachometer tick marks around the outer ring */
+.decoTick {
     position: absolute;
-    bottom: 0; left: 12%; right: 4%;
-    height: 48px;
-    background: radial-gradient(ellipse, rgba(0,0,0,1) 0%, transparent 70%);
-    filter: blur(16px);
-    animation: shadowSync 5s ease-in-out infinite;
+    top: 50%; left: 50%;
+    width: 1px;
+    height: 10px;
+    background: rgba(220,38,38,0.28);
+    transform-origin: 0 0;
+    transform:
+        translate(-50%, -50%)
+        rotate(calc(var(--ti) * 12.857deg))
+        translateY(-46%);
 }
-@keyframes shadowSync {
-    0%,100% { transform: scaleX(1);    opacity:.9; }
-    50%      { transform: scaleX(.82); opacity:.5; }
+.decoTick:nth-child(7n) {
+    height: 18px;
+    background: rgba(220,38,38,0.55);
+    width: 1.5px;
+}
+
+/* glowing center dot */
+.decoCenter {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #dc2626;
+    box-shadow: 0 0 20px 6px rgba(220,38,38,0.5),
+                0 0 55px 18px rgba(220,38,38,0.18);
+    z-index: 2;
+    animation: centerPulse 2.4s ease-in-out infinite;
+    position: relative;
+}
+@keyframes centerPulse {
+    0%,100% { box-shadow: 0 0 20px 6px rgba(220,38,38,0.5), 0 0 55px 18px rgba(220,38,38,0.18); transform: scale(1); }
+    50%      { box-shadow: 0 0 30px 10px rgba(220,38,38,0.7), 0 0 80px 28px rgba(220,38,38,0.25); transform: scale(1.25); }
+}
+
+/* ghost monogram behind rings */
+.decoMonogram {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    display: flex;
+    gap: 0.05em;
+    pointer-events: none;
+    z-index: 0;
+}
+.decoN, .decoA {
+    font-size: clamp(5rem, 9vw, 10rem);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(220,38,38,0.12);
+    text-transform: uppercase;
+    animation: monoBreath 5s ease-in-out infinite;
+}
+.decoA { animation-delay: 0.4s; }
+@keyframes monoBreath {
+    0%,100% { opacity:.5; }
+    50%      { opacity:1; }
 }
 
 /* ═══════════════════════════════════════════════
@@ -582,24 +643,20 @@
 ═══════════════════════════════════════════════ */
 @media (max-width: 768px) {
     .root {
-        flex-direction: column;
-        justify-content: flex-end;
+        justify-content: center;
         align-items: center;
     }
     .cardOuter {
         width: 100%;
         margin: 0;
-        padding: 0 1rem 2rem;
+        padding: 0 1rem;
     }
     .card {
         background: rgba(6,6,6,0.97);
         padding: 2rem 1.6rem 1.6rem;
     }
-    .bikeWrap {
-        width: 105%;
-        right: -10%;
-        bottom: 22%;
-        opacity: 0.3;
+    .deco {
+        display: none;
     }
     .brandWhite, .brandRed { font-size: 2rem; }
 }
