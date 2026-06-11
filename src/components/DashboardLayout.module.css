@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   LAYOUT ROOT
+   LAYOUT
 ═══════════════════════════════════════════════ */
 .layout {
     display: flex;
@@ -10,6 +10,7 @@
 
 /* ═══════════════════════════════════════════════
    ANIMATED BACKGROUND CIRCLES
+   Very subtle — dark neutral tones
 ═══════════════════════════════════════════════ */
 .bgCircles {
     position: fixed;
@@ -18,89 +19,80 @@
     z-index: 0;
     overflow: hidden;
 }
-
 .bgCircle {
     position: absolute;
     border-radius: 50%;
-    filter: blur(72px);
+    filter: blur(80px);
 }
-
 .bgCircle1 {
-    width: 420px; height: 420px;
-    background: radial-gradient(circle, rgba(0,230,118,0.07) 0%, transparent 70%);
-    top: -120px; left: -120px;
-    animation: circleA 28s ease-in-out infinite;
+    width: 460px; height: 460px;
+    background: radial-gradient(circle, rgba(0,230,118,0.055) 0%, transparent 65%);
+    top: -140px; left: -100px;
+    animation: cA 30s ease-in-out infinite;
 }
 .bgCircle2 {
-    width: 340px; height: 340px;
-    background: radial-gradient(circle, rgba(0,230,118,0.05) 0%, transparent 70%);
-    top: 30%; left: 20%;
-    animation: circleB 22s ease-in-out infinite;
+    width: 360px; height: 360px;
+    background: radial-gradient(circle, rgba(255,255,255,0.025) 0%, transparent 65%);
+    top: 35%; left: 25%;
+    animation: cB 24s ease-in-out infinite;
 }
 .bgCircle3 {
-    width: 500px; height: 500px;
-    background: radial-gradient(circle, rgba(0,180,90,0.06) 0%, transparent 70%);
-    bottom: -150px; right: -100px;
-    animation: circleC 35s ease-in-out infinite;
+    width: 520px; height: 520px;
+    background: radial-gradient(circle, rgba(0,200,100,0.045) 0%, transparent 65%);
+    bottom: -160px; right: -80px;
+    animation: cC 38s ease-in-out infinite;
 }
 .bgCircle4 {
-    width: 280px; height: 280px;
-    background: radial-gradient(circle, rgba(0,230,118,0.06) 0%, transparent 70%);
-    top: 55%; left: 60%;
-    animation: circleD 19s ease-in-out infinite;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(255,255,255,0.02) 0%, transparent 65%);
+    top: 58%; left: 58%;
+    animation: cD 20s ease-in-out infinite;
 }
 .bgCircle5 {
-    width: 360px; height: 360px;
-    background: radial-gradient(circle, rgba(105,255,157,0.04) 0%, transparent 70%);
-    top: 10%; right: 15%;
-    animation: circleE 26s ease-in-out infinite;
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(0,230,118,0.035) 0%, transparent 65%);
+    top: 8%; right: 12%;
+    animation: cE 28s ease-in-out infinite;
 }
 .bgCircle6 {
-    width: 240px; height: 240px;
-    background: radial-gradient(circle, rgba(0,230,118,0.05) 0%, transparent 70%);
-    bottom: 25%; left: 35%;
-    animation: circleF 18s ease-in-out infinite;
+    width: 250px; height: 250px;
+    background: radial-gradient(circle, rgba(255,255,255,0.018) 0%, transparent 65%);
+    bottom: 28%; left: 38%;
+    animation: cF 19s ease-in-out infinite;
 }
 
-/* Paths are staggered so circles periodically "meet" and drift apart */
-@keyframes circleA {
-    0%   { transform: translate(0vw,   0vh);  }
-    25%  { transform: translate(35vw,  18vh); }
-    50%  { transform: translate(55vw,  42vh); }
-    75%  { transform: translate(20vw,  60vh); }
-    100% { transform: translate(0vw,   0vh);  }
+@keyframes cA {
+    0%,100% { transform: translate(0,0); }
+    25%      { transform: translate(32vw, 16vh); }
+    50%      { transform: translate(50vw, 38vh); }
+    75%      { transform: translate(18vw, 55vh); }
 }
-@keyframes circleB {
-    0%   { transform: translate(0vw,  0vh);  }
-    33%  { transform: translate(40vw, -15vh); }
-    66%  { transform: translate(-10vw, 30vh); }
-    100% { transform: translate(0vw,  0vh);  }
+@keyframes cB {
+    0%,100% { transform: translate(0,0); }
+    33%      { transform: translate(38vw,-14vh); }
+    66%      { transform: translate(-8vw, 28vh); }
 }
-@keyframes circleC {
-    0%   { transform: translate(0vw,  0vh);  }
-    20%  { transform: translate(-30vw,-20vh); }
-    50%  { transform: translate(-50vw,-10vh); }
-    70%  { transform: translate(-20vw, 10vh); }
-    100% { transform: translate(0vw,  0vh);  }
+@keyframes cC {
+    0%,100% { transform: translate(0,0); }
+    20%      { transform: translate(-28vw,-18vh); }
+    50%      { transform: translate(-48vw,-8vh); }
+    70%      { transform: translate(-18vw, 8vh); }
 }
-@keyframes circleD {
-    0%   { transform: translate(0vw,  0vh);  }
-    40%  { transform: translate(-30vw,-25vh); }
-    70%  { transform: translate(-50vw, 5vh);  }
-    100% { transform: translate(0vw,  0vh);  }
+@keyframes cD {
+    0%,100% { transform: translate(0,0); }
+    40%      { transform: translate(-28vw,-22vh); }
+    70%      { transform: translate(-46vw, 4vh); }
 }
-@keyframes circleE {
-    0%   { transform: translate(0vw, 0vh);  }
-    30%  { transform: translate(-25vw, 30vh); }
-    60%  { transform: translate(-40vw, 55vh); }
-    100% { transform: translate(0vw, 0vh);  }
+@keyframes cE {
+    0%,100% { transform: translate(0,0); }
+    30%      { transform: translate(-22vw, 28vh); }
+    60%      { transform: translate(-38vw, 50vh); }
 }
-@keyframes circleF {
-    0%   { transform: translate(0vw, 0vh);  }
-    25%  { transform: translate(20vw,-20vh); }
-    50%  { transform: translate(40vw, 10vh); }
-    75%  { transform: translate(15vw, 30vh); }
-    100% { transform: translate(0vw, 0vh);  }
+@keyframes cF {
+    0%,100% { transform: translate(0,0); }
+    25%      { transform: translate(18vw,-18vh); }
+    50%      { transform: translate(36vw, 8vh); }
+    75%      { transform: translate(12vw, 26vh); }
 }
 
 /* ═══════════════════════════════════════════════
@@ -108,7 +100,7 @@
 ═══════════════════════════════════════════════ */
 .sidebar {
     width: 240px;
-    background: rgba(10, 18, 12, 0.92);
+    background: rgba(12, 12, 12, 0.95);
     border-right: 1px solid var(--color-border);
     display: flex;
     flex-direction: column;
@@ -116,8 +108,8 @@
     height: 100vh;
     overflow-y: auto;
     z-index: 100;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
 }
 
 /* Logo */
@@ -125,25 +117,16 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 1.4rem 1.25rem;
+    padding: 1.35rem 1.25rem;
     border-bottom: 1px solid var(--color-border);
 }
 .logoIcon {
-    font-size: 1.6rem;
-    animation: logoPulse 3s ease-in-out infinite;
-    filter: drop-shadow(0 0 8px rgba(0,230,118,0.4));
-}
-@keyframes logoPulse {
-    0%,100% { filter: drop-shadow(0 0 6px rgba(0,230,118,0.3)); }
-    50%      { filter: drop-shadow(0 0 14px rgba(0,230,118,0.7)); }
+    font-size: 1.5rem;
 }
 .logoText {
-    font-size: 1.1rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, #00e676 0%, #69ff9d 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-text);
     letter-spacing: -0.01em;
 }
 
@@ -155,52 +138,46 @@
     flex-direction: column;
     gap: 2px;
 }
-
 .navItem {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.6rem 0.9rem;
+    padding: 0.58rem 0.85rem;
     border-radius: 8px;
-    color: var(--color-text-subtle);
+    color: var(--color-text-muted);
+    font-size: 0.83rem;
     font-weight: 500;
-    font-size: 0.85rem;
     transition: all var(--transition-fast);
-    cursor: pointer;
-    position: relative;
+    border: 1px solid transparent;
 }
 .navItem:hover {
-    background: rgba(0,230,118,0.07);
-    color: var(--color-text-muted);
-    transform: translateX(3px);
+    background: rgba(255,255,255,0.05);
+    color: var(--color-text);
+    border-color: var(--color-border);
 }
+/* Active — neon green highlight only here */
 .navItemActive {
-    background: rgba(0,230,118,0.1);
-    color: var(--color-primary);
-    border-left: 3px solid var(--color-primary);
-    padding-left: calc(0.9rem - 3px);
-    box-shadow: inset 0 0 20px rgba(0,230,118,0.05);
+    background: rgba(0, 230, 118, 0.08);
+    color: #00e676;
+    border-color: rgba(0, 230, 118, 0.25);
 }
-.navItemActive .navIcon {
-    filter: drop-shadow(0 0 6px rgba(0,230,118,0.5));
-}
-.navIcon  { font-size: 1.1rem; width: 22px; text-align: center; flex-shrink: 0; }
+.navIcon  { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
 .navLabel { font-size: 0.82rem; }
 
 /* Sidebar footer */
 .sidebarFooter {
-    padding: 1rem 0.75rem;
+    padding: 0.85rem 0.75rem;
     border-top: 1px solid var(--color-border);
 }
 .footerText {
-    font-size: 0.68rem;
+    font-size: 0.65rem;
     color: var(--color-text-subtle);
     text-align: center;
     margin-top: 0.4rem;
 }
 
 /* ═══════════════════════════════════════════════
-   MAIN CONTENT
+   MAIN
 ═══════════════════════════════════════════════ */
 .main {
     flex: 1;
@@ -209,21 +186,19 @@
     position: relative;
     z-index: 1;
 }
-
 .content {
     padding: var(--spacing-2xl);
     max-width: 1400px;
     margin: 0 auto;
-    animation: fadeIn var(--transition-base) ease-out;
+    animation: fadeIn 200ms ease-out;
 }
-
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0; transform: translateY(6px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ═══════════════════════════════════════════════
-   BOTTOM NAV (mobile)
+   BOTTOM NAV — hidden on desktop
 ═══════════════════════════════════════════════ */
 .bottomNav { display: none; }
 
@@ -243,11 +218,7 @@
 ═══════════════════════════════════════════════ */
 @media (max-width: 768px) {
     .sidebar { display: none; }
-
-    .main {
-        margin-left: 0;
-        margin-bottom: 70px;
-    }
+    .main    { margin-left: 0; margin-bottom: 70px; }
     .content { padding: var(--spacing-md); }
 
     .bottomNav {
@@ -255,13 +226,13 @@
         position: fixed;
         bottom: 0; left: 0; right: 0;
         height: 64px;
-        background: rgba(8, 14, 10, 0.97);
+        background: rgba(10, 10, 10, 0.98);
         border-top: 1px solid var(--color-border);
         z-index: 100;
         overflow-x: auto;
         scrollbar-width: none;
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
     }
     .bottomNav::-webkit-scrollbar { display: none; }
 
@@ -271,11 +242,11 @@
         align-items: center;
         justify-content: center;
         gap: 2px;
-        min-width: 60px;
+        min-width: 58px;
         flex: 1;
         padding: 0.25rem 0.4rem;
         color: var(--color-text-subtle);
-        font-size: 0.58rem;
+        font-size: 0.57rem;
         font-weight: 500;
         text-align: center;
         cursor: pointer;
@@ -285,26 +256,25 @@
     }
     .bottomNavItem:hover { color: var(--color-text-muted); }
 
+    /* Active — neon green */
     .bottomNavItemActive {
-        color: var(--color-primary);
+        color: #00e676;
         font-weight: 700;
     }
-    .bottomNavItemActive .bottomNavIcon {
-        filter: drop-shadow(0 0 5px rgba(0,230,118,0.6));
-    }
 
-    .bottomNavIcon { font-size: 1.3rem; }
+    .bottomNavIcon { font-size: 1.25rem; }
 
+    /* Logout button in bottom nav */
     .bottomNavLogout {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         gap: 2px;
-        min-width: 60px;
+        min-width: 58px;
         padding: 0.25rem 0.4rem;
-        color: #ff5252;
-        font-size: 0.58rem;
+        color: #f87171;
+        font-size: 0.57rem;
         font-weight: 500;
         background: none;
         border: none;
@@ -312,6 +282,6 @@
         transition: color var(--transition-fast);
         flex-shrink: 0;
     }
-    .bottomNavLogout:hover { color: #ff7575; }
-    .bottomNavLogout svg  { width: 1.3rem; height: 1.3rem; margin-bottom: 1px; }
+    .bottomNavLogout:hover { color: #fca5a5; }
+    .bottomNavLogout svg   { width: 1.25rem; height: 1.25rem; margin-bottom: 1px; }
 }
