@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { MARGIN_PASSWORD } from '@/lib/constants';
+import Loader from '@/components/Loader';
 
 const CATEGORY_ICONS: Record<string, string> = {
     'Petrol': '⛽',
@@ -342,9 +343,7 @@ export default function ReportsPage() {
                 )}
 
                 {loading && !data ? (
-                    <div style={{ textAlign: 'center', padding: '3rem' }}>
-                        <div className="spinner" style={{ margin: '0 auto' }}></div>
-                    </div>
+                    <Loader size={160} text="Loading report..." fullPage />
                 ) : (
                     <>
                         <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '1.25rem', letterSpacing: '0.05em' }}>

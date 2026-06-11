@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
+import Loader from '@/components/Loader';
 
 interface Sale {
     id: string;
@@ -177,7 +178,7 @@ export default function SalesPage() {
                 {/* Table */}
                 <div className="card" style={{ padding: '0' }}>
                     {loading ? (
-                        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>Loading...</div>
+                        <Loader size={160} text="Loading sales..." />
                     ) : filtered.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>No sales found</div>
                     ) : (

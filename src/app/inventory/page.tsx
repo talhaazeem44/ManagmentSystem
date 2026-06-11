@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
+import Loader from '@/components/Loader';
 
 interface Bike {
     id: string;
@@ -205,10 +206,7 @@ export default function InventoryPage() {
                     </div>
 
                     {loading ? (
-                        <div style={{ textAlign: 'center', padding: '3rem' }}>
-                            <div className="spinner" style={{ margin: '0 auto' }}></div>
-                            <p style={{ marginTop: '1rem', color: 'var(--color-text-muted)' }}>Loading inventory...</p>
-                        </div>
+                        <Loader size={160} />
                     ) : filteredBikes.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>
                             <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>📦</p>

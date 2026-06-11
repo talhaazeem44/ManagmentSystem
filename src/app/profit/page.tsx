@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { MARGIN_PASSWORD } from '@/lib/constants';
+import Loader from '@/components/Loader';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line } from 'recharts';
 
 interface RangeStats {
@@ -187,7 +188,7 @@ export default function ProfitPage() {
                 </div>
 
                 {loading ? (
-                    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>Loading...</div>
+                    <Loader size={160} text="Loading profit data..." />
                 ) : (
                     <>
                         {/* ── Margin Tracker ── */}

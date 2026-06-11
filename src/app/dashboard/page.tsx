@@ -5,6 +5,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import Loader from '@/components/Loader';
 
 interface SaleRecord {
     id: string;
@@ -553,7 +554,7 @@ export default function DashboardPage() {
                 <div className="card" style={{ padding: '1rem' }}>
                     <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.75rem' }}>Today's Sales</div>
                     {loading ? (
-                        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>Loading...</div>
+                        <Loader size={140} />
                     ) : records.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>No records found</div>
                     ) : (

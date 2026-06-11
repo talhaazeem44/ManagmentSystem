@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import styles from './receipt.module.css';
 import { BIKE_STANDARD_PRICES } from '@/lib/constants';
+import Loader from '@/components/Loader';
 
 interface Payment {
     amount: number;
@@ -90,10 +91,7 @@ export default function ReceiptPage() {
 
     if (loading) return (
         <DashboardLayout>
-            <div style={{ textAlign: 'center', padding: '3rem' }}>
-                <div className="spinner" style={{ margin: '0 auto' }} />
-                <p style={{ marginTop: '1rem', color: 'var(--color-text-muted)' }}>Loading receipt...</p>
-            </div>
+            <Loader size={160} fullPage />
         </DashboardLayout>
     );
 

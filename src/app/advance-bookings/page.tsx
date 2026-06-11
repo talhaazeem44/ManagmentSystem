@@ -5,6 +5,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { HONDA_BIKE_MODELS } from '@/lib/constants';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
+import Loader from '@/components/Loader';
 
 interface AdvanceBooking {
     _id: string;
@@ -207,7 +208,7 @@ export default function AdvanceBookingsPage() {
 
                 <div className="card">
                     {loading ? (
-                        <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>
+                        <Loader size={140} />
                     ) : filtered.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>No bookings found</div>
                     ) : (

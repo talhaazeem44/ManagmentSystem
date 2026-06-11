@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
+import Loader from '@/components/Loader';
 
 interface Expense {
     _id: string;
@@ -262,7 +263,7 @@ export default function ExpensesPage() {
                 {/* List */}
                 <div className="card">
                     {loading ? (
-                        <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>
+                        <Loader size={140} />
                     ) : filtered.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>No expenses found</div>
                     ) : (
