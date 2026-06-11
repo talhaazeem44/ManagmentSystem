@@ -1,358 +1,299 @@
-/* ── Layout ── */
+/* ══════════════════════════════════
+   BASE
+══════════════════════════════════ */
 .container {
     min-height: 100vh;
-    display: flex;
-    background: #05050a;
-    overflow: hidden;
-}
-
-/* ════════════════════════════════
-   LEFT HERO PANEL
-════════════════════════════════ */
-.hero {
-    flex: 1.1;
+    width: 100%;
+    background: #080808;
     position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 3rem;
     overflow: hidden;
-    background: linear-gradient(135deg, #0a0010 0%, #0d0018 40%, #0a000e 100%);
+    display: flex;
+    align-items: center;
 }
 
-/* Moving grid */
-.hero::before {
-    content: '';
-    position: absolute;
-    inset: -60px;
-    background-image:
-        linear-gradient(rgba(220,38,38,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(220,38,38,0.04) 1px, transparent 1px);
-    background-size: 55px 55px;
-    animation: gridMove 2.5s linear infinite;
-    pointer-events: none;
-}
-@keyframes gridMove {
-    0%   { transform: translateY(0); }
-    100% { transform: translateY(55px); }
-}
-
-/* Big radial glow behind bike */
-.heroGlow {
-    position: absolute;
-    width: 700px; height: 700px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(220,38,38,0.18) 0%, rgba(180,0,0,0.07) 40%, transparent 70%);
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    animation: glowBreath 4s ease-in-out infinite;
-}
-@keyframes glowBreath {
-    0%, 100% { transform: translate(-50%, -50%) scale(1);   opacity: 0.8; }
-    50%       { transform: translate(-50%, -50%) scale(1.15); opacity: 1;   }
-}
-
-/* Speed lines */
-.lines {
+/* subtle noise grain */
+.noise {
     position: absolute;
     inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity: 0.4;
     pointer-events: none;
-    overflow: hidden;
-}
-.line {
-    position: absolute;
-    height: 1px;
-    background: linear-gradient(90deg, transparent 0%, rgba(220,38,38,0.5) 50%, transparent 100%);
-    animation: lineSweep 2.2s ease-in-out infinite;
-    top: 0; bottom: 0;
-    margin: auto;
-}
-.line:nth-child(odd)  { width: 35%;  left: 5%;  top: calc(40% + var(--i, 0) * 18px); }
-.line:nth-child(even) { width: 25%;  left: 10%; top: calc(45% + var(--i, 0) * 18px); }
-.line:nth-child(1)  { top: 38%; width: 40%; opacity: 0.6; }
-.line:nth-child(2)  { top: 44%; width: 30%; opacity: 0.4; }
-.line:nth-child(3)  { top: 50%; width: 50%; opacity: 0.7; }
-.line:nth-child(4)  { top: 56%; width: 35%; opacity: 0.5; }
-.line:nth-child(5)  { top: 62%; width: 20%; opacity: 0.3; }
-.line:nth-child(6)  { top: 36%; width: 15%; opacity: 0.3; left: 30%; }
-.line:nth-child(7)  { top: 42%; width: 25%; opacity: 0.5; left: 20%; }
-.line:nth-child(8)  { top: 48%; width: 45%; opacity: 0.6; left: 0%; }
-.line:nth-child(9)  { top: 54%; width: 30%; opacity: 0.4; left: 15%; }
-.line:nth-child(10) { top: 60%; width: 18%; opacity: 0.25; left: 25%; }
-.line:nth-child(11) { top: 40%; width: 22%; opacity: 0.35; left: 35%; }
-.line:nth-child(12) { top: 52%; width: 38%; opacity: 0.55; left: 8%; }
-
-@keyframes lineSweep {
-    0%   { transform: translateX(-20px); opacity: 0;   }
-    30%  { opacity: 1; }
-    70%  { opacity: 1; }
-    100% { transform: translateX(20px);  opacity: 0;   }
-}
-
-/* Road */
-.road {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 60px;
-    background: linear-gradient(180deg, transparent 0%, rgba(8,0,15,0.98) 60%);
-    pointer-events: none;
-    z-index: 4;
-}
-.roadDash {
-    position: absolute;
-    bottom: 18px; left: 0; right: 0;
-    height: 3px;
-    background: repeating-linear-gradient(
-        90deg,
-        transparent 0px, transparent 25px,
-        rgba(220,38,38,0.6) 25px, rgba(220,38,38,0.6) 65px
-    );
-    animation: roadScroll 0.35s linear infinite;
-}
-@keyframes roadScroll {
-    0%   { background-position: 0px; }
-    100% { background-position: -90px; }
-}
-
-/* Brand text */
-.brand {
-    position: relative;
-    z-index: 5;
-}
-.brandBadge {
-    display: inline-block;
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    color: #dc2626;
-    border: 1px solid rgba(220,38,38,0.4);
-    padding: 0.3rem 0.8rem;
-    border-radius: 20px;
-    background: rgba(220,38,38,0.07);
-    margin-bottom: 1rem;
-    text-transform: uppercase;
-}
-.brandName {
-    font-size: clamp(2.8rem, 5vw, 4.5rem);
-    font-weight: 900;
-    line-height: 0.95;
-    letter-spacing: -0.03em;
-    color: #fff;
-    text-transform: uppercase;
-    margin-bottom: 0.75rem;
-    text-shadow: 0 0 60px rgba(220,38,38,0.3);
-}
-.brandTag {
-    font-size: 0.78rem;
-    color: rgba(255,255,255,0.3);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-}
-
-/* Bike hero */
-.bikeHero {
-    position: absolute;
-    bottom: 55px;
-    left: 50%;
-    transform: translateX(-48%);
-    z-index: 3;
-    animation: bikeFloat 4s ease-in-out infinite;
-}
-@keyframes bikeFloat {
-    0%, 100% { transform: translateX(-48%) translateY(0);   }
-    50%       { transform: translateX(-48%) translateY(-14px); }
-}
-.bikeGlow {
-    position: absolute;
-    width: 380px; height: 100px;
-    bottom: -20px; left: 50%;
-    transform: translateX(-50%);
-    background: radial-gradient(ellipse, rgba(220,38,38,0.35) 0%, transparent 70%);
-    filter: blur(18px);
-    animation: shadowPulse 4s ease-in-out infinite;
-}
-@keyframes shadowPulse {
-    0%, 100% { opacity: 0.7; transform: translateX(-50%) scaleX(1); }
-    50%       { opacity: 1;   transform: translateX(-50%) scaleX(1.1); }
-}
-.bikeImg {
-    width: 420px;
-    height: auto;
-    filter: drop-shadow(0 0 30px rgba(220,38,38,0.5)) drop-shadow(0 0 60px rgba(220,38,38,0.2));
-    position: relative;
     z-index: 1;
 }
 
-/* Stats strip */
-.stats {
-    display: flex;
-    gap: 2.5rem;
-    position: relative;
-    z-index: 5;
-    padding-bottom: 1rem;
-}
-.stat { text-align: left; }
-.statValue {
-    font-size: 1.6rem;
-    font-weight: 900;
-    color: #dc2626;
-    line-height: 1;
-    margin-bottom: 0.2rem;
-}
-.statLabel {
-    font-size: 0.6rem;
-    color: rgba(255,255,255,0.3);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    font-weight: 700;
-}
-
-/* ════════════════════════════════
-   RIGHT FORM PANEL
-════════════════════════════════ */
-.formPanel {
-    width: 420px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #08080f;
-    padding: 2rem;
-    position: relative;
-    border-left: 1px solid rgba(220,38,38,0.1);
-}
-.formPanel::before {
-    content: '';
+/* ══════════════════════════════════
+   WATERMARK
+══════════════════════════════════ */
+.watermark {
     position: absolute;
-    top: 0; left: 0; bottom: 0;
-    width: 1px;
-    background: linear-gradient(180deg, transparent 0%, rgba(220,38,38,0.5) 50%, transparent 100%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: clamp(5rem, 14vw, 13rem);
+    font-weight: 900;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(255,255,255,0.04);
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 0;
+    animation: wmPulse 6s ease-in-out infinite;
+    user-select: none;
+}
+@keyframes wmPulse {
+    0%, 100% { opacity: 0.6; }
+    50%       { opacity: 1;   }
 }
 
-.formCard {
-    width: 100%;
-    animation: cardIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+/* ══════════════════════════════════
+   SPOTLIGHT GLOW BEHIND BIKE
+══════════════════════════════════ */
+.spotlight {
+    position: absolute;
+    right: -5%;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 65vw;
+    height: 65vw;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 50%,
+        rgba(255,255,255,0.07) 0%,
+        rgba(200,200,200,0.04) 20%,
+        rgba(100,100,100,0.02) 45%,
+        transparent 70%
+    );
+    pointer-events: none;
+    z-index: 2;
+    animation: spotlightBreath 5s ease-in-out infinite;
 }
-@keyframes cardIn {
-    0%   { opacity: 0; transform: translateX(30px); }
+.spotlight2 {
+    position: absolute;
+    right: 5%;
+    top: 55%;
+    transform: translateY(-50%);
+    width: 45vw;
+    height: 30vw;
+    background: radial-gradient(ellipse,
+        rgba(180,30,30,0.08) 0%,
+        rgba(150,20,20,0.04) 40%,
+        transparent 70%
+    );
+    pointer-events: none;
+    z-index: 2;
+    animation: spotlightBreath 5s ease-in-out infinite;
+    animation-delay: -2.5s;
+}
+@keyframes spotlightBreath {
+    0%, 100% { opacity: 0.7; transform: translateY(-50%) scale(1);    }
+    50%       { opacity: 1;   transform: translateY(-52%) scale(1.04); }
+}
+
+/* ══════════════════════════════════
+   BIKE IMAGE
+══════════════════════════════════ */
+.bikeWrap {
+    position: absolute;
+    right: -2%;
+    bottom: 0;
+    width: 68%;
+    z-index: 3;
+    animation: bikeReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: 0.3s;
+}
+@keyframes bikeReveal {
+    0%   { opacity: 0; transform: translateX(80px); }
+    100% { opacity: 1; transform: translateX(0); }
+}
+.bikeImg {
+    width: 100%;
+    height: auto;
+    display: block;
+    filter:
+        drop-shadow(0 0 40px rgba(255,255,255,0.06))
+        drop-shadow(-20px 0 60px rgba(200,200,200,0.04))
+        brightness(1.05)
+        contrast(1.05);
+}
+.groundShadow {
+    position: absolute;
+    bottom: 0;
+    left: 10%;
+    right: 5%;
+    height: 60px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.9) 0%, transparent 70%);
+    filter: blur(20px);
+    z-index: -1;
+}
+
+/* ══════════════════════════════════
+   LEFT PANEL
+══════════════════════════════════ */
+.leftPanel {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 460px;
+    padding: 3.5rem 3.5rem 3.5rem 5vw;
+    animation: panelIn 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes panelIn {
+    0%   { opacity: 0; transform: translateX(-40px); }
     100% { opacity: 1; transform: translateX(0); }
 }
 
-.formHeader {
-    margin-bottom: 2.5rem;
+/* Honda badge */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: rgba(255,255,255,0.45);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
 }
-.formIcon {
-    font-size: 2.8rem;
-    margin-bottom: 1rem;
-    animation: iconBob 3s ease-in-out infinite;
-    display: block;
+.badgeDot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #dc2626;
+    box-shadow: 0 0 8px rgba(220,38,38,0.8);
+    animation: dotBlink 2s ease-in-out infinite;
 }
-@keyframes iconBob {
-    0%, 100% { transform: translateY(0) rotate(-3deg); }
-    50%       { transform: translateY(-5px) rotate(3deg); }
-}
-.formTitle {
-    font-size: 2rem;
-    font-weight: 800;
-    color: #fff;
-    margin-bottom: 0.4rem;
-    letter-spacing: -0.02em;
-}
-.formSubtitle {
-    font-size: 0.82rem;
-    color: rgba(255,255,255,0.3);
-    letter-spacing: 0.04em;
+@keyframes dotBlink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
 }
 
-/* Form fields */
+/* Brand name */
+.brand {
+    font-size: clamp(3rem, 6vw, 5rem);
+    font-weight: 900;
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+    color: #fff;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+.brandAccent {
+    color: #dc2626;
+    display: block;
+}
+
+.tagline {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.28);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+}
+
+/* Divider */
+.divider {
+    width: 48px;
+    height: 3px;
+    background: linear-gradient(90deg, #dc2626, #ff6b6b);
+    border-radius: 2px;
+    margin-bottom: 2rem;
+}
+
+/* ══════════════════════════════════
+   FORM
+══════════════════════════════════ */
 .form {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1.1rem;
     margin-bottom: 2rem;
 }
 .errorMsg {
-    padding: 0.75rem 1rem;
+    padding: 0.7rem 1rem;
     background: rgba(239,68,68,0.08);
     border: 1px solid rgba(239,68,68,0.25);
-    border-radius: 10px;
+    border-radius: 8px;
     color: #f87171;
-    font-size: 0.83rem;
+    font-size: 0.82rem;
     text-align: center;
 }
 .fieldGroup {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.45rem;
 }
 .fieldLabel {
-    font-size: 0.73rem;
+    font-size: 0.68rem;
     font-weight: 700;
-    color: rgba(255,255,255,0.35);
+    color: rgba(255,255,255,0.3);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
 }
 .fieldInput {
     width: 100%;
-    padding: 0.85rem 1rem;
+    padding: 0.8rem 1rem;
     background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
     color: #fff;
-    font-size: 0.95rem;
-    transition: all 0.25s;
+    font-size: 0.92rem;
+    transition: all 0.2s;
+    backdrop-filter: blur(8px);
 }
 .fieldInput:focus {
     outline: none;
-    border-color: rgba(220,38,38,0.55);
-    background: rgba(220,38,38,0.05);
-    box-shadow: 0 0 0 3px rgba(220,38,38,0.1), 0 0 20px rgba(220,38,38,0.08);
+    border-color: rgba(220,38,38,0.5);
+    background: rgba(220,38,38,0.04);
+    box-shadow: 0 0 0 3px rgba(220,38,38,0.08);
 }
-.fieldInput::placeholder { color: rgba(255,255,255,0.18); }
+.fieldInput::placeholder { color: rgba(255,255,255,0.15); }
 
 /* Sign in button */
 .signInBtn {
     width: 100%;
-    padding: 0.95rem;
-    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+    padding: 0.9rem;
+    background: #dc2626;
     color: #fff;
     border: none;
-    border-radius: 12px;
-    font-size: 1rem;
-    font-weight: 700;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
     cursor: pointer;
-    letter-spacing: 0.04em;
-    transition: all 0.25s;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    box-shadow: 0 4px 20px rgba(220,38,38,0.45), inset 0 1px 0 rgba(255,255,255,0.12);
+    margin-top: 0.25rem;
     position: relative;
     overflow: hidden;
-    margin-top: 0.25rem;
+    box-shadow: 0 4px 20px rgba(220,38,38,0.4);
+}
+.signInBtn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
 }
 .signInBtn::after {
     content: '';
     position: absolute;
     top: -50%; left: -60%;
     width: 40%; height: 200%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
     transform: skewX(-20deg);
-    animation: btnShine 3.5s ease-in-out infinite;
+    animation: btnShine 4s ease-in-out infinite;
 }
 @keyframes btnShine {
-    0%, 65%, 100% { left: -60%; }
+    0%, 70%, 100% { left: -60%; }
     40%            { left: 120%; }
 }
 .signInBtn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    box-shadow: 0 6px 28px rgba(220,38,38,0.65), inset 0 1px 0 rgba(255,255,255,0.2);
-    transform: translateY(-2px);
+    background: #b91c1c;
+    box-shadow: 0 6px 30px rgba(220,38,38,0.6);
+    transform: translateY(-1px);
 }
 .signInBtn:disabled {
-    opacity: 0.6;
+    opacity: 0.55;
     cursor: not-allowed;
     transform: none;
 }
@@ -360,43 +301,43 @@
 /* Spinner */
 .spinner {
     display: inline-block;
-    width: 16px; height: 16px;
+    width: 15px; height: 15px;
     border: 2px solid rgba(255,255,255,0.3);
     border-top-color: #fff;
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
 }
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Footer */
-.footerText {
-    font-size: 0.7rem;
-    color: rgba(255,255,255,0.15);
-    text-align: center;
-    letter-spacing: 0.05em;
+.footer {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.13);
+    letter-spacing: 0.06em;
 }
 
-/* ── Mobile ── */
+/* ══════════════════════════════════
+   MOBILE
+══════════════════════════════════ */
 @media (max-width: 768px) {
-    .container { flex-direction: column; }
-
-    .hero {
-        flex: none;
-        height: 55vh;
-        padding: 2rem 1.5rem 1rem;
+    .container {
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: flex-start;
     }
-    .bikeImg { width: 280px; }
-    .bikeHero { bottom: 50px; }
-    .brandName { font-size: 2.8rem; }
-    .stats { gap: 1.5rem; }
-
-    .formPanel {
+    .bikeWrap {
+        position: absolute;
+        top: 0; right: -10%;
         width: 100%;
-        padding: 2rem 1.5rem;
-        border-left: none;
-        border-top: 1px solid rgba(220,38,38,0.1);
+        bottom: auto;
+        opacity: 0.5;
     }
-    .formPanel::before { display: none; }
+    .leftPanel {
+        padding: 2rem 1.5rem 3rem;
+        max-width: 100%;
+        background: linear-gradient(0deg, rgba(8,8,8,0.98) 70%, transparent 100%);
+        width: 100%;
+    }
+    .brand { font-size: 3rem; }
+    .watermark { font-size: 4rem; }
 }

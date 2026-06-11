@@ -37,108 +37,83 @@ export default function LoginPage() {
     return (
         <div className={styles.container}>
 
-            {/* ── Left hero panel ── */}
-            <div className={styles.hero}>
-                {/* Background radial glow */}
-                <div className={styles.heroGlow} />
+            {/* Noise texture overlay */}
+            <div className={styles.noise} />
 
-                {/* Speed lines */}
-                <div className={styles.lines}>
-                    {[...Array(12)].map((_, i) => (
-                        <div key={i} className={styles.line} style={{ animationDelay: `${i * 0.18}s` }} />
-                    ))}
-                </div>
+            {/* Big watermark text */}
+            <div className={styles.watermark}>NAEEM AUTOS</div>
 
-                {/* Road */}
-                <div className={styles.road}>
-                    <div className={styles.roadDash} />
-                </div>
+            {/* Spotlight behind bike */}
+            <div className={styles.spotlight} />
+            <div className={styles.spotlight2} />
 
-                {/* Brand */}
-                <div className={styles.brand}>
-                    <div className={styles.brandBadge}>HONDA AUTHORIZED DEALER</div>
-                    <h1 className={styles.brandName}>NAEEM<br />AUTOS</h1>
-                    <p className={styles.brandTag}>Dealership Management System</p>
-                </div>
-
-                {/* Big bike */}
-                <div className={styles.bikeHero}>
-                    <div className={styles.bikeGlow} />
-                    <Image
-                        src="/bike-icon.gif"
-                        alt="Motorcycle"
-                        width={420}
-                        height={420}
-                        className={styles.bikeImg}
-                        unoptimized
-                        priority
-                    />
-                </div>
-
-                {/* Bottom stat strip */}
-                <div className={styles.stats}>
-                    {[
-                        { label: 'BIKES SOLD', value: '1000+' },
-                        { label: 'YEARS TRUSTED', value: '15+' },
-                        { label: 'HAPPY CUSTOMERS', value: '500+' },
-                    ].map(s => (
-                        <div key={s.label} className={styles.stat}>
-                            <div className={styles.statValue}>{s.value}</div>
-                            <div className={styles.statLabel}>{s.label}</div>
-                        </div>
-                    ))}
-                </div>
+            {/* Bike image — right side hero */}
+            <div className={styles.bikeWrap}>
+                <Image
+                    src="/honda-bike.png"
+                    alt="Honda CG150"
+                    width={820}
+                    height={500}
+                    className={styles.bikeImg}
+                    priority
+                    unoptimized
+                />
+                {/* Ground shadow */}
+                <div className={styles.groundShadow} />
             </div>
 
-            {/* ── Right form panel ── */}
-            <div className={styles.formPanel}>
-                <div className={styles.formCard}>
-                    <div className={styles.formHeader}>
-                        <div className={styles.formIcon}>🏍️</div>
-                        <h2 className={styles.formTitle}>Welcome Back</h2>
-                        <p className={styles.formSubtitle}>Sign in to your dashboard</p>
+            {/* Left: brand + form */}
+            <div className={styles.leftPanel}>
+
+                {/* Honda badge */}
+                <div className={styles.badge}>
+                    <span className={styles.badgeDot} />
+                    HONDA AUTHORIZED DEALER
+                </div>
+
+                <h1 className={styles.brand}>NAEEM<br /><span className={styles.brandAccent}>AUTOS</span></h1>
+                <p className={styles.tagline}>Dealership Management System</p>
+
+                {/* Divider */}
+                <div className={styles.divider} />
+
+                {/* Form */}
+                <form onSubmit={handleSubmit} className={styles.form}>
+                    {error && <div className={styles.errorMsg}>{error}</div>}
+
+                    <div className={styles.fieldGroup}>
+                        <label className={styles.fieldLabel}>Email</label>
+                        <input
+                            type="email"
+                            className={styles.fieldInput}
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            placeholder="admin@naeem-autos.com"
+                            required
+                            autoFocus
+                        />
                     </div>
 
-                    <form onSubmit={handleSubmit} className={styles.form}>
-                        {error && <div className={styles.errorMsg}>{error}</div>}
+                    <div className={styles.fieldGroup}>
+                        <label className={styles.fieldLabel}>Password</label>
+                        <input
+                            type="password"
+                            className={styles.fieldInput}
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            placeholder="••••••••"
+                            required
+                        />
+                    </div>
 
-                        <div className={styles.fieldGroup}>
-                            <label className={styles.fieldLabel}>Email Address</label>
-                            <input
-                                type="email"
-                                className={styles.fieldInput}
-                                value={email}
-                                onChange={e => setEmail(e.target.value)}
-                                placeholder="admin@naeem-autos.com"
-                                required
-                                autoFocus
-                            />
-                        </div>
+                    <button type="submit" className={styles.signInBtn} disabled={loading}>
+                        {loading ? <><span className={styles.spinner} /> Signing in...</> : 'SIGN IN →'}
+                    </button>
+                </form>
 
-                        <div className={styles.fieldGroup}>
-                            <label className={styles.fieldLabel}>Password</label>
-                            <input
-                                type="password"
-                                className={styles.fieldInput}
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                required
-                            />
-                        </div>
-
-                        <button type="submit" className={styles.signInBtn} disabled={loading}>
-                            {loading ? (
-                                <><span className={styles.spinner} /> Signing in...</>
-                            ) : (
-                                <>Sign In →</>
-                            )}
-                        </button>
-                    </form>
-
-                    <p className={styles.footerText}>© 2026 Naeem Autos — Honda DMS</p>
-                </div>
+                <p className={styles.footer}>© 2026 Naeem Autos</p>
             </div>
+
         </div>
     );
 }
