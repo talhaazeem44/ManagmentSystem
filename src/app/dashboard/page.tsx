@@ -258,7 +258,7 @@ export default function DashboardPage() {
                                             return d?.date || label;
                                         }}
                                     />
-                                    <Bar dataKey="sales" fill="hsl(0,85%,45%)" radius={[4, 4, 0, 0]} name="sales" />
+                                    <Bar dataKey="sales" fill="#00e676" radius={[4, 4, 0, 0]} name="sales" />
                                 </BarChart>
                             </ResponsiveContainer>
                             </div>
@@ -269,7 +269,7 @@ export default function DashboardPage() {
 
                     {/* Right column: Cash summary + Credit */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div className="card" style={{ padding: '1.25rem', flex: 1, borderLeft: '4px solid #f59e0b' }}>
+                        <div className="card" style={{ padding: '1.25rem', flex: 1, borderLeft: '4px solid #00e676' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Cash in Hand</div>
                                 {lastDeposit && (
@@ -278,7 +278,7 @@ export default function DashboardPage() {
                                     </div>
                                 )}
                             </div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b', marginBottom: '0.75rem' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#00e676', marginBottom: '0.75rem' }}>
                                 Rs. {((sinceStats?.cashReceived ?? 0) + (Number(manualCash) || 0)).toLocaleString()}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.82rem', marginBottom: '0.75rem' }}>
@@ -300,8 +300,8 @@ export default function DashboardPage() {
                                 </div>
                                 {(Number(manualCash) || 0) > 0 && (
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ color: '#f59e0b' }}>Manual Addition</span>
-                                        <strong style={{ color: '#f59e0b' }}>+ Rs. {(Number(manualCash)).toLocaleString()}</strong>
+                                        <span style={{ color: '#00e676' }}>Manual Addition</span>
+                                        <strong style={{ color: '#00e676' }}>+ Rs. {(Number(manualCash)).toLocaleString()}</strong>
                                     </div>
                                 )}
                             </div>
@@ -320,7 +320,7 @@ export default function DashboardPage() {
                                 onClick={handleDeposit}
                                 disabled={depositing || ((sinceStats?.cashReceived ?? 0) + (Number(manualCash) || 0)) <= 0}
                                 className="btn"
-                                style={{ width: '100%', fontSize: '0.8rem', padding: '0.4rem', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 700, cursor: depositing ? 'not-allowed' : 'pointer', opacity: (sinceStats?.cashReceived ?? 0) <= 0 ? 0.5 : 1 }}>
+                                style={{ width: '100%', fontSize: '0.8rem', padding: '0.4rem', background: 'rgba(0,230,118,0.12)', color: '#00e676', border: '1px solid rgba(0,230,118,0.4)', borderRadius: '6px', fontWeight: 700, cursor: depositing ? 'not-allowed' : 'pointer', opacity: (sinceStats?.cashReceived ?? 0) <= 0 ? 0.5 : 1 }}>
                                 {depositing ? '⏳ Saving...' : '🏦 Deposit to Bank'}
                             </button>
                         </div>
