@@ -177,6 +177,15 @@ export async function GET(request: NextRequest) {
 
         const rangeBikeProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).bikeProfit, 0) + rangeAdvanceMargin;
         const rangeRegProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).regProfit, 0);
+        // Extra = amount received above standard price (positive = profit boost, negative = loss)
+        const rangeExtraCash = filteredSales.reduce((s, sale: any) => {
+            const model = sale.bikeId?.model || '';
+            const standardPrice = BIKE_STANDARD_PRICES[model] || Number(sale.price || 0);
+            const totalReceived = sale.paymentMode === 'CREDIT'
+                ? Number(sale.price || 0)
+                : (Number(sale.receivedCash || 0) + Number(sale.bankTransferAmount || 0)) || Number(sale.price || 0);
+            return s + (totalReceived - standardPrice);
+        }, 0);
 
         // ── Range: workshop ────────────────────────────────────────────────────
         const rangeWorkshopRevenue = filteredServices.reduce((s, svc: any) => s + Number(svc.totalAmount || 0), 0);
@@ -256,6 +265,7 @@ export async function GET(request: NextRequest) {
                 cashToDeposit: rangeCashToDeposit,
                 expenseCash: expenseCash,
                 expenseMargin: expenseMargin,
+                extraCash: rangeExtraCash,
                 expensesByCategory,
                 expenseList,
                 cashInHand: rangeCashInHand,

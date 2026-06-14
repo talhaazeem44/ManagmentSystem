@@ -10,6 +10,7 @@ interface RangeStats {
     bikeProfit: number; advanceMargin: number; regProfit: number; workshopProfit: number; profit: number;
     sales: number; cashReceived: number; cashInHand: number; expenseMargin: number;
     registrationCollected: number; totalCashIn: number; bankTransfer: number; cashToDeposit: number; expenseCash: number; cashDepositOnly: number;
+    extraCash: number;
 }
 
 interface Stats {
@@ -193,7 +194,7 @@ export default function ProfitPage() {
                     <>
                         {/* ── Margin Tracker ── */}
                         <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Margin Tracker</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '0.75rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem', marginBottom: '0.75rem' }}>
                             <div className="card" style={{ padding: '1.5rem', borderLeft: '4px solid #10b981' }}>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>Uncollected Margin</div>
                                 <div style={{ fontSize: '2rem', fontWeight: 800, color: '#10b981', marginBottom: '0.3rem' }}>Rs. {uncollectedMargin.toLocaleString()}</div>
@@ -211,6 +212,19 @@ export default function ProfitPage() {
                                 <div style={{ fontSize: '2rem', fontWeight: 800, color: '#3b82f6', marginBottom: '0.3rem' }}>Rs. {monthMargin.toLocaleString()}</div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>{monthStats?.sales ?? 0} bikes sold this month</div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Bike margin after expenses · excludes registration</div>
+                            </div>
+                            {/* Extra Amount card */}
+                            <div className="card" style={{ padding: '1.5rem', borderLeft: `4px solid ${(monthStats?.extraCash ?? 0) >= 0 ? '#00e676' : '#f87171'}` }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>{monthName} — Extra Amount</div>
+                                <div style={{ fontSize: '2rem', fontWeight: 800, color: (monthStats?.extraCash ?? 0) >= 0 ? '#00e676' : '#f87171', marginBottom: '0.3rem' }}>
+                                    {(monthStats?.extraCash ?? 0) >= 0 ? '+' : ''}Rs. {(monthStats?.extraCash ?? 0).toLocaleString()}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>
+                                    {(monthStats?.extraCash ?? 0) >= 0 ? 'Earned above standard price' : 'Lost below standard price'}
+                                </div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--color-border)' }}>
+                                    {monthStats?.sales ?? 0} bikes · avg Rs. {monthStats?.sales ? Math.round((monthStats.extraCash ?? 0) / monthStats.sales).toLocaleString() : '0'} extra/bike
+                                </div>
                             </div>
                         </div>
                         {lastMarginCol && (
