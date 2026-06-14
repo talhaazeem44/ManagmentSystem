@@ -258,7 +258,7 @@ export default function DashboardPage() {
                                             return d?.date || label;
                                         }}
                                     />
-                                    <Bar dataKey="sales" fill="#00e676" radius={[4, 4, 0, 0]} name="sales" />
+                                    <Bar dataKey="sales" fill="hsl(0,85%,45%)" radius={[4, 4, 0, 0]} name="sales" />
                                 </BarChart>
                             </ResponsiveContainer>
                             </div>
