@@ -15,21 +15,21 @@ export default function DashboardLayout({
     const role = (session?.user as any)?.role as string | undefined;
 
     const mainNavItems = [
-        { href: '/dashboard',          label: 'Dashboard', icon: '📊' },
-        { href: '/sales/new',          label: 'New Sale',  icon: '➕' },
-        { href: '/advance-bookings',   label: 'Advance',   icon: '📋' },
-        { href: '/inventory',          label: 'Inventory', icon: '🏍️' },
-        { href: '/inventory/receive',  label: 'Receive',   icon: '📦' },
-        { href: '/sales',              label: 'Sales',     icon: '💰' },
-        { href: '/reports',            label: 'Reports',   icon: '📈' },
-        { href: '/profit',             label: 'Profit',    icon: '💵' },
-        { href: '/expenses',           label: 'Expenses',  icon: '💸' },
+        { href: '/dashboard',         label: 'Dashboard', icon: '📊' },
+        { href: '/sales/new',         label: 'New Sale',  icon: '➕' },
+        { href: '/advance-bookings',  label: 'Advance',   icon: '📋' },
+        { href: '/inventory',         label: 'Inventory', icon: '🏍️' },
+        { href: '/inventory/receive', label: 'Receive',   icon: '📦' },
+        { href: '/sales',             label: 'Sales',     icon: '💰' },
+        { href: '/reports',           label: 'Reports',   icon: '📈' },
+        { href: '/profit',            label: 'Profit',    icon: '💰' },
+        { href: '/expenses',          label: 'Expenses',  icon: '💸' },
     ];
 
     const workshopNavItems = [
-        { href: '/workshop',          label: 'Workshop', icon: '🛠️' },
-        { href: '/workshop/stock',    label: 'W. Stock', icon: '🔩' },
-        { href: '/workshop/tracker',  label: 'W. Cash',  icon: '💵' },
+        { href: '/workshop',         label: 'Workshop', icon: '🛠️' },
+        { href: '/workshop/stock',   label: 'W. Stock', icon: '🔩' },
+        { href: '/workshop/tracker', label: 'W. Cash',  icon: '💵' },
     ];
 
     let navItems;
@@ -43,18 +43,7 @@ export default function DashboardLayout({
 
     return (
         <div className={styles.layout}>
-
-            {/* ── Animated background circles ── */}
-            <div className={styles.bgCircles} aria-hidden>
-                <div className={`${styles.bgCircle} ${styles.bgCircle1}`} />
-                <div className={`${styles.bgCircle} ${styles.bgCircle2}`} />
-                <div className={`${styles.bgCircle} ${styles.bgCircle3}`} />
-                <div className={`${styles.bgCircle} ${styles.bgCircle4}`} />
-                <div className={`${styles.bgCircle} ${styles.bgCircle5}`} />
-                <div className={`${styles.bgCircle} ${styles.bgCircle6}`} />
-            </div>
-
-            {/* ── Desktop sidebar ── */}
+            {/* Desktop sidebar */}
             <aside className={styles.sidebar}>
                 <div className={styles.logo}>
                     <div className={styles.logoIcon}>🏍️</div>
@@ -77,33 +66,21 @@ export default function DashboardLayout({
                 <div className={styles.sidebarFooter}>
                     <button
                         onClick={() => signOut({ callbackUrl: '/login' })}
-                        style={{
-                            width: '100%',
-                            padding: '0.55rem',
-                            marginBottom: '0.5rem',
-                            background: 'rgba(255,82,82,0.08)',
-                            color: '#ff5252',
-                            border: '1px solid rgba(255,82,82,0.25)',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontSize: '0.82rem',
-                            fontWeight: 600,
-                        }}
+                        style={{ width: '100%', padding: '0.5rem', marginBottom: '0.5rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
                     >
-                        🔓 Logout
+                        Logout
                     </button>
                     <p className={styles.footerText}>© 2026 Naeem Autos</p>
                 </div>
             </aside>
 
-            {/* ── Main content ── */}
             <main className={styles.main}>
                 <div className={styles.content}>
                     {children}
                 </div>
             </main>
 
-            {/* ── Mobile bottom navigation ── */}
+            {/* Mobile bottom navigation */}
             <nav className={styles.bottomNav}>
                 {navItems.map((item) => (
                     <Link
@@ -115,7 +92,6 @@ export default function DashboardLayout({
                         <span>{item.label}</span>
                     </Link>
                 ))}
-                {/* Logout in mobile nav */}
                 <button
                     className={styles.bottomNavLogout}
                     onClick={() => signOut({ callbackUrl: '/login' })}
@@ -128,7 +104,6 @@ export default function DashboardLayout({
                     <span>Logout</span>
                 </button>
             </nav>
-
         </div>
     );
 }
