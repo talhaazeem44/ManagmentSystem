@@ -38,6 +38,7 @@ interface Stats {
         bikeProfit: number; regProfit: number; profit: number; cashReceived: number;
         registrationCollected: number; totalCashIn: number; cashToDeposit: number;
         expenseCash: number; cashInHand: number; bankTransfer: number; cashDepositOnly: number;
+        modelBreakdown?: Record<string, number>;
     };
     allTime: { totalBikes: number; availableBikes: number; soldBikes: number };
     creditSales: CreditSale[];
@@ -237,6 +238,29 @@ export default function DashboardPage() {
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)', marginTop: '0.3rem', fontWeight: 600 }}>Tap to view →</div>
                     </a>
                 </div>
+
+                {/* ── Model-wise Sales Today ── */}
+                {stats?.range?.modelBreakdown && Object.keys(stats.range.modelBreakdown).length > 0 && (
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.6rem', letterSpacing: '0.05em' }}>
+                            Today's Sales by Model
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                            {Object.entries(stats.range.modelBreakdown)
+                                .sort(([, a], [, b]) => b - a)
+                                .map(([model, count]) => (
+                                    <div key={model} className="card" style={{ padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
+                                        <span style={{ fontSize: '1.4rem' }}>🏍️</span>
+                                        <div>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>{model}</div>
+                                            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1 }}>{count}</div>
+                                            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>bike{count !== 1 ? 's' : ''} sold</div>
+                                        </div>
+                                    </div>
+                                ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* ── Chart + Credit Summary ── */}
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.25rem', marginBottom: '1.5rem' }}>

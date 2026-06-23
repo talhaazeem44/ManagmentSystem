@@ -175,6 +175,12 @@ export async function GET(request: NextRequest) {
         }, 0);
         const rangeCashInHand = Math.max(0, rangeTotalCashIn - rangeCashToDeposit - expenseCash);
 
+        const modelBreakdown: Record<string, number> = {};
+        for (const sale of filteredSales as any[]) {
+            const model = sale.bikeId?.model || 'Unknown';
+            modelBreakdown[model] = (modelBreakdown[model] || 0) + 1;
+        }
+
         const rangeBikeProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).bikeProfit, 0) + rangeAdvanceMargin;
         const rangeRegProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).regProfit, 0);
         // Extra = amount received above standard price (positive = profit boost, negative = loss)
@@ -266,6 +272,7 @@ export async function GET(request: NextRequest) {
                 expenseCash: expenseCash,
                 expenseMargin: expenseMargin,
                 extraCash: rangeExtraCash,
+                modelBreakdown,
                 expensesByCategory,
                 expenseList,
                 cashInHand: rangeCashInHand,
