@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
 
         const [filteredSales, filteredServices, allSales, allServices,
             totalBikesCount, availableBikesCount, soldBikesCount,
-            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings, filteredAdvanceBookings, filteredExpenses, weekSales] = await Promise.all([
+            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings, filteredAdvanceBookings, filteredExpenses, weekSales, creditPaymentSales] = await Promise.all([
             Sale.find({ saleDate: { $gte: filterStartDate, $lt: filterEndDate } }).populate('bikeId').lean(),
             ServiceSale.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
             Sale.find().populate('bikeId').lean(),
@@ -83,6 +83,8 @@ export async function GET(request: NextRequest) {
             AdvanceBooking.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
             Expense.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
             Sale.find({ saleDate: { $gte: sevenDaysAgo } }).populate('bikeId').lean(),
+            // Credit payments recorded in this date range (for sales whose saleDate is outside the range)
+            Sale.find({ 'payments.date': { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
         ]);
 
         // 7-day chart data
@@ -159,7 +161,18 @@ export async function GET(request: NextRequest) {
             amount: Number(e.amount || 0),
         }));
 
-        const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || 0), 0) + rangeAdvanceCash;
+        // Sum credit payments recorded within this date range (for sales whose saleDate may be outside the range)
+        const creditPaymentsInRange = (creditPaymentSales as any[]).reduce((total, sale) => {
+            // Exclude sales already counted via saleDate filter to avoid double-counting
+            const alreadyCounted = (filteredSales as any[]).some((fs: any) => fs._id.toString() === sale._id.toString());
+            if (alreadyCounted) return total;
+            const rangePayments = (sale.payments || []).filter((p: any) => {
+                const pd = new Date(p.date);
+                return pd >= filterStartDate && pd < filterEndDate;
+            });
+            return total + rangePayments.reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+        }, 0);
+        const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || 0), 0) + rangeAdvanceCash + creditPaymentsInRange;
         const rangeRegistration = filteredSales.reduce((s, sale: any) => s + Number(sale.registrationCost || 0), 0);
         const rangeBankTransfer = filteredSales.reduce((s, sale: any) => s + Number(sale.bankTransferAmount || 0), 0);
         const rangeTotalCashIn = rangeCashReceived + rangeRegistration;
@@ -200,6 +213,11 @@ export async function GET(request: NextRequest) {
         const rangeProfit = rangeBikeProfit + rangeRegProfit + rangeWorkshopProfit - expenseMargin;
 
         // ── All-time ───────────────────────────────────────────────────────────
+        const allTimeModelBreakdown: Record<string, number> = {};
+        for (const sale of allSales as any[]) {
+            const model = sale.bikeId?.model || 'Unknown';
+            allTimeModelBreakdown[model] = (allTimeModelBreakdown[model] || 0) + 1;
+        }
         const allTimeRevenue = allSales.reduce((s, sale: any) => s + Number(sale.price || 0), 0);
         const allTimeBikeProfit = allSales.reduce((s, sale: any) => s + calcSaleMargin(sale).totalProfit, 0);
         const allTimeWorkshopRevenue = allServices.reduce((s, svc: any) => s + Number(svc.totalAmount || 0), 0);
@@ -289,6 +307,7 @@ export async function GET(request: NextRequest) {
                 totalRevenue: allTimeRevenue,
                 totalWorkshopRevenue: allTimeWorkshopRevenue,
                 totalProfit: allTimeProfit,
+                modelBreakdown: allTimeModelBreakdown,
             },
             deliveryOrders: doStats,
             creditSales,

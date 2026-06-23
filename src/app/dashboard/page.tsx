@@ -40,7 +40,7 @@ interface Stats {
         expenseCash: number; cashInHand: number; bankTransfer: number; cashDepositOnly: number;
         modelBreakdown?: Record<string, number>;
     };
-    allTime: { totalBikes: number; availableBikes: number; soldBikes: number };
+    allTime: { totalBikes: number; availableBikes: number; soldBikes: number; modelBreakdown?: Record<string, number> };
     creditSales: CreditSale[];
     advanceBookings: {
         pendingCount: number; pendingMargin: number;
@@ -239,25 +239,30 @@ export default function DashboardPage() {
                     </a>
                 </div>
 
-                {/* ── Model-wise Sales Today ── */}
-                {stats?.range?.modelBreakdown && Object.keys(stats.range.modelBreakdown).length > 0 && (
+                {/* ── Model-wise Sales (All Time) ── */}
+                {stats?.allTime?.modelBreakdown && Object.keys(stats.allTime.modelBreakdown).length > 0 && (
                     <div style={{ marginBottom: '1.5rem' }}>
                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.6rem', letterSpacing: '0.05em' }}>
-                            Today's Sales by Model
+                            Total Sales by Model
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                            {Object.entries(stats.range.modelBreakdown)
+                            {Object.entries(stats.allTime.modelBreakdown)
                                 .sort(([, a], [, b]) => b - a)
-                                .map(([model, count]) => (
-                                    <div key={model} className="card" style={{ padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
-                                        <span style={{ fontSize: '1.4rem' }}>🏍️</span>
-                                        <div>
-                                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>{model}</div>
-                                            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1 }}>{count}</div>
-                                            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>bike{count !== 1 ? 's' : ''} sold</div>
+                                .map(([model, count]) => {
+                                    const todayCount = stats.range?.modelBreakdown?.[model] ?? 0;
+                                    return (
+                                        <div key={model} className="card" style={{ padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
+                                            <span style={{ fontSize: '1.4rem' }}>🏍️</span>
+                                            <div>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>{model}</div>
+                                                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1 }}>{count}</div>
+                                                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>
+                                                    total sold{todayCount > 0 ? ` · +${todayCount} today` : ''}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                         </div>
                     </div>
                 )}
