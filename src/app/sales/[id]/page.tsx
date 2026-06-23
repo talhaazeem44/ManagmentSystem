@@ -50,6 +50,7 @@ export default function ReceiptPage() {
     const [payForm, setPayForm] = useState({ amount: '', date: today(), note: '' });
     const [paying, setPaying] = useState(false);
     const [payError, setPayError] = useState('');
+    const [deletingPayment, setDeletingPayment] = useState<number | null>(null);
 
     useEffect(() => {
         if (params.id) fetchSale(params.id as string);
@@ -61,6 +62,22 @@ export default function ReceiptPage() {
             if (res.ok) setSale(await res.json());
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeletePayment = async (index: number, amount: number) => {
+        if (!sale) return;
+        if (!confirm(`Remove payment of Rs. ${amount.toLocaleString()}? This will add it back to the balance.`)) return;
+        setDeletingPayment(index);
+        try {
+            const res = await fetch(`/api/sales/${sale.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ removePaymentIndex: index }),
+            });
+            if (res.ok) await fetchSale(sale.id);
+        } finally {
+            setDeletingPayment(null);
         }
     };
 
@@ -169,9 +186,17 @@ export default function ReceiptPage() {
                                         <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Rs. {Number(p.amount).toLocaleString()}</span>
                                         {p.note && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>{p.note}</span>}
                                     </div>
-                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                                        📅 {new Date(p.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                    </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                            📅 {new Date(p.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </span>
+                                        <button
+                                            onClick={() => handleDeletePayment(i, Number(p.amount))}
+                                            disabled={deletingPayment === i}
+                                            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>
+                                            {deletingPayment === i ? '...' : '✕ Remove'}
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>

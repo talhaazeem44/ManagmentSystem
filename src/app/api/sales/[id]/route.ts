@@ -47,6 +47,31 @@ export async function PATCH(
         const { id } = await params;
         const body = await request.json();
 
+        // Special handler: delete a payment by index and reverse its effect
+        if (body.removePaymentIndex !== undefined) {
+            const idx = Number(body.removePaymentIndex);
+            const existing = await Sale.findById(id);
+            if (!existing) return NextResponse.json({ message: 'Sale not found' }, { status: 404 });
+            const payments = [...(existing.payments || [])];
+            if (idx < 0 || idx >= payments.length) {
+                return NextResponse.json({ message: 'Invalid payment index' }, { status: 400 });
+            }
+            const removedAmount = Number(payments[idx].amount || 0);
+            payments.splice(idx, 1);
+            const sale = await Sale.findByIdAndUpdate(
+                id,
+                {
+                    $set: {
+                        payments,
+                        receivedCash: Math.max(0, Number(existing.receivedCash || 0) - removedAmount),
+                        balance: Number(existing.balance || 0) + removedAmount,
+                    },
+                },
+                { new: true }
+            );
+            return NextResponse.json(sale);
+        }
+
         // Special handler: record a payment against a credit sale
         if (body.addPayment) {
             const { amount, date, note } = body.addPayment;

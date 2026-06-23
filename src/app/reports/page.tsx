@@ -33,6 +33,7 @@ interface RangeData {
     expenseMargin: number;
     expensesByCategory: Record<string, number>;
     expenseList: ExpenseItem[];
+    modelBreakdown?: Record<string, number>;
     startDate: string;
     endDate: string;
 }
@@ -394,6 +395,35 @@ export default function ReportsPage() {
                                 <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>after margin expenses</div>
                             </div>
                         </div>
+
+                        {/* ── Sales by Model ── */}
+                        {r?.modelBreakdown && Object.keys(r.modelBreakdown).length > 0 && (
+                            <div className="card" style={{ marginBottom: '1.25rem', padding: '1.25rem' }}>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+                                    Sales by Model — {rangeLabel}
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                                    {Object.entries(r.modelBreakdown)
+                                        .sort(([, a], [, b]) => b - a)
+                                        .map(([model, count]) => (
+                                            <div key={model} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.85rem 1.25rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: '12px', minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
+                                                <span style={{ fontSize: '1.4rem' }}>🏍️</span>
+                                                <div>
+                                                    <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>{model}</div>
+                                                    <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1 }}>{count}</div>
+                                                    <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>bike{count !== 1 ? 's' : ''} sold</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                </div>
+                                <div style={{ marginTop: '1rem', padding: '0.6rem 0.75rem', background: 'rgba(204,0,0,0.05)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '0.82rem', fontWeight: 600 }}>Total Bikes Sold</span>
+                                    <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                                        {Object.values(r.modelBreakdown).reduce((s, c) => s + c, 0)} units
+                                    </span>
+                                </div>
+                            </div>
+                        )}
 
                         {/* ── Margin Tracker ── */}
                         <div className="card" style={{ marginBottom: '1.25rem', padding: '1.25rem' }}>
