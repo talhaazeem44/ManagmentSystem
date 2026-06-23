@@ -62,6 +62,12 @@ interface ExpenseItem {
     amount: number;
 }
 
+interface MonthlyModelRow {
+    month: string;
+    models: Record<string, number>;
+    total: number;
+}
+
 interface ReportData {
     range: RangeData;
     cashBreakdown: CashBreakdownItem[];
@@ -130,6 +136,7 @@ export default function ReportsPage() {
     const [data, setData] = useState<ReportData | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<QuickFilter>('today');
+    const [monthlyModels, setMonthlyModels] = useState<{ rows: MonthlyModelRow[]; models: string[] } | null>(null);
 
     const todayDates = getRangeDates('today');
     const [startDate, setStartDate] = useState(() => toLocalDatetimeStr(todayDates.start));
@@ -151,7 +158,10 @@ export default function ReportsPage() {
         }
     };
 
-    useEffect(() => { fetchReports(startDate, endDate); }, []);
+    useEffect(() => {
+        fetchReports(startDate, endDate);
+        fetch('/api/reports/model-monthly').then(r => r.ok ? r.json() : null).then(d => { if (d) setMonthlyModels(d); });
+    }, []);
 
     const applyQuickFilter = (filter: QuickFilter) => {
         setActiveFilter(filter);
@@ -567,6 +577,53 @@ export default function ReportsPage() {
                                                 <td style={{ padding: '6px 8px', textAlign: 'right', color: '#10b981' }}>{(data?.cashBreakdown ?? []).reduce((s, r) => s + r.bikeProfit, 0).toLocaleString()}</td>
                                                 <td style={{ padding: '6px 8px', textAlign: 'right', color: '#8b5cf6' }}>{(data?.cashBreakdown ?? []).reduce((s, r) => s + r.regProfit, 0).toLocaleString()}</td>
                                                 <td style={{ padding: '6px 8px', textAlign: 'right', color: '#06b6d4' }}>{(data?.cashBreakdown ?? []).reduce((s, r) => s + r.totalProfit, 0).toLocaleString()}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                        {/* ── Monthly Sales by Model ── */}
+                        {monthlyModels && monthlyModels.rows.length > 0 && (
+                            <div className="card" style={{ marginBottom: '1.25rem', padding: '1.25rem' }}>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+                                    Monthly Sales by Model — All Time
+                                </div>
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '2px solid var(--color-border)', background: 'var(--color-bg-elevated)' }}>
+                                                <th style={{ padding: '8px 10px', textAlign: 'left', color: 'var(--color-text-muted)', fontWeight: 700, whiteSpace: 'nowrap' }}>Month</th>
+                                                {monthlyModels.models.map(m => (
+                                                    <th key={m} style={{ padding: '8px 10px', textAlign: 'center', color: 'var(--color-text-muted)', fontWeight: 700, whiteSpace: 'nowrap' }}>{m}</th>
+                                                ))}
+                                                <th style={{ padding: '8px 10px', textAlign: 'center', color: 'var(--color-primary)', fontWeight: 700 }}>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {[...monthlyModels.rows].reverse().map((row, i) => (
+                                                <tr key={i} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                                                    <td style={{ padding: '7px 10px', fontWeight: 600, whiteSpace: 'nowrap' }}>{row.month}</td>
+                                                    {monthlyModels.models.map(m => (
+                                                        <td key={m} style={{ padding: '7px 10px', textAlign: 'center', color: row.models[m] ? 'var(--color-text)' : 'var(--color-text-subtle)' }}>
+                                                            {row.models[m] ?? '—'}
+                                                        </td>
+                                                    ))}
+                                                    <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 800, color: 'var(--color-primary)' }}>{row.total}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style={{ borderTop: '2px solid var(--color-border)', background: 'var(--color-bg-elevated)', fontWeight: 700 }}>
+                                                <td style={{ padding: '8px 10px' }}>All Time</td>
+                                                {monthlyModels.models.map(m => (
+                                                    <td key={m} style={{ padding: '8px 10px', textAlign: 'center', color: '#10b981' }}>
+                                                        {monthlyModels.rows.reduce((s, r) => s + (r.models[m] ?? 0), 0)}
+                                                    </td>
+                                                ))}
+                                                <td style={{ padding: '8px 10px', textAlign: 'center', color: 'var(--color-primary)', fontSize: '1rem' }}>
+                                                    {monthlyModels.rows.reduce((s, r) => s + r.total, 0)}
+                                                </td>
                                             </tr>
                                         </tfoot>
                                     </table>
