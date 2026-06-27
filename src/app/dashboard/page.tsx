@@ -124,7 +124,7 @@ export default function DashboardPage() {
     const handleDeposit = async () => {
         if (!sinceStats) return;
         const extra = Number(manualCash) || 0;
-        const cashInHand = (sinceStats.cashReceived ?? 0) + extra;
+        const cashInHand = Math.max(0, (sinceStats.cashReceived ?? 0) - (sinceStats.expenseCash ?? 0) + extra);
         if (!confirm(`Mark Rs. ${cashInHand.toLocaleString()} as deposited to bank? Cash counter resets to zero.`)) return;
         setDepositing(true);
         try {
@@ -308,7 +308,7 @@ export default function DashboardPage() {
                                 )}
                             </div>
                             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b', marginBottom: '0.75rem' }}>
-                                Rs. {((sinceStats?.cashReceived ?? 0) + (Number(manualCash) || 0)).toLocaleString()}
+                                Rs. {Math.max(0, (sinceStats?.cashReceived ?? 0) - (sinceStats?.expenseCash ?? 0) + (Number(manualCash) || 0)).toLocaleString()}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.82rem', marginBottom: '0.75rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -323,6 +323,12 @@ export default function DashboardPage() {
                                     <span style={{ color: 'var(--color-text-muted)' }}>Registration</span>
                                     <strong style={{ color: '#8b5cf6' }}>Rs. {(sinceStats?.registrationCollected ?? 0).toLocaleString()}</strong>
                                 </div>
+                                {(sinceStats?.expenseCash ?? 0) > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#ef4444' }}>Cash Expenses</span>
+                                        <strong style={{ color: '#ef4444' }}>− Rs. {(sinceStats?.expenseCash ?? 0).toLocaleString()}</strong>
+                                    </div>
+                                )}
                                 <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.3rem', display: 'flex', justifyContent: 'space-between' }}>
                                     <span style={{ color: 'var(--color-text-muted)' }}>Honda Deposit</span>
                                     <strong style={{ color: '#ef4444' }}>− Rs. {(sinceStats?.cashDepositOnly ?? 0).toLocaleString()}</strong>
@@ -347,9 +353,9 @@ export default function DashboardPage() {
                             </div>
                             <button
                                 onClick={handleDeposit}
-                                disabled={depositing || ((sinceStats?.cashReceived ?? 0) + (Number(manualCash) || 0)) <= 0}
+                                disabled={depositing || Math.max(0, (sinceStats?.cashReceived ?? 0) - (sinceStats?.expenseCash ?? 0) + (Number(manualCash) || 0)) <= 0}
                                 className="btn"
-                                style={{ width: '100%', fontSize: '0.8rem', padding: '0.4rem', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 700, cursor: depositing ? 'not-allowed' : 'pointer', opacity: (sinceStats?.cashReceived ?? 0) <= 0 ? 0.5 : 1 }}>
+                                style={{ width: '100%', fontSize: '0.8rem', padding: '0.4rem', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 700, cursor: depositing ? 'not-allowed' : 'pointer', opacity: Math.max(0, (sinceStats?.cashReceived ?? 0) - (sinceStats?.expenseCash ?? 0)) <= 0 ? 0.5 : 1 }}>
                                 {depositing ? '⏳ Saving...' : '🏦 Deposit to Bank'}
                             </button>
                         </div>
