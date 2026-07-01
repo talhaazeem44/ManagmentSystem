@@ -111,7 +111,7 @@ export default function ProfitPage() {
 
     const handleCollectMargin = async () => {
         if (!sinceStats) return;
-        const net = (sinceStats.bikeProfit - (sinceStats.advanceMargin ?? 0)) - (sinceStats.expenseMargin ?? 0);
+        const net = sinceStats.bikeProfit - (sinceStats.expenseMargin ?? 0);
         if (!confirm(`Mark Rs. ${net.toLocaleString()} margin as collected? Counter resets to zero.`)) return;
         setCollecting(true);
         try {
@@ -142,8 +142,8 @@ export default function ProfitPage() {
     const marginSinceDate = lastMarginCol ? new Date(lastMarginCol.collectedAt) : (() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; })();
     const cashSinceDate   = lastCashCol   ? new Date(lastCashCol.collectedAt)   : (() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; })();
 
-    const uncollectedMargin = sinceStats ? (sinceStats.bikeProfit - (sinceStats.advanceMargin ?? 0)) - (sinceStats.expenseMargin ?? 0) : 0;
-    const monthMargin       = monthStats ? (monthStats.bikeProfit - (monthStats.advanceMargin ?? 0)) - (monthStats.expenseMargin ?? 0) : 0;
+    const uncollectedMargin = sinceStats ? sinceStats.bikeProfit - (sinceStats.expenseMargin ?? 0) : 0;
+    const monthMargin       = monthStats  ? monthStats.bikeProfit  - (monthStats.expenseMargin  ?? 0) : 0;
     const uncollectedCash   = sinceCashStats?.cashReceived ?? 0;
     const hasCashToDeposit  = uncollectedCash > 0;
     const monthCash         = monthCashStats?.cashReceived ?? 0;
@@ -290,11 +290,11 @@ export default function ProfitPage() {
                                     <div>
                                         <div style={{ fontWeight: 700, fontSize: '0.875rem', marginBottom: '0.25rem' }}>Bike Margin After Deductions (Today)</div>
                                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                                            Bike Margin &nbsp;<span style={{ color: '#ef4444' }}>− Rs. {rs.expenseMargin.toLocaleString()} expenses</span>
+                                            Bike + Advance Margin &nbsp;<span style={{ color: '#ef4444' }}>− Rs. {rs.expenseMargin.toLocaleString()} expenses</span>
                                         </div>
                                     </div>
                                     <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ef4444' }}>
-                                        Rs. {((rs.bikeProfit - (rs.advanceMargin ?? 0)) - rs.expenseMargin).toLocaleString()}
+                                        Rs. {(rs.bikeProfit - rs.expenseMargin).toLocaleString()}
                                     </div>
                                 </div>
                             </div>

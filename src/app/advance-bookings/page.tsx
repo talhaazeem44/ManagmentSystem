@@ -128,7 +128,7 @@ export default function AdvanceBookingsPage() {
                     <div>
                         <h1 style={{ fontSize: '2rem', fontWeight: 700 }}>Advance Bookings</h1>
                         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-                            {pendingCount} pending · Advance: Rs. {totalAdvance.toLocaleString()} · Expected Profit: <span style={{ color: 'var(--color-success)', fontWeight: 700 }}>Rs. {totalMargin.toLocaleString()}</span>
+                            {pendingCount} pending · Advance: Rs. {totalAdvance.toLocaleString()}
                         </p>
                     </div>
                     <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
