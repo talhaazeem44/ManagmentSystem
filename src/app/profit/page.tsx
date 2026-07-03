@@ -25,6 +25,27 @@ interface CollectionRecord {
     collectedAt: string;
 }
 
+interface BreakdownItem {
+    bikeModel: string;
+    paymentMode: string;
+    price: number;
+    receivedCash: number;
+    bankTransferAmount: number;
+    bikeProfit: number;
+    regProfit: number;
+    totalProfit: number;
+    standardPrice: number;
+    baseMargin: number;
+}
+
+interface ExpenseItem {
+    date: string;
+    description: string;
+    category: string;
+    deductFrom: string;
+    amount: number;
+}
+
 function Card({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
     return (
         <div className="card" style={{ padding: '1.25rem' }}>
@@ -57,6 +78,9 @@ export default function ProfitPage() {
     const [lastCashCol, setLastCashCol] = useState<CollectionRecord | null>(null);
     const [collectingCash, setCollectingCash] = useState(false);
 
+    const [monthBreakdown, setMonthBreakdown] = useState<BreakdownItem[]>([]);
+    const [monthExpenseList, setMonthExpenseList] = useState<ExpenseItem[]>([]);
+    const [showMonthBreakdown, setShowMonthBreakdown] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const handleUnlock = (e: React.FormEvent) => {
@@ -101,7 +125,12 @@ export default function ProfitPage() {
             ]);
 
             if (marginSinceRes.ok) { const d = await marginSinceRes.json(); setSinceStats(d.range); }
-            if (monthMarginRes.ok) { const d = await monthMarginRes.json(); setMonthStats(d.range); }
+            if (monthMarginRes.ok) {
+                const d = await monthMarginRes.json();
+                setMonthStats(d.range);
+                setMonthBreakdown(d.cashBreakdown ?? []);
+                setMonthExpenseList(d.range?.expenseList ?? []);
+            }
             if (cashSinceRes.ok)   { const d = await cashSinceRes.json();   setSinceCashStats(d.range); }
             if (monthCashRes.ok)   { const d = await monthCashRes.json();   setMonthCashStats(d.range); }
         } finally {
@@ -209,9 +238,31 @@ export default function ProfitPage() {
                             </div>
                             <div className="card" style={{ padding: '1.5rem', borderLeft: '4px solid #3b82f6' }}>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>{monthName} — Total Margin</div>
-                                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#3b82f6', marginBottom: '0.3rem' }}>Rs. {monthMargin.toLocaleString()}</div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>{monthStats?.sales ?? 0} bikes sold this month</div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Bike margin after expenses · excludes registration</div>
+                                <div style={{ fontSize: '2rem', fontWeight: 800, color: monthMargin < 0 ? '#ef4444' : '#3b82f6', marginBottom: '0.75rem' }}>Rs. {monthMargin.toLocaleString()}</div>
+
+                                {/* Gross vs Net breakdown */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginBottom: '0.75rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', padding: '0.35rem 0.6rem', background: 'rgba(16,185,129,0.07)', borderRadius: '6px' }}>
+                                        <span style={{ color: 'var(--color-text-muted)' }}>Gross (before exp.)</span>
+                                        <strong style={{ color: '#10b981' }}>Rs. {(monthStats?.bikeProfit ?? 0).toLocaleString()}</strong>
+                                    </div>
+                                    {(monthStats?.expenseMargin ?? 0) > 0 && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', padding: '0.35rem 0.6rem', background: 'rgba(239,68,68,0.06)', borderRadius: '6px' }}>
+                                            <span style={{ color: '#ef4444' }}>Margin Expenses</span>
+                                            <strong style={{ color: '#ef4444' }}>− Rs. {(monthStats?.expenseMargin ?? 0).toLocaleString()}</strong>
+                                        </div>
+                                    )}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', padding: '0.35rem 0.6rem', background: monthMargin < 0 ? 'rgba(239,68,68,0.08)' : 'rgba(59,130,246,0.08)', borderRadius: '6px', borderTop: '1px solid var(--color-border)' }}>
+                                        <span style={{ fontWeight: 700 }}>Net Margin</span>
+                                        <strong style={{ color: monthMargin < 0 ? '#ef4444' : '#3b82f6' }}>Rs. {monthMargin.toLocaleString()}</strong>
+                                    </div>
+                                </div>
+
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>{monthStats?.sales ?? 0} bikes sold this month</div>
+                                <button onClick={() => setShowMonthBreakdown(v => !v)}
+                                    style={{ fontSize: '0.75rem', fontWeight: 700, color: '#3b82f6', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)', borderRadius: '6px', padding: '0.3rem 0.75rem', cursor: 'pointer', width: '100%' }}>
+                                    {showMonthBreakdown ? '▲ Hide breakdown' : '▼ See how it is calculated'}
+                                </button>
                             </div>
                             {/* Extra Amount card */}
                             <div className="card" style={{ padding: '1.5rem', borderLeft: `4px solid ${(monthStats?.extraCash ?? 0) >= 0 ? '#00e676' : '#f87171'}` }}>
@@ -227,6 +278,82 @@ export default function ProfitPage() {
                                 </div>
                             </div>
                         </div>
+                        {/* ── Month Margin Breakdown ── */}
+                        {showMonthBreakdown && (
+                            <div className="card" style={{ marginBottom: '1rem', padding: '1.25rem', border: '1px solid rgba(59,130,246,0.25)' }}>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+                                    {monthName} — Margin Breakdown
+                                </div>
+
+                                {/* Per-sale rows */}
+                                {monthBreakdown.length > 0 && (
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Bike Sales</div>
+                                        <div style={{ overflowX: 'auto' }}>
+                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                                                <thead>
+                                                    <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                                        {['Model', 'Mode', 'Base Margin', 'Extra / Less', 'Bike Profit'].map(h => (
+                                                            <th key={h} style={{ padding: '5px 8px', textAlign: h === 'Model' || h === 'Mode' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {monthBreakdown.map((row, i) => {
+                                                        const extra = row.bikeProfit - row.baseMargin;
+                                                        return (
+                                                            <tr key={i} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                                                                <td style={{ padding: '5px 8px', fontWeight: 600 }}>{row.bikeModel}</td>
+                                                                <td style={{ padding: '5px 8px' }}>
+                                                                    <span style={{ fontSize: '0.68rem', padding: '1px 5px', borderRadius: '4px', background: row.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.1)' : row.paymentMode === 'ADVANCE' ? 'rgba(139,92,246,0.1)' : 'rgba(16,185,129,0.1)', color: row.paymentMode === 'CREDIT' ? '#ef4444' : row.paymentMode === 'ADVANCE' ? '#8b5cf6' : '#10b981', fontWeight: 700 }}>{row.paymentMode}</span>
+                                                                </td>
+                                                                <td style={{ padding: '5px 8px', textAlign: 'right', color: 'var(--color-text-muted)' }}>Rs. {row.baseMargin.toLocaleString()}</td>
+                                                                <td style={{ padding: '5px 8px', textAlign: 'right', color: extra > 0 ? '#10b981' : extra < 0 ? '#ef4444' : 'var(--color-text-muted)', fontWeight: extra !== 0 ? 700 : 400 }}>
+                                                                    {extra > 0 ? `+${extra.toLocaleString()}` : extra < 0 ? extra.toLocaleString() : '—'}
+                                                                </td>
+                                                                <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 700, color: row.bikeProfit < 0 ? '#ef4444' : '#10b981' }}>Rs. {row.bikeProfit.toLocaleString()}</td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 700, background: 'var(--color-bg-elevated)' }}>
+                                                        <td colSpan={4} style={{ padding: '6px 8px', color: 'var(--color-text-muted)' }}>Total Bike Profit</td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right', color: monthBreakdown.reduce((s, r) => s + r.bikeProfit, 0) < 0 ? '#ef4444' : '#10b981' }}>
+                                                            Rs. {monthBreakdown.reduce((s, r) => s + r.bikeProfit, 0).toLocaleString()}
+                                                        </td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Margin expenses */}
+                                {monthExpenseList.filter(e => e.deductFrom === 'MARGIN').length > 0 && (
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <div style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Margin Expenses (deducted)</div>
+                                        {monthExpenseList.filter(e => e.deductFrom === 'MARGIN').map((e, i) => (
+                                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px', fontSize: '0.8rem', borderBottom: '1px solid var(--color-border-light)' }}>
+                                                <span style={{ color: 'var(--color-text-muted)' }}>{new Date(e.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })} · {e.description || e.category}</span>
+                                                <span style={{ fontWeight: 700, color: '#ef4444' }}>− Rs. {Number(e.amount).toLocaleString()}</span>
+                                            </div>
+                                        ))}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(239,68,68,0.06)', borderRadius: '6px', marginTop: '4px' }}>
+                                            <span>Total margin expenses</span>
+                                            <span style={{ color: '#ef4444' }}>− Rs. {monthExpenseList.filter(e => e.deductFrom === 'MARGIN').reduce((s, e) => s + Number(e.amount), 0).toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Final tally */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: monthMargin < 0 ? 'rgba(239,68,68,0.08)' : 'rgba(59,130,246,0.08)', border: `1px solid ${monthMargin < 0 ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)'}`, borderRadius: '8px' }}>
+                                    <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>Net Bike Margin ({monthName})</span>
+                                    <span style={{ fontSize: '1.25rem', fontWeight: 800, color: monthMargin < 0 ? '#ef4444' : '#3b82f6' }}>Rs. {monthMargin.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        )}
+
                         {lastMarginCol && (
                             <div style={{ padding: '0.6rem 1rem', background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', justifyContent: 'space-between' }}>
                                 <span>Last margin collected · {new Date(lastMarginCol.collectedAt).toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
