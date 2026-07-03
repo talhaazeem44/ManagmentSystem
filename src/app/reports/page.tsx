@@ -272,11 +272,8 @@ export default function ReportsPage() {
         XLSX.writeFile(wb, `report-${rangeLabel.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.xlsx`);
     };
 
-    const bikeSalesMarginOnly = (r?.bikeProfit ?? 0) - (r?.advanceMargin ?? 0);
-    // Net Bike Margin = same formula as Profit page (excludes reg & workshop)
-    const netBikeMargin = bikeSalesMarginOnly - (r?.expenseMargin ?? 0);
-    // Total net profit = netBikeMargin + advance + reg + workshop
-    const totalNetProfit = netBikeMargin + (r?.advanceMargin ?? 0) + (r?.regProfit ?? 0) + (r?.workshopProfit ?? 0);
+    // Matches Profit page exactly: bikeProfit (includes advance) − expenseMargin
+    const totalNetProfit = (r?.bikeProfit ?? 0) - (r?.expenseMargin ?? 0);
     const profitBeforeExp = (r?.bikeProfit ?? 0) + (r?.regProfit ?? 0) + (r?.workshopProfit ?? 0);
     const totalAllExp = (r?.expenseCash ?? 0) + (r?.expenseMargin ?? 0);
 
@@ -450,47 +447,29 @@ export default function ReportsPage() {
                                 const bikeSalesMargin = (r?.bikeProfit ?? 0) - (r?.advanceMargin ?? 0);
                                 const advanceMargin   = r?.advanceMargin ?? 0;
                                 const expMargin       = r?.expenseMargin ?? 0;
-                                const netBikeMargin   = bikeSalesMargin - expMargin;   // matches Profit page "Bike Margin"
-                                const regProfit       = r?.regProfit ?? 0;
-                                const wsProfit        = r?.workshopProfit ?? 0;
-                                const totalProfit     = netBikeMargin + advanceMargin + regProfit + wsProfit;
+                                const netBikeMargin   = bikeSalesMargin - expMargin;
+                                // Total = bikeProfit − expenseMargin (same as Profit page)
+                                const totalProfit     = netBikeMargin + advanceMargin;
                                 return (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-                                        {/* Step 1: bike sales */}
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'var(--color-bg-elevated)', borderRadius: '8px' }}>
                                             <span style={{ fontSize: '0.82rem' }}>Bike Sales Margin</span>
                                             <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#10b981' }}>Rs. {bikeSalesMargin.toLocaleString()}</span>
                                         </div>
-                                        {/* Step 2: deduct margin expenses */}
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'rgba(239,68,68,0.05)', borderRadius: '8px' }}>
                                             <span style={{ fontSize: '0.82rem', color: '#ef4444' }}>Less: Margin Expenses</span>
                                             <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#ef4444' }}>− Rs. {expMargin.toLocaleString()}</span>
                                         </div>
-                                        {/* Net Bike Margin — matches Profit page exactly */}
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.75rem', background: netBikeMargin >= 0 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${netBikeMargin >= 0 ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`, borderRadius: '8px' }}>
                                             <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>Net Bike Margin</span>
                                             <span style={{ fontSize: '1rem', fontWeight: 800, color: netBikeMargin >= 0 ? '#10b981' : '#ef4444' }}>Rs. {netBikeMargin.toLocaleString()}</span>
                                         </div>
-                                        {/* Additional income sources */}
                                         {advanceMargin > 0 && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'var(--color-bg-elevated)', borderRadius: '8px' }}>
                                                 <span style={{ fontSize: '0.82rem' }}>+ Advance Bookings Margin</span>
                                                 <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#f59e0b' }}>Rs. {advanceMargin.toLocaleString()}</span>
                                             </div>
                                         )}
-                                        {regProfit > 0 && (
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'var(--color-bg-elevated)', borderRadius: '8px' }}>
-                                                <span style={{ fontSize: '0.82rem' }}>+ Registration Profit</span>
-                                                <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#8b5cf6' }}>Rs. {regProfit.toLocaleString()}</span>
-                                            </div>
-                                        )}
-                                        {wsProfit > 0 && (
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'var(--color-bg-elevated)', borderRadius: '8px' }}>
-                                                <span style={{ fontSize: '0.82rem' }}>+ Workshop Profit</span>
-                                                <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#06b6d4' }}>Rs. {wsProfit.toLocaleString()}</span>
-                                            </div>
-                                        )}
-                                        {/* Grand total */}
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.7rem 0.75rem', background: totalProfit >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', border: `2px solid ${totalProfit >= 0 ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: '8px' }}>
                                             <span style={{ fontSize: '0.9rem', fontWeight: 800 }}>Total Net Profit</span>
                                             <span style={{ fontSize: '1.1rem', fontWeight: 800, color: totalProfit >= 0 ? '#10b981' : '#ef4444' }}>Rs. {totalProfit.toLocaleString()}</span>

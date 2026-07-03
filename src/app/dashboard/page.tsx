@@ -56,6 +56,12 @@ interface CashDeposit {
     collectedAt: string;
 }
 
+interface MonthlyModelRow {
+    month: string;
+    models: Record<string, number>;
+    total: number;
+}
+
 export default function DashboardPage() {
     const { toasts, showToast, removeToast } = useToast();
     const [records, setRecords] = useState<SaleRecord[]>([]);
@@ -74,6 +80,8 @@ export default function DashboardPage() {
     const [customDateStats, setCustomDateStats] = useState<Stats | null>(null);
     const [showCustomBreakdown, setShowCustomBreakdown] = useState(false);
     const [loadingCustom, setLoadingCustom] = useState(false);
+    const [monthModelBreakdown, setMonthModelBreakdown] = useState<Record<string, number> | null>(null);
+    const [monthlyModels, setMonthlyModels] = useState<{ rows: MonthlyModelRow[]; models: string[] } | null>(null);
 
     const fetchData = async (searchFilters = filters) => {
         setLoading(true);
@@ -107,15 +115,20 @@ export default function DashboardPage() {
                 ? new Date(colData.last.collectedAt).toISOString()
                 : new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
 
-            const sinceRes = await fetch(`/api/reports?startDate=${sinceDate}&endDate=${now}`);
-            if (sinceRes.ok) { const d = await sinceRes.json(); setSinceStats(d.range); }
-
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
             const yStart = new Date(yesterday); yStart.setHours(0, 0, 0, 0);
             const yEnd = new Date(yesterday); yEnd.setHours(23, 59, 59, 999);
-            const yRes = await fetch(`/api/reports?startDate=${yStart.toISOString()}&endDate=${yEnd.toISOString()}`);
+            const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+
+            const [sinceRes, yRes, monthStatsRes] = await Promise.all([
+                fetch(`/api/reports?startDate=${sinceDate}&endDate=${now}`),
+                fetch(`/api/reports?startDate=${yStart.toISOString()}&endDate=${yEnd.toISOString()}`),
+                fetch(`/api/reports?startDate=${monthStart.toISOString()}&endDate=${now}`),
+            ]);
+            if (sinceRes.ok) { const d = await sinceRes.json(); setSinceStats(d.range); }
             if (yRes.ok) setYesterdayStats(await yRes.json());
+            if (monthStatsRes.ok) { const d = await monthStatsRes.json(); setMonthModelBreakdown(d.range?.modelBreakdown ?? null); }
         } finally {
             setLoading(false);
         }
@@ -157,7 +170,10 @@ export default function DashboardPage() {
         }
     };
 
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => {
+        fetchData();
+        fetch('/api/reports/model-monthly').then(r => r.ok ? r.json() : null).then(d => { if (d) setMonthlyModels(d); });
+    }, []);
 
     const handleDeleteSale = async (id: string) => {
         if (!confirm('Delete this sale? Bike will be marked AVAILABLE again.')) return;
@@ -239,31 +255,83 @@ export default function DashboardPage() {
                     </a>
                 </div>
 
-                {/* ── Model-wise Sales (All Time) ── */}
+                {/* ── Model-wise Sales ── */}
                 {stats?.allTime?.modelBreakdown && Object.keys(stats.allTime.modelBreakdown).length > 0 && (
                     <div style={{ marginBottom: '1.5rem' }}>
                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.6rem', letterSpacing: '0.05em' }}>
-                            Total Sales by Model
+                            {new Date().toLocaleDateString('en-PK', { month: 'long', year: 'numeric' })} — Bikes Sold by Model
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
                             {Object.entries(stats.allTime.modelBreakdown)
                                 .sort(([, a], [, b]) => b - a)
-                                .map(([model, count]) => {
+                                .map(([model, allTimeCount]) => {
+                                    const monthCount = monthModelBreakdown?.[model] ?? 0;
                                     const todayCount = stats.range?.modelBreakdown?.[model] ?? 0;
                                     return (
                                         <div key={model} className="card" style={{ padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
                                             <span style={{ fontSize: '1.4rem' }}>🏍️</span>
                                             <div>
                                                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>{model}</div>
-                                                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1 }}>{count}</div>
+                                                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1 }}>{monthCount}</div>
                                                 <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>
-                                                    total sold{todayCount > 0 ? ` · +${todayCount} today` : ''}
+                                                    this month{todayCount > 0 ? ` · +${todayCount} today` : ''}
+                                                </div>
+                                                <div style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', marginTop: '0.15rem' }}>
+                                                    {allTimeCount} all time
                                                 </div>
                                             </div>
                                         </div>
                                     );
                                 })}
                         </div>
+
+                        {/* Monthly breakdown table */}
+                        {monthlyModels && monthlyModels.rows.length > 0 && (
+                            <div className="card" style={{ padding: '1rem' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.75rem', letterSpacing: '0.05em' }}>
+                                    Monthly Sales by Model — All Time
+                                </div>
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '2px solid var(--color-border)', background: 'var(--color-bg-elevated)' }}>
+                                                <th style={{ padding: '8px 10px', textAlign: 'left', color: 'var(--color-text-muted)', fontWeight: 700, whiteSpace: 'nowrap' }}>Month</th>
+                                                {monthlyModels.models.map(m => (
+                                                    <th key={m} style={{ padding: '8px 10px', textAlign: 'center', color: 'var(--color-text-muted)', fontWeight: 700, whiteSpace: 'nowrap' }}>{m}</th>
+                                                ))}
+                                                <th style={{ padding: '8px 10px', textAlign: 'center', color: 'var(--color-primary)', fontWeight: 700 }}>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {[...monthlyModels.rows].reverse().map((row, i) => (
+                                                <tr key={i} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                                    <td style={{ padding: '7px 10px', fontWeight: 600, whiteSpace: 'nowrap' }}>{row.month}</td>
+                                                    {monthlyModels.models.map(m => (
+                                                        <td key={m} style={{ padding: '7px 10px', textAlign: 'center', color: row.models[m] ? 'var(--color-text)' : 'var(--color-text-muted)' }}>
+                                                            {row.models[m] ?? '—'}
+                                                        </td>
+                                                    ))}
+                                                    <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 800, color: 'var(--color-primary)' }}>{row.total}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style={{ borderTop: '2px solid var(--color-border)', background: 'var(--color-bg-elevated)', fontWeight: 700 }}>
+                                                <td style={{ padding: '8px 10px' }}>All Time</td>
+                                                {monthlyModels.models.map(m => (
+                                                    <td key={m} style={{ padding: '8px 10px', textAlign: 'center', color: '#10b981' }}>
+                                                        {monthlyModels.rows.reduce((s, r) => s + (r.models[m] ?? 0), 0)}
+                                                    </td>
+                                                ))}
+                                                <td style={{ padding: '8px 10px', textAlign: 'center', color: 'var(--color-primary)', fontSize: '1rem' }}>
+                                                    {monthlyModels.rows.reduce((s, r) => s + r.total, 0)}
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
