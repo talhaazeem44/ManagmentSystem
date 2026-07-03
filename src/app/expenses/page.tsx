@@ -46,23 +46,40 @@ export default function ExpensesPage() {
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [filterDeduct, setFilterDeduct] = useState<'ALL' | 'MARGIN' | 'CASH' | 'WORKSHOP'>('ALL');
     const [filterCat, setFilterCat] = useState('ALL');
-    const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
 
-    const fetchExpenses = async (range = dateRange) => {
+    // Month navigation — default to current month
+    const now = new Date();
+    const [activeMonth, setActiveMonth] = useState({ year: now.getFullYear(), month: now.getMonth() });
+
+    const getMonthRange = (year: number, month: number) => {
+        const start = new Date(year, month, 1);
+        const end = new Date(year, month + 1, 0); // last day of month
+        return {
+            startDate: start.toISOString().split('T')[0],
+            endDate: end.toISOString().split('T')[0],
+        };
+    };
+
+    const fetchExpenses = async (year = activeMonth.year, month = activeMonth.month) => {
         setLoading(true);
         try {
-            const params = new URLSearchParams();
-            if (range.startDate) params.set('startDate', range.startDate);
-            if (range.endDate) {
-                const end = new Date(range.endDate);
-                end.setDate(end.getDate() + 1);
-                params.set('endDate', end.toISOString().split('T')[0]);
-            }
+            const { startDate, endDate } = getMonthRange(year, month);
+            const params = new URLSearchParams({ startDate });
+            const endD = new Date(endDate);
+            endD.setDate(endD.getDate() + 1);
+            params.set('endDate', endD.toISOString().split('T')[0]);
             const res = await fetch(`/api/expenses?${params}`);
             if (res.ok) setExpenses(await res.json());
         } finally {
             setLoading(false);
         }
+    };
+
+    const goMonth = (dir: -1 | 1) => {
+        const d = new Date(activeMonth.year, activeMonth.month + dir, 1);
+        const next = { year: d.getFullYear(), month: d.getMonth() };
+        setActiveMonth(next);
+        fetchExpenses(next.year, next.month);
     };
 
     useEffect(() => { fetchExpenses(); }, []);
@@ -79,7 +96,7 @@ export default function ExpensesPage() {
             if (res.ok) {
                 showToast('Expense added', 'success');
                 setForm(emptyForm);
-                fetchExpenses(dateRange);
+                fetchExpenses();
             } else {
                 const err = await res.json();
                 showToast(err.message, 'error');
@@ -94,7 +111,7 @@ export default function ExpensesPage() {
         if (res.ok) {
             showToast('Expense deleted', 'success');
             setConfirmDeleteId(null);
-            fetchExpenses(dateRange);
+            fetchExpenses();
         } else {
             showToast('Delete failed', 'error');
             setConfirmDeleteId(null);
@@ -161,25 +178,18 @@ export default function ExpensesPage() {
                     </div>
                 )}
 
-                {/* Date Range Filter */}
-                <div className="card" style={{ marginBottom: '1.25rem', padding: '1rem' }}>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.75rem' }}>📅 Filter by Date Range</div>
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                        <div className="form-group" style={{ margin: 0, flex: '1 1 140px' }}>
-                            <label className="label">From</label>
-                            <input type="date" className="input" value={dateRange.startDate}
-                                onChange={e => setDateRange(r => ({ ...r, startDate: e.target.value }))} />
+                {/* Month Navigator */}
+                <div className="card" style={{ marginBottom: '1.25rem', padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                    <button className="btn btn-secondary" style={{ padding: '0.35rem 0.9rem', fontSize: '0.85rem' }} onClick={() => goMonth(-1)}>‹ Prev</button>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '1rem', fontWeight: 700 }}>
+                            {new Date(activeMonth.year, activeMonth.month, 1).toLocaleDateString('en-PK', { month: 'long', year: 'numeric' })}
                         </div>
-                        <div className="form-group" style={{ margin: 0, flex: '1 1 140px' }}>
-                            <label className="label">To</label>
-                            <input type="date" className="input" value={dateRange.endDate}
-                                onChange={e => setDateRange(r => ({ ...r, endDate: e.target.value }))} />
-                        </div>
-                        <button className="btn btn-primary" style={{ padding: '0.45rem 1rem', fontSize: '0.8rem' }}
-                            onClick={() => fetchExpenses(dateRange)}>Search</button>
-                        <button className="btn btn-secondary" style={{ padding: '0.45rem 1rem', fontSize: '0.8rem' }}
-                            onClick={() => { const r = { startDate: '', endDate: '' }; setDateRange(r); fetchExpenses(r); }}>Reset</button>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{filtered.length} expense{filtered.length !== 1 ? 's' : ''} · Rs. {filtered.reduce((s, e) => s + e.amount, 0).toLocaleString()}</div>
                     </div>
+                    <button className="btn btn-secondary" style={{ padding: '0.35rem 0.9rem', fontSize: '0.85rem' }}
+                        disabled={activeMonth.year === now.getFullYear() && activeMonth.month === now.getMonth()}
+                        onClick={() => goMonth(1)}>Next ›</button>
                 </div>
 
                 {/* Add Form */}
@@ -255,9 +265,6 @@ export default function ExpensesPage() {
                             {getCat(filterCat).icon} {filterCat} ✕
                         </button>
                     )}
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: 'auto' }}>
-                        {filtered.length} expense{filtered.length !== 1 ? 's' : ''} · Rs. {filtered.reduce((s, e) => s + e.amount, 0).toLocaleString()}
-                    </span>
                 </div>
 
                 {/* List */}
