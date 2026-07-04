@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
         const [filteredSales, filteredServices, allSales, allServices,
             totalBikesCount, availableBikesCount, soldBikesCount,
             deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings, filteredAdvanceBookings, filteredExpenses, weekSales, creditPaymentSales, allKhataParties] = await Promise.all([
-            Sale.find({ saleDate: { $gte: filterStartDate, $lt: filterEndDate } }).populate('bikeId').lean(),
+            Sale.find({ saleDate: { $gte: filterStartDate, $lt: filterEndDate } }).populate('bikeId').populate('customerId').lean(),
             ServiceSale.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
             Sale.find().populate('bikeId').lean(),
             ServiceSale.find().lean(),
@@ -258,6 +258,9 @@ export async function GET(request: NextRequest) {
                     totalProfit: m.totalProfit,
                     standardPrice: BIKE_STANDARD_PRICES[sale.bikeId?.model || ''] || 0,
                     baseMargin: BIKE_UNIT_MARGINS[sale.bikeId?.model || ''] || 0,
+                    buyerName: (sale.customerId as any)?.name || '',
+                    buyerMobile: (sale.customerId as any)?.mobile || '',
+                    chassisNo: sale.bikeId?.chassisNumber || '',
                 };
             }),
             ...filteredAdvanceBookings.map((b: any) => {
@@ -274,6 +277,9 @@ export async function GET(request: NextRequest) {
                     totalProfit: am.bikeProfit,
                     standardPrice: am.standardPrice,
                     baseMargin: am.baseMargin,
+                    buyerName: b.customerName || '',
+                    buyerMobile: b.customerMobile || '',
+                    chassisNo: '',
                 };
             }),
         ];
