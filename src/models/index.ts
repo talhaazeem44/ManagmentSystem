@@ -341,3 +341,64 @@ const WorkshopDepositSchema = new Schema<IWorkshopDeposit>({
 }, { timestamps: true });
 
 export const WorkshopDeposit: Model<IWorkshopDeposit> = models.WorkshopDeposit || mongoose.model<IWorkshopDeposit>('WorkshopDeposit', WorkshopDepositSchema);
+
+// ── Khata Party ──────────────────────────────────────────────────────────────
+export interface IKhataItem {
+    model: string;
+    quantity: number;
+    pricePerUnit: number;
+    standardPrice: number;
+    baseMargin: number;
+    totalMargin: number;
+}
+
+export interface IKhataTransaction {
+    _id?: string;
+    date: Date;
+    type: 'STOCK_GIVEN' | 'PAYMENT';
+    description: string;
+    amount: number;
+    margin?: number;
+    items?: IKhataItem[];
+    paymentMode?: 'CASH' | 'BANK_TRANSFER' | 'CREDIT';
+    note?: string;
+}
+
+export interface IKhataParty {
+    _id?: string;
+    name: string;
+    mobile?: string;
+    address?: string;
+    notes?: string;
+    transactions: IKhataTransaction[];
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+const KhataTransactionSchema = new Schema<IKhataTransaction>({
+    date: { type: Date, default: Date.now },
+    type: { type: String, enum: ['STOCK_GIVEN', 'PAYMENT'], required: true },
+    description: { type: String, required: true },
+    amount: { type: Number, required: true },
+    margin: { type: Number, default: 0 },
+    items: [{
+        model: { type: String },
+        quantity: { type: Number },
+        pricePerUnit: { type: Number },
+        standardPrice: { type: Number },
+        baseMargin: { type: Number },
+        totalMargin: { type: Number },
+    }],
+    paymentMode: { type: String, enum: ['CASH', 'BANK_TRANSFER', 'CREDIT'] },
+    note: { type: String },
+});
+
+const KhataPartySchema = new Schema<IKhataParty>({
+    name: { type: String, required: true },
+    mobile: { type: String },
+    address: { type: String },
+    notes: { type: String },
+    transactions: [KhataTransactionSchema],
+}, { timestamps: true });
+
+export const KhataParty: Model<IKhataParty> = models.KhataParty || mongoose.model<IKhataParty>('KhataParty', KhataPartySchema);

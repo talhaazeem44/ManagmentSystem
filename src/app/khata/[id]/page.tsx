@@ -1,0 +1,516 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import DashboardLayout from '@/components/DashboardLayout';
+import Toast from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
+import Loader from '@/components/Loader';
+import { HONDA_BIKE_MODELS, BIKE_STANDARD_PRICES, BIKE_UNIT_MARGINS } from '@/lib/constants';
+
+interface KhataItem {
+    model: string;
+    quantity: number;
+    pricePerUnit: number;
+    standardPrice: number;
+    baseMargin: number;
+    totalMargin: number;
+}
+
+interface KhataTransaction {
+    _id: string;
+    date: string;
+    type: 'STOCK_GIVEN' | 'PAYMENT';
+    description: string;
+    amount: number;
+    margin?: number;
+    items?: KhataItem[];
+    paymentMode?: 'CASH' | 'BANK_TRANSFER' | 'CREDIT';
+    note?: string;
+}
+
+interface KhataParty {
+    _id: string;
+    name: string;
+    mobile?: string;
+    address?: string;
+    notes?: string;
+    transactions: KhataTransaction[];
+    totalDebit: number;
+    totalCredit: number;
+    balance: number;
+}
+
+interface BikeRow {
+    key: string;
+    model: string;
+    quantity: string;
+    pricePerUnit: string;
+}
+
+const emptyPaymentForm = { amount: '', paymentMode: 'CASH' as 'CASH' | 'BANK_TRANSFER' | 'CREDIT', note: '', date: '' };
+const newBikeRow = (): BikeRow => ({ key: Math.random().toString(36).slice(2), model: '', quantity: '1', pricePerUnit: '' });
+
+export default function KhataDetailPage() {
+    const { id } = useParams<{ id: string }>();
+    const { toasts, showToast, removeToast } = useToast();
+    const [party, setParty] = useState<KhataParty | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [activeForm, setActiveForm] = useState<'STOCK' | 'PAYMENT' | null>(null);
+    const [bikeRows, setBikeRows] = useState<BikeRow[]>([newBikeRow()]);
+    const [stockDate, setStockDate] = useState('');
+    const [stockNote, setStockNote] = useState('');
+    const [paymentForm, setPaymentForm] = useState(emptyPaymentForm);
+    const [submitting, setSubmitting] = useState(false);
+    const [confirmDeleteTx, setConfirmDeleteTx] = useState<string | null>(null);
+    const [selectedMonth, setSelectedMonth] = useState<string>('ALL');
+
+    const fetchParty = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/khata/${id}`);
+            if (res.ok) setParty(await res.json());
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchParty(); }, [id]);
+
+    // Compute derived values for each bike row
+    const computeRow = (row: BikeRow) => {
+        const qty = Number(row.quantity) || 0;
+        const price = Number(row.pricePerUnit) || 0;
+        const stdPrice = BIKE_STANDARD_PRICES[row.model] || 0;
+        const baseMargin = BIKE_UNIT_MARGINS[row.model] || 0;
+        const extra = price - stdPrice;
+        const marginPerBike = baseMargin + extra;
+        return {
+            stdPrice,
+            baseMargin,
+            marginPerBike,
+            rowTotal: qty * price,
+            rowMargin: qty * marginPerBike,
+        };
+    };
+
+    const totalAmount = bikeRows.reduce((s, r) => s + computeRow(r).rowTotal, 0);
+    const totalMargin = bikeRows.reduce((s, r) => s + computeRow(r).rowMargin, 0);
+    const stockFormValid = bikeRows.some(r => r.model && Number(r.quantity) > 0 && Number(r.pricePerUnit) > 0);
+
+    const handleAddStock = async () => {
+        setSubmitting(true);
+        try {
+            const items = bikeRows
+                .filter(r => r.model && Number(r.quantity) > 0 && Number(r.pricePerUnit) > 0)
+                .map(r => ({ model: r.model, quantity: Number(r.quantity), pricePerUnit: Number(r.pricePerUnit) }));
+
+            const res = await fetch(`/api/khata/${id}/transactions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'STOCK_GIVEN', items, date: stockDate || undefined, note: stockNote }),
+            });
+            if (res.ok) {
+                showToast('Stock entry added', 'success');
+                setBikeRows([newBikeRow()]);
+                setStockDate('');
+                setStockNote('');
+                setActiveForm(null);
+                fetchParty();
+            } else {
+                const err = await res.json();
+                showToast(err.message || 'Failed', 'error');
+            }
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleAddPayment = async () => {
+        setSubmitting(true);
+        try {
+            const res = await fetch(`/api/khata/${id}/transactions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'PAYMENT',
+                    description: 'Payment received',
+                    amount: Number(paymentForm.amount),
+                    paymentMode: paymentForm.paymentMode,
+                    note: paymentForm.note,
+                    date: paymentForm.date || undefined,
+                }),
+            });
+            if (res.ok) {
+                showToast('Payment recorded', 'success');
+                setPaymentForm(emptyPaymentForm);
+                setActiveForm(null);
+                fetchParty();
+            } else {
+                const err = await res.json();
+                showToast(err.message || 'Failed', 'error');
+            }
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleDeleteTx = async (txId: string) => {
+        const res = await fetch(`/api/khata/${id}/transactions/${txId}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast('Entry deleted', 'success');
+            setConfirmDeleteTx(null);
+            fetchParty();
+        } else {
+            showToast('Delete failed', 'error');
+            setConfirmDeleteTx(null);
+        }
+    };
+
+    const updateRow = (key: string, field: keyof BikeRow, value: string) =>
+        setBikeRows(rows => rows.map(r => r.key === key ? { ...r, [field]: value } : r));
+
+    const allMonths = Array.from(new Set(
+        (party?.transactions || []).map(t => {
+            const d = new Date(t.date);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        })
+    )).sort().reverse();
+
+    const filteredTxs = (party?.transactions || [])
+        .filter(t => {
+            if (selectedMonth === 'ALL') return true;
+            const d = new Date(t.date);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === selectedMonth;
+        })
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    const runningRows = (() => {
+        let balance = 0;
+        if (selectedMonth !== 'ALL') {
+            const [y, m] = selectedMonth.split('-').map(Number);
+            const monthStart = new Date(y, m - 1, 1);
+            balance = (party?.transactions || [])
+                .filter(t => new Date(t.date) < monthStart)
+                .reduce((s, t) => t.type === 'STOCK_GIVEN' ? s + t.amount : s - t.amount, 0);
+        }
+        return filteredTxs.map(t => {
+            if (t.type === 'STOCK_GIVEN') balance += t.amount;
+            else balance -= t.amount;
+            return { ...t, runningBalance: balance };
+        });
+    })();
+
+    const filteredDebit = filteredTxs.filter(t => t.type === 'STOCK_GIVEN').reduce((s, t) => s + t.amount, 0);
+    const filteredCredit = filteredTxs.filter(t => t.type === 'PAYMENT').reduce((s, t) => s + t.amount, 0);
+    const filteredMargin = filteredTxs.filter(t => t.type === 'STOCK_GIVEN').reduce((s, t) => s + (t.margin || 0), 0);
+
+    const monthLabel = (m: string) => {
+        const [y, mo] = m.split('-');
+        return new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString('en-PK', { month: 'long', year: 'numeric' });
+    };
+
+    const totalKhataMargin = (party?.transactions || [])
+        .filter(t => t.type === 'STOCK_GIVEN')
+        .reduce((s, t) => s + (t.margin || 0), 0);
+
+    if (loading) return <DashboardLayout><Loader size={160} text="Loading khata..." fullPage /></DashboardLayout>;
+    if (!party) return <DashboardLayout><div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>Party not found.</div></DashboardLayout>;
+
+    return (
+        <DashboardLayout>
+            <div className="animate-fade-in">
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div>
+                        <a href="/khata" style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', textDecoration: 'none' }}>← Khata</a>
+                        <h1 style={{ fontSize: '2rem', fontWeight: 700, marginTop: '0.25rem' }}>{party.name}</h1>
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                            {party.mobile && <span>📞 {party.mobile}</span>}
+                            {party.address && <span>📍 {party.address}</span>}
+                        </p>
+                        {party.notes && <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic', marginTop: '0.2rem' }}>{party.notes}</p>}
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <button className={`btn ${activeForm === 'STOCK' ? 'btn-secondary' : 'btn-primary'}`}
+                            onClick={() => setActiveForm(activeForm === 'STOCK' ? null : 'STOCK')}>
+                            {activeForm === 'STOCK' ? 'Cancel' : '📦 Stock Given'}
+                        </button>
+                        <button className={`btn ${activeForm === 'PAYMENT' ? 'btn-secondary' : 'btn-success'}`}
+                            onClick={() => setActiveForm(activeForm === 'PAYMENT' ? null : 'PAYMENT')}>
+                            {activeForm === 'PAYMENT' ? 'Cancel' : '💰 Record Payment'}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Summary cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                    <div className="card" style={{ padding: '1.1rem', borderLeft: '4px solid #ef4444' }}>
+                        <div style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.3rem' }}>Total Stock Given</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ef4444' }}>Rs. {party.totalDebit.toLocaleString()}</div>
+                    </div>
+                    <div className="card" style={{ padding: '1.1rem', borderLeft: '4px solid #10b981' }}>
+                        <div style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.3rem' }}>Total Paid</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981' }}>Rs. {party.totalCredit.toLocaleString()}</div>
+                    </div>
+                    <div className="card" style={{ padding: '1.1rem', borderLeft: `4px solid ${party.balance > 0 ? '#f59e0b' : '#10b981'}` }}>
+                        <div style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.3rem' }}>Outstanding</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: party.balance > 0 ? '#f59e0b' : '#10b981' }}>Rs. {party.balance.toLocaleString()}</div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>{party.balance > 0 ? 'amount due' : 'settled'}</div>
+                    </div>
+                    <div className="card" style={{ padding: '1.1rem', borderLeft: '4px solid #8b5cf6' }}>
+                        <div style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.3rem' }}>Total Margin Earned</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#8b5cf6' }}>Rs. {totalKhataMargin.toLocaleString()}</div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>added to profit</div>
+                    </div>
+                </div>
+
+                {/* ── Stock Given form ── */}
+                {activeForm === 'STOCK' && (
+                    <div className="card" style={{ marginBottom: '1.25rem' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>📦 Add Stock Given</h3>
+
+                        {/* Bike rows table */}
+                        <div style={{ overflowX: 'auto', marginBottom: '0.75rem' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '2px solid var(--color-border)', background: 'var(--color-bg-elevated)' }}>
+                                        {['Model', 'Qty', 'Price / Bike (PKR)', 'Std Price', 'Margin / Bike', 'Row Total', ''].map(h => (
+                                            <th key={h} style={{ padding: '7px 8px', textAlign: h === 'Model' || h === '' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {bikeRows.map(row => {
+                                        const c = computeRow(row);
+                                        return (
+                                            <tr key={row.key} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                                <td style={{ padding: '6px 8px', minWidth: '130px' }}>
+                                                    <select className="select" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem' }}
+                                                        value={row.model}
+                                                        onChange={e => updateRow(row.key, 'model', e.target.value)}>
+                                                        <option value="">Select model</option>
+                                                        {HONDA_BIKE_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
+                                                    </select>
+                                                </td>
+                                                <td style={{ padding: '6px 8px', minWidth: '70px' }}>
+                                                    <input type="number" min="1" className="input" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '60px', textAlign: 'right' }}
+                                                        value={row.quantity}
+                                                        onChange={e => updateRow(row.key, 'quantity', e.target.value)} />
+                                                </td>
+                                                <td style={{ padding: '6px 8px', minWidth: '130px' }}>
+                                                    <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '110px', textAlign: 'right' }}
+                                                        placeholder={row.model ? String(BIKE_STANDARD_PRICES[row.model] || '') : '0'}
+                                                        value={row.pricePerUnit}
+                                                        onChange={e => updateRow(row.key, 'pricePerUnit', e.target.value)} />
+                                                </td>
+                                                <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+                                                    {row.model ? `Rs. ${(c.stdPrice).toLocaleString()}` : '—'}
+                                                </td>
+                                                <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: c.marginPerBike >= 0 ? '#10b981' : '#ef4444', whiteSpace: 'nowrap' }}>
+                                                    {row.model && row.pricePerUnit ? `Rs. ${c.marginPerBike.toLocaleString()}` : '—'}
+                                                </td>
+                                                <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                                                    {row.model && row.pricePerUnit && row.quantity ? `Rs. ${c.rowTotal.toLocaleString()}` : '—'}
+                                                </td>
+                                                <td style={{ padding: '6px 8px' }}>
+                                                    {bikeRows.length > 1 && (
+                                                        <button onClick={() => setBikeRows(r => r.filter(x => x.key !== row.key))}
+                                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1rem', padding: '0.2rem' }}>✕</button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.3rem 0.75rem', marginBottom: '1rem' }}
+                            onClick={() => setBikeRows(r => [...r, newBikeRow()])}>
+                            + Add Bike
+                        </button>
+
+                        {/* Totals summary */}
+                        {stockFormValid && (
+                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem', padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                                <span style={{ fontSize: '0.85rem' }}>Total Amount: <strong style={{ color: 'var(--color-primary)' }}>Rs. {totalAmount.toLocaleString()}</strong></span>
+                                <span style={{ fontSize: '0.85rem' }}>Total Margin: <strong style={{ color: totalMargin >= 0 ? '#10b981' : '#ef4444' }}>Rs. {totalMargin.toLocaleString()}</strong></span>
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                            <div className="form-group" style={{ margin: 0 }}>
+                                <label className="label">Date</label>
+                                <input type="date" className="input" value={stockDate} onChange={e => setStockDate(e.target.value)} />
+                            </div>
+                            <div className="form-group" style={{ margin: 0, flex: 1, minWidth: '180px' }}>
+                                <label className="label">Note</label>
+                                <input className="input" value={stockNote} onChange={e => setStockNote(e.target.value)} placeholder="Optional note..." />
+                            </div>
+                        </div>
+
+                        <button className="btn btn-primary" disabled={submitting || !stockFormValid} onClick={handleAddStock}>
+                            {submitting ? 'Saving...' : '✅ Save Stock Entry'}
+                        </button>
+                    </div>
+                )}
+
+                {/* ── Payment form ── */}
+                {activeForm === 'PAYMENT' && (
+                    <div className="card" style={{ marginBottom: '1.25rem' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>💰 Record Payment</h3>
+                        <div className="grid-2" style={{ marginBottom: '1rem' }}>
+                            <div className="form-group">
+                                <label className="label">Amount (PKR) *</label>
+                                <input type="text" inputMode="decimal" className="input" value={paymentForm.amount}
+                                    onChange={e => setPaymentForm({ ...paymentForm, amount: e.target.value })} placeholder="50000" />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Payment Mode *</label>
+                                <select className="select" value={paymentForm.paymentMode}
+                                    onChange={e => setPaymentForm({ ...paymentForm, paymentMode: e.target.value as any })}>
+                                    <option value="CASH">Cash</option>
+                                    <option value="BANK_TRANSFER">Bank Transfer</option>
+                                    <option value="CREDIT">Credit (still owed)</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Date</label>
+                                <input type="date" className="input" value={paymentForm.date}
+                                    onChange={e => setPaymentForm({ ...paymentForm, date: e.target.value })} />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Note</label>
+                                <input className="input" value={paymentForm.note}
+                                    onChange={e => setPaymentForm({ ...paymentForm, note: e.target.value })} placeholder="Reference / note..." />
+                            </div>
+                        </div>
+                        <button className="btn btn-success" disabled={submitting || !paymentForm.amount} onClick={handleAddPayment}>
+                            {submitting ? 'Saving...' : '✅ Record Payment'}
+                        </button>
+                    </div>
+                )}
+
+                {/* Month filter */}
+                {allMonths.length > 0 && (
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                        <button onClick={() => setSelectedMonth('ALL')} className={`btn ${selectedMonth === 'ALL' ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '0.35rem 0.9rem', fontSize: '0.8rem' }}>All Time</button>
+                        {allMonths.map(m => (
+                            <button key={m} onClick={() => setSelectedMonth(m)} className={`btn ${selectedMonth === m ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '0.35rem 0.9rem', fontSize: '0.8rem' }}>
+                                {monthLabel(m)}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {/* Month summary chips */}
+                {selectedMonth !== 'ALL' && (
+                    <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                        <div style={{ padding: '0.5rem 0.9rem', background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', fontSize: '0.82rem' }}>
+                            Given: <strong style={{ color: '#ef4444' }}>Rs. {filteredDebit.toLocaleString()}</strong>
+                        </div>
+                        <div style={{ padding: '0.5rem 0.9rem', background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '8px', fontSize: '0.82rem' }}>
+                            Paid: <strong style={{ color: '#10b981' }}>Rs. {filteredCredit.toLocaleString()}</strong>
+                        </div>
+                        {filteredMargin !== 0 && (
+                            <div style={{ padding: '0.5rem 0.9rem', background: 'rgba(139,92,246,0.07)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '8px', fontSize: '0.82rem' }}>
+                                Margin: <strong style={{ color: '#8b5cf6' }}>Rs. {filteredMargin.toLocaleString()}</strong>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Transactions table */}
+                <div className="card" style={{ padding: '1.25rem' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '1rem' }}>
+                        Transactions {selectedMonth !== 'ALL' ? `— ${monthLabel(selectedMonth)}` : '— All Time'}
+                    </div>
+                    {runningRows.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>No transactions yet</div>
+                    ) : (
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                                        {['Date', 'Description', 'Stock Given', 'Margin', 'Payment', 'Mode', 'Balance', ''].map(h => (
+                                            <th key={h} style={{ padding: '7px 10px', textAlign: h === 'Date' || h === 'Description' || h === '' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {[...runningRows].reverse().map(tx => {
+                                        const isDel = confirmDeleteTx === tx._id;
+                                        return (
+                                            <tr key={tx._id} style={{ borderBottom: '1px solid var(--color-border)', background: isDel ? 'rgba(239,68,68,0.04)' : 'transparent' }}>
+                                                <td style={{ padding: '7px 10px', whiteSpace: 'nowrap', color: 'var(--color-text-muted)' }}>
+                                                    {new Date(tx.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                </td>
+                                                <td style={{ padding: '7px 10px' }}>
+                                                    <div style={{ fontWeight: 500 }}>{tx.description}</div>
+                                                    {tx.items && tx.items.length > 0 && (
+                                                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.15rem' }}>
+                                                            {tx.items.map((item, i) => (
+                                                                <span key={i}>{i > 0 ? ' · ' : ''}{item.quantity}× {item.model} @ Rs.{item.pricePerUnit.toLocaleString()}</span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {tx.note && <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>{tx.note}</div>}
+                                                </td>
+                                                <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: tx.type === 'STOCK_GIVEN' ? '#ef4444' : 'var(--color-text-muted)' }}>
+                                                    {tx.type === 'STOCK_GIVEN' ? `Rs. ${tx.amount.toLocaleString()}` : '—'}
+                                                </td>
+                                                <td style={{ padding: '7px 10px', textAlign: 'right', color: tx.type === 'STOCK_GIVEN' ? '#8b5cf6' : 'var(--color-text-muted)' }}>
+                                                    {tx.type === 'STOCK_GIVEN' && (tx.margin || 0) !== 0 ? `Rs. ${(tx.margin || 0).toLocaleString()}` : '—'}
+                                                </td>
+                                                <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: tx.type === 'PAYMENT' ? '#10b981' : 'var(--color-text-muted)' }}>
+                                                    {tx.type === 'PAYMENT' ? `Rs. ${tx.amount.toLocaleString()}` : '—'}
+                                                </td>
+                                                <td style={{ padding: '7px 10px', textAlign: 'right' }}>
+                                                    {tx.paymentMode ? (
+                                                        <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, background: tx.paymentMode === 'CASH' ? 'rgba(16,185,129,0.12)' : tx.paymentMode === 'BANK_TRANSFER' ? 'rgba(59,130,246,0.12)' : 'rgba(239,68,68,0.12)', color: tx.paymentMode === 'CASH' ? '#10b981' : tx.paymentMode === 'BANK_TRANSFER' ? '#3b82f6' : '#ef4444' }}>
+                                                            {tx.paymentMode === 'BANK_TRANSFER' ? 'BANK' : tx.paymentMode}
+                                                        </span>
+                                                    ) : '—'}
+                                                </td>
+                                                <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 800, color: tx.runningBalance > 0 ? '#f59e0b' : '#10b981' }}>
+                                                    Rs. {tx.runningBalance.toLocaleString()}
+                                                </td>
+                                                <td style={{ padding: '7px 10px' }}>
+                                                    {isDel ? (
+                                                        <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                            <button className="btn" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem', background: '#ef4444', color: '#fff', border: 'none' }} onClick={() => handleDeleteTx(tx._id)}>Yes</button>
+                                                            <button className="btn btn-secondary" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem' }} onClick={() => setConfirmDeleteTx(null)}>No</button>
+                                                        </div>
+                                                    ) : (
+                                                        <button className="btn" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }} onClick={() => setConfirmDeleteTx(tx._id)}>🗑️</button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                                <tfoot>
+                                    <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 700, background: 'var(--color-bg-elevated)' }}>
+                                        <td colSpan={2} style={{ padding: '8px 10px', color: 'var(--color-text-muted)' }}>
+                                            {selectedMonth === 'ALL' ? 'All Time' : monthLabel(selectedMonth)}
+                                        </td>
+                                        <td style={{ padding: '8px 10px', textAlign: 'right', color: '#ef4444' }}>Rs. {filteredDebit.toLocaleString()}</td>
+                                        <td style={{ padding: '8px 10px', textAlign: 'right', color: '#8b5cf6' }}>Rs. {filteredMargin.toLocaleString()}</td>
+                                        <td style={{ padding: '8px 10px', textAlign: 'right', color: '#10b981' }}>Rs. {filteredCredit.toLocaleString()}</td>
+                                        <td />
+                                        <td style={{ padding: '8px 10px', textAlign: 'right', color: party.balance > 0 ? '#f59e0b' : '#10b981' }}>
+                                            {selectedMonth === 'ALL' ? `Balance: Rs. ${party.balance.toLocaleString()}` : ''}
+                                        </td>
+                                        <td />
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </div>
+            <Toast toasts={toasts} removeToast={removeToast} />
+        </DashboardLayout>
+    );
+}

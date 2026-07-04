@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { Sale, Bike, DeliveryOrder, ServiceSale, Customer, AdvanceBooking, Expense } from '@/models';
+import { Sale, Bike, DeliveryOrder, ServiceSale, Customer, AdvanceBooking, Expense, KhataParty } from '@/models';
 import {
     BIKE_BOOK_PRICES,
     BIKE_STANDARD_PRICES,
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
 
         const [filteredSales, filteredServices, allSales, allServices,
             totalBikesCount, availableBikesCount, soldBikesCount,
-            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings, filteredAdvanceBookings, filteredExpenses, weekSales, creditPaymentSales] = await Promise.all([
+            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings, filteredAdvanceBookings, filteredExpenses, weekSales, creditPaymentSales, allKhataParties] = await Promise.all([
             Sale.find({ saleDate: { $gte: filterStartDate, $lt: filterEndDate } }).populate('bikeId').lean(),
             ServiceSale.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
             Sale.find().populate('bikeId').lean(),
@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
             Sale.find({ saleDate: { $gte: sevenDaysAgo } }).populate('bikeId').lean(),
             // Credit payments recorded in this date range (for sales whose saleDate is outside the range)
             Sale.find({ 'payments.date': { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
+            KhataParty.find({}).lean(),
         ]);
 
         // 7-day chart data
@@ -194,7 +195,12 @@ export async function GET(request: NextRequest) {
             modelBreakdown[model] = (modelBreakdown[model] || 0) + 1;
         }
 
-        const rangeBikeProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).bikeProfit, 0) + rangeAdvanceMargin;
+        // Khata dealer sale margins in this date range
+        const khataMarginInRange = (allKhataParties as any[]).flatMap(p => p.transactions || [])
+            .filter((t: any) => t.type === 'STOCK_GIVEN' && (t.margin || 0) !== 0 && new Date(t.date) >= filterStartDate && new Date(t.date) < filterEndDate)
+            .reduce((s: number, t: any) => s + (t.margin || 0), 0);
+
+        const rangeBikeProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).bikeProfit, 0) + rangeAdvanceMargin + khataMarginInRange;
         const rangeRegProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).regProfit, 0);
         // Extra = amount received above standard price (positive = profit boost, negative = loss)
         const rangeExtraCash = filteredSales.reduce((s, sale: any) => {
