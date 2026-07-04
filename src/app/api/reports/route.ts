@@ -243,6 +243,35 @@ export async function GET(request: NextRequest) {
             };
         });
 
+        // Khata stock given in this date range
+        let khataStockCount = 0;
+        const khataBreakdownRows: any[] = [];
+        for (const party of allKhataParties) {
+            for (const tx of (party as any).transactions || []) {
+                if (tx.type !== 'STOCK_GIVEN') continue;
+                const txDate = new Date(tx.date);
+                if (txDate < filterStartDate || txDate >= filterEndDate) continue;
+                for (const item of (tx.items || [])) {
+                    khataStockCount += Number(item.quantity) || 0;
+                    khataBreakdownRows.push({
+                        bikeModel: item.model || '?',
+                        paymentMode: 'KHATA',
+                        price: Number(item.quantity) * Number(item.pricePerUnit),
+                        receivedCash: 0,
+                        bankTransferAmount: 0,
+                        counted: 0,
+                        bikeProfit: Number(item.totalMargin) || 0,
+                        regProfit: 0,
+                        totalProfit: Number(item.totalMargin) || 0,
+                        standardPrice: Number(item.standardPrice) || BIKE_STANDARD_PRICES[item.model] || 0,
+                        baseMargin: Number(item.baseMargin) || BIKE_UNIT_MARGINS[item.model] || 0,
+                        buyerName: (party as any).name || '',
+                        quantity: Number(item.quantity) || 0,
+                    });
+                }
+            }
+        }
+
         const cashBreakdown = [
             ...filteredSales.map((sale: any) => {
                 const m = calcSaleMargin(sale);
@@ -259,8 +288,7 @@ export async function GET(request: NextRequest) {
                     standardPrice: BIKE_STANDARD_PRICES[sale.bikeId?.model || ''] || 0,
                     baseMargin: BIKE_UNIT_MARGINS[sale.bikeId?.model || ''] || 0,
                     buyerName: (sale.customerId as any)?.name || '',
-                    buyerMobile: (sale.customerId as any)?.mobile || '',
-                    chassisNo: sale.bikeId?.chassisNumber || '',
+                    quantity: 1,
                 };
             }),
             ...filteredAdvanceBookings.map((b: any) => {
@@ -278,15 +306,15 @@ export async function GET(request: NextRequest) {
                     standardPrice: am.standardPrice,
                     baseMargin: am.baseMargin,
                     buyerName: b.customerName || '',
-                    buyerMobile: b.customerMobile || '',
-                    chassisNo: '',
+                    quantity: 1,
                 };
             }),
+            ...khataBreakdownRows,
         ];
 
         return NextResponse.json({
             range: {
-                sales: filteredSales.length,
+                sales: filteredSales.length + khataStockCount,
                 revenue: rangeRevenue,
                 workshopRevenue: rangeWorkshopRevenue,
                 bikeProfit: rangeBikeProfit,
