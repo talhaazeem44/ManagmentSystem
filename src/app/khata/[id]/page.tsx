@@ -60,6 +60,7 @@ export default function KhataDetailPage() {
     const [bikeRows, setBikeRows] = useState<BikeRow[]>([newBikeRow()]);
     const [stockDate, setStockDate] = useState('');
     const [stockNote, setStockNote] = useState('');
+    const [otherAmount, setOtherAmount] = useState('');
     const [paymentForm, setPaymentForm] = useState(emptyPaymentForm);
     const [submitting, setSubmitting] = useState(false);
     const [confirmDeleteTx, setConfirmDeleteTx] = useState<string | null>(null);
@@ -94,7 +95,8 @@ export default function KhataDetailPage() {
         };
     };
 
-    const totalAmount = bikeRows.reduce((s, r) => s + computeRow(r).rowTotal, 0);
+    const bikesTotal = bikeRows.reduce((s, r) => s + computeRow(r).rowTotal, 0);
+    const totalAmount = bikesTotal + (Number(otherAmount) || 0);
     const totalMargin = bikeRows.reduce((s, r) => s + computeRow(r).rowMargin, 0);
     const stockFormValid = bikeRows.some(r => r.model && Number(r.quantity) > 0 && Number(r.pricePerUnit) > 0);
 
@@ -108,13 +110,14 @@ export default function KhataDetailPage() {
             const res = await fetch(`/api/khata/${id}/transactions`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: 'STOCK_GIVEN', items, date: stockDate || undefined, note: stockNote }),
+                body: JSON.stringify({ type: 'STOCK_GIVEN', items, otherAmount: Number(otherAmount) || 0, date: stockDate || undefined, note: stockNote }),
             });
             if (res.ok) {
                 showToast('Stock entry added', 'success');
                 setBikeRows([newBikeRow()]);
                 setStockDate('');
                 setStockNote('');
+                setOtherAmount('');
                 setActiveForm(null);
                 fetchParty();
             } else {
@@ -331,11 +334,20 @@ export default function KhataDetailPage() {
                             + Add Bike
                         </button>
 
+                        {/* Other Amount */}
+                        <div className="form-group" style={{ marginBottom: '1rem', maxWidth: '280px' }}>
+                            <label className="label">Other Amount (PKR) <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>— added to total, not to margin</span></label>
+                            <input type="text" inputMode="decimal" className="input" value={otherAmount}
+                                onChange={e => setOtherAmount(e.target.value)} placeholder="e.g. transport, delivery charges" />
+                        </div>
+
                         {/* Totals summary */}
                         {stockFormValid && (
                             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem', padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                                <span style={{ fontSize: '0.85rem' }}>Bikes: <strong>Rs. {bikesTotal.toLocaleString()}</strong></span>
+                                {(Number(otherAmount) || 0) > 0 && <span style={{ fontSize: '0.85rem' }}>Other: <strong>Rs. {(Number(otherAmount)).toLocaleString()}</strong></span>}
                                 <span style={{ fontSize: '0.85rem' }}>Total Amount: <strong style={{ color: 'var(--color-primary)' }}>Rs. {totalAmount.toLocaleString()}</strong></span>
-                                <span style={{ fontSize: '0.85rem' }}>Total Margin: <strong style={{ color: totalMargin >= 0 ? '#10b981' : '#ef4444' }}>Rs. {totalMargin.toLocaleString()}</strong></span>
+                                <span style={{ fontSize: '0.85rem' }}>Margin: <strong style={{ color: totalMargin >= 0 ? '#10b981' : '#ef4444' }}>Rs. {totalMargin.toLocaleString()}</strong></span>
                             </div>
                         )}
 

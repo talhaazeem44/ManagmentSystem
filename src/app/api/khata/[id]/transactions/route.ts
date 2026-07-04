@@ -31,7 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         if (items.length === 0)
             return NextResponse.json({ message: 'No valid bike items provided' }, { status: 400 });
 
-        amount = items.reduce((s: number, i: any) => s + i.quantity * i.pricePerUnit, 0);
+        amount = items.reduce((s: number, i: any) => s + i.quantity * i.pricePerUnit, 0) + (Number(body.otherAmount) || 0);
         margin = items.reduce((s: number, i: any) => s + i.totalMargin, 0);
         if (!description)
             description = items.map((i: any) => `${i.quantity}x ${i.model}`).join(' + ');
