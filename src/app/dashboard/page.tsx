@@ -315,8 +315,9 @@ export default function DashboardPage() {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Cash in Hand</div>
                                 {lastDeposit && (
-                                    <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textAlign: 'right' }}>
                                         Last: {new Date(lastDeposit.collectedAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}
+                                        <div style={{ fontWeight: 700, color: '#f59e0b' }}>Rs. {lastDeposit.amount.toLocaleString()}</div>
                                     </div>
                                 )}
                             </div>
