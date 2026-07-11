@@ -254,6 +254,24 @@ export default function DashboardPage() {
                             {new Date().toLocaleDateString('en-PK', { month: 'long', year: 'numeric' })} — Bikes Sold by Model
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                            <div className="card" style={{ padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '130px', flex: '1 1 130px', maxWidth: '200px', border: '1px solid var(--color-primary)' }}>
+                                <span style={{ fontSize: '1.4rem' }}>📊</span>
+                                <div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Total</div>
+                                    <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1 }}>
+                                        {Object.values(monthModelBreakdown ?? {}).reduce((s, n) => s + n, 0)}
+                                    </div>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>
+                                        this month{(() => {
+                                            const todayTotal = Object.values(stats.range?.modelBreakdown ?? {}).reduce((s, n) => s + n, 0);
+                                            return todayTotal > 0 ? ` · +${todayTotal} today` : '';
+                                        })()}
+                                    </div>
+                                    <div style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', marginTop: '0.15rem' }}>
+                                        {Object.values(stats.allTime.modelBreakdown).reduce((s, n) => s + n, 0)} all time
+                                    </div>
+                                </div>
+                            </div>
                             {Object.entries(stats.allTime.modelBreakdown)
                                 .sort(([, a], [, b]) => b - a)
                                 .map(([model, allTimeCount]) => {
