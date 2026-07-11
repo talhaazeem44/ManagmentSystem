@@ -65,6 +65,13 @@ export default function KhataDetailPage() {
     const [submitting, setSubmitting] = useState(false);
     const [confirmDeleteTx, setConfirmDeleteTx] = useState<string | null>(null);
     const [selectedMonth, setSelectedMonth] = useState<string>('ALL');
+    const [editingTx, setEditingTx] = useState<KhataTransaction | null>(null);
+    const [editBikeRows, setEditBikeRows] = useState<BikeRow[]>([newBikeRow()]);
+    const [editOtherAmount, setEditOtherAmount] = useState('');
+    const [editDate, setEditDate] = useState('');
+    const [editNote, setEditNote] = useState('');
+    const [editPaymentForm, setEditPaymentForm] = useState({ amount: '', paymentMode: 'CASH' as 'CASH' | 'BANK_TRANSFER' | 'CREDIT', note: '', date: '' });
+    const [editSubmitting, setEditSubmitting] = useState(false);
 
     const fetchParty = async () => {
         setLoading(true);
@@ -172,6 +179,68 @@ export default function KhataDetailPage() {
 
     const updateRow = (key: string, field: keyof BikeRow, value: string) =>
         setBikeRows(rows => rows.map(r => r.key === key ? { ...r, [field]: value } : r));
+
+    const updateEditRow = (key: string, field: keyof BikeRow, value: string) =>
+        setEditBikeRows(rows => rows.map(r => r.key === key ? { ...r, [field]: value } : r));
+
+    const handleEditInit = (tx: KhataTransaction) => {
+        setActiveForm(null);
+        setEditingTx(tx);
+        if (tx.type === 'PAYMENT') {
+            const d = new Date(tx.date);
+            setEditPaymentForm({
+                amount: String(tx.amount),
+                paymentMode: tx.paymentMode || 'CASH',
+                note: tx.note || '',
+                date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+            });
+        } else {
+            const rows: BikeRow[] = (tx.items && tx.items.length > 0)
+                ? tx.items.map(item => ({ key: Math.random().toString(36).slice(2), model: item.model, quantity: String(item.quantity), pricePerUnit: String(item.pricePerUnit) }))
+                : [newBikeRow()];
+            setEditBikeRows(rows);
+            setEditOtherAmount('');
+            const d = new Date(tx.date);
+            setEditDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+            setEditNote(tx.note || '');
+        }
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingTx) return;
+        setEditSubmitting(true);
+        try {
+            let body: any;
+            if (editingTx.type === 'PAYMENT') {
+                body = { type: 'PAYMENT', amount: Number(editPaymentForm.amount), paymentMode: editPaymentForm.paymentMode, note: editPaymentForm.note, date: editPaymentForm.date || undefined };
+            } else {
+                const items = editBikeRows
+                    .filter(r => r.model && Number(r.quantity) > 0 && Number(r.pricePerUnit) > 0)
+                    .map(r => ({ model: r.model, quantity: Number(r.quantity), pricePerUnit: Number(r.pricePerUnit) }));
+                body = { type: 'STOCK_GIVEN', items, otherAmount: Number(editOtherAmount) || 0, date: editDate || undefined, note: editNote };
+            }
+            const res = await fetch(`/api/khata/${id}/transactions/${editingTx._id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (res.ok) {
+                showToast('Entry updated', 'success');
+                setEditingTx(null);
+                fetchParty();
+            } else {
+                const err = await res.json();
+                showToast(err.message || 'Failed to update', 'error');
+            }
+        } finally {
+            setEditSubmitting(false);
+        }
+    };
+
+    const editBikesTotal = editBikeRows.reduce((s, r) => s + computeRow(r).rowTotal, 0);
+    const editTotalAmount = editBikesTotal + (Number(editOtherAmount) || 0);
+    const editTotalMargin = editBikeRows.reduce((s, r) => s + computeRow(r).rowMargin, 0);
+    const editStockValid = editBikeRows.some(r => r.model && Number(r.quantity) > 0 && Number(r.pricePerUnit) > 0);
 
     const allMonths = Array.from(new Set(
         (party?.transactions || []).map(t => {
@@ -433,6 +502,134 @@ export default function KhataDetailPage() {
                     </div>
                 )}
 
+                {/* ── Edit form ── */}
+                {editingTx && (
+                    <div className="card" style={{ marginBottom: '1.25rem', borderLeft: '4px solid #f59e0b' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 700 }}>
+                                ✏️ Edit {editingTx.type === 'PAYMENT' ? 'Payment' : 'Stock Entry'}
+                            </h3>
+                            <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.3rem 0.75rem' }} onClick={() => setEditingTx(null)}>Cancel</button>
+                        </div>
+
+                        {editingTx.type === 'PAYMENT' ? (
+                            <div className="grid-2" style={{ marginBottom: '1rem' }}>
+                                <div className="form-group">
+                                    <label className="label">Amount (PKR) *</label>
+                                    <input type="text" inputMode="decimal" className="input" value={editPaymentForm.amount}
+                                        onChange={e => setEditPaymentForm({ ...editPaymentForm, amount: e.target.value })} placeholder="50000" />
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Payment Mode *</label>
+                                    <select className="select" value={editPaymentForm.paymentMode}
+                                        onChange={e => setEditPaymentForm({ ...editPaymentForm, paymentMode: e.target.value as any })}>
+                                        <option value="CASH">Cash</option>
+                                        <option value="BANK_TRANSFER">Bank Transfer</option>
+                                        <option value="CREDIT">Credit (still owed)</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Date</label>
+                                    <input type="date" className="input" value={editPaymentForm.date}
+                                        onChange={e => setEditPaymentForm({ ...editPaymentForm, date: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Note</label>
+                                    <input className="input" value={editPaymentForm.note}
+                                        onChange={e => setEditPaymentForm({ ...editPaymentForm, note: e.target.value })} placeholder="Reference / note..." />
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div style={{ overflowX: 'auto', marginBottom: '0.75rem' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '2px solid var(--color-border)', background: 'var(--color-bg-elevated)' }}>
+                                                {['Model', 'Qty', 'Price / Bike (PKR)', 'Std Price', 'Margin / Bike', 'Row Total', ''].map(h => (
+                                                    <th key={h} style={{ padding: '7px 8px', textAlign: h === 'Model' || h === '' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {editBikeRows.map(row => {
+                                                const c = computeRow(row);
+                                                return (
+                                                    <tr key={row.key} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                                        <td style={{ padding: '6px 8px', minWidth: '130px' }}>
+                                                            <select className="select" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem' }}
+                                                                value={row.model} onChange={e => updateEditRow(row.key, 'model', e.target.value)}>
+                                                                <option value="">Select model</option>
+                                                                {HONDA_BIKE_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
+                                                            </select>
+                                                        </td>
+                                                        <td style={{ padding: '6px 8px', minWidth: '70px' }}>
+                                                            <input type="number" min="1" className="input" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '60px', textAlign: 'right' }}
+                                                                value={row.quantity} onChange={e => updateEditRow(row.key, 'quantity', e.target.value)} />
+                                                        </td>
+                                                        <td style={{ padding: '6px 8px', minWidth: '130px' }}>
+                                                            <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '110px', textAlign: 'right' }}
+                                                                placeholder={row.model ? String(BIKE_STANDARD_PRICES[row.model] || '') : '0'}
+                                                                value={row.pricePerUnit} onChange={e => updateEditRow(row.key, 'pricePerUnit', e.target.value)} />
+                                                        </td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+                                                            {row.model ? `Rs. ${c.stdPrice.toLocaleString()}` : '—'}
+                                                        </td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: c.marginPerBike >= 0 ? '#10b981' : '#ef4444', whiteSpace: 'nowrap' }}>
+                                                            {row.model && row.pricePerUnit ? `Rs. ${c.marginPerBike.toLocaleString()}` : '—'}
+                                                        </td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                                                            {row.model && row.pricePerUnit && row.quantity ? `Rs. ${c.rowTotal.toLocaleString()}` : '—'}
+                                                        </td>
+                                                        <td style={{ padding: '6px 8px' }}>
+                                                            {editBikeRows.length > 1 && (
+                                                                <button onClick={() => setEditBikeRows(r => r.filter(x => x.key !== row.key))}
+                                                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1rem', padding: '0.2rem' }}>✕</button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.3rem 0.75rem', marginBottom: '1rem' }}
+                                    onClick={() => setEditBikeRows(r => [...r, newBikeRow()])}>+ Add Bike</button>
+
+                                <div className="form-group" style={{ marginBottom: '1rem', maxWidth: '280px' }}>
+                                    <label className="label">Other Amount (PKR) <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>— not counted in margin</span></label>
+                                    <input type="text" inputMode="decimal" className="input" value={editOtherAmount}
+                                        onChange={e => setEditOtherAmount(e.target.value)} placeholder="e.g. transport charges" />
+                                </div>
+
+                                {editStockValid && (
+                                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem', padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                                        <span style={{ fontSize: '0.85rem' }}>Bikes: <strong>Rs. {editBikesTotal.toLocaleString()}</strong></span>
+                                        {(Number(editOtherAmount) || 0) > 0 && <span style={{ fontSize: '0.85rem' }}>Other: <strong>Rs. {Number(editOtherAmount).toLocaleString()}</strong></span>}
+                                        <span style={{ fontSize: '0.85rem' }}>Total: <strong style={{ color: 'var(--color-primary)' }}>Rs. {editTotalAmount.toLocaleString()}</strong></span>
+                                        <span style={{ fontSize: '0.85rem' }}>Margin: <strong style={{ color: editTotalMargin >= 0 ? '#10b981' : '#ef4444' }}>Rs. {editTotalMargin.toLocaleString()}</strong></span>
+                                    </div>
+                                )}
+
+                                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                                    <div className="form-group" style={{ margin: 0 }}>
+                                        <label className="label">Date</label>
+                                        <input type="date" className="input" value={editDate} onChange={e => setEditDate(e.target.value)} />
+                                    </div>
+                                    <div className="form-group" style={{ margin: 0, flex: 1, minWidth: '180px' }}>
+                                        <label className="label">Note</label>
+                                        <input className="input" value={editNote} onChange={e => setEditNote(e.target.value)} placeholder="Optional note..." />
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        <button className="btn btn-primary" disabled={editSubmitting || (editingTx.type === 'STOCK_GIVEN' && !editStockValid) || (editingTx.type === 'PAYMENT' && !editPaymentForm.amount)}
+                            onClick={handleSaveEdit}>
+                            {editSubmitting ? 'Saving...' : '✅ Save Changes'}
+                        </button>
+                    </div>
+                )}
+
                 {/* Transactions table */}
                 <div className="card" style={{ padding: '1.25rem' }}>
                     <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '1rem' }}>
@@ -454,7 +651,7 @@ export default function KhataDetailPage() {
                                     {[...runningRows].reverse().map(tx => {
                                         const isDel = confirmDeleteTx === tx._id;
                                         return (
-                                            <tr key={tx._id} style={{ borderBottom: '1px solid var(--color-border)', background: isDel ? 'rgba(239,68,68,0.04)' : 'transparent' }}>
+                                            <tr key={tx._id} style={{ borderBottom: '1px solid var(--color-border)', background: isDel ? 'rgba(239,68,68,0.04)' : editingTx?._id === tx._id ? 'rgba(245,158,11,0.06)' : 'transparent' }}>
                                                 <td style={{ padding: '7px 10px', whiteSpace: 'nowrap', color: 'var(--color-text-muted)' }}>
                                                     {new Date(tx.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                 </td>
@@ -495,7 +692,11 @@ export default function KhataDetailPage() {
                                                             <button className="btn btn-secondary" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem' }} onClick={() => setConfirmDeleteTx(null)}>No</button>
                                                         </div>
                                                     ) : (
-                                                        <button className="btn" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }} onClick={() => setConfirmDeleteTx(tx._id)}>🗑️</button>
+                                                        <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                            <button className="btn" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}
+                                                                onClick={() => { setConfirmDeleteTx(null); handleEditInit(tx); }}>✏️</button>
+                                                            <button className="btn" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }} onClick={() => { setEditingTx(null); setConfirmDeleteTx(tx._id); }}>🗑️</button>
+                                                        </div>
                                                     )}
                                                 </td>
                                             </tr>
