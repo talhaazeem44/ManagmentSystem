@@ -224,6 +224,12 @@ export async function GET(request: NextRequest) {
             const model = sale.bikeId?.model || 'Unknown';
             allTimeModelBreakdown[model] = (allTimeModelBreakdown[model] || 0) + 1;
         }
+        const availableModelBreakdown: Record<string, number> = {};
+        for (const bike of bikes as any[]) {
+            if (bike.status !== 'AVAILABLE') continue;
+            const model = bike.model || 'Unknown';
+            availableModelBreakdown[model] = (availableModelBreakdown[model] || 0) + 1;
+        }
         const allTimeRevenue = allSales.reduce((s, sale: any) => s + Number(sale.price || 0), 0);
         const allTimeBikeProfit = allSales.reduce((s, sale: any) => s + calcSaleMargin(sale).totalProfit, 0);
         const allTimeWorkshopRevenue = allServices.reduce((s, svc: any) => s + Number(svc.totalAmount || 0), 0);
@@ -348,6 +354,7 @@ export async function GET(request: NextRequest) {
                 totalWorkshopRevenue: allTimeWorkshopRevenue,
                 totalProfit: allTimeProfit,
                 modelBreakdown: allTimeModelBreakdown,
+                availableModelBreakdown,
             },
             deliveryOrders: doStats,
             creditSales,

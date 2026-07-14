@@ -35,6 +35,7 @@ export default function NewSalePage() {
     const { toasts, showToast, removeToast } = useToast();
     const [bikes, setBikes] = useState<Bike[]>([]);
     const [doFilter, setDoFilter] = useState('');
+    const [bikeSearch, setBikeSearch] = useState('');
     const [selectedBikeId, setSelectedBikeId] = useState('');
     const [selectedBike, setSelectedBike] = useState<Bike | null>(null);
 
@@ -121,6 +122,21 @@ export default function NewSalePage() {
     const filteredBikes = doFilter
         ? bikes.filter(b => b.deliveryOrder?.doNumber === doFilter)
         : bikes;
+
+    // Bikes matching the engine/chassis search box
+    const bikeSearchQuery = bikeSearch.trim().toLowerCase();
+    const searchMatches = bikeSearchQuery
+        ? bikes.filter(b =>
+            b.engineNumber?.toLowerCase().includes(bikeSearchQuery) ||
+            b.chassisNumber?.toLowerCase().includes(bikeSearchQuery)
+          ).slice(0, 8)
+        : [];
+
+    const selectBikeFromSearch = (bike: Bike) => {
+        setDoFilter('');
+        setSelectedBikeId(bike.id);
+        setBikeSearch('');
+    };
 
     // When DO filter changes, reset bike selection if it no longer matches
     useEffect(() => {
@@ -211,6 +227,34 @@ export default function NewSalePage() {
                         <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: 'var(--spacing-lg)' }}>
                             Select Bike
                         </h2>
+
+                        <div className="form-group" style={{ position: 'relative', marginBottom: 'var(--spacing-lg)' }}>
+                            <label className="label">Search by Engine / Chassis Number</label>
+                            <input
+                                type="text"
+                                className="input"
+                                placeholder="Type engine or chassis number..."
+                                value={bikeSearch}
+                                onChange={(e) => setBikeSearch(e.target.value)}
+                            />
+                            {searchMatches.length > 0 && (
+                                <div style={{
+                                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                                    background: 'var(--color-bg-card)', border: '1px solid var(--color-border)',
+                                    borderRadius: 'var(--radius-md)', marginTop: '0.25rem', maxHeight: '260px', overflowY: 'auto',
+                                }}>
+                                    {searchMatches.map(bike => (
+                                        <div
+                                            key={bike.id}
+                                            onClick={() => selectBikeFromSearch(bike)}
+                                            style={{ padding: '0.5rem 0.75rem', cursor: 'pointer', fontSize: '0.85rem', borderBottom: '1px solid var(--color-border)' }}
+                                        >
+                                            {bike.model} - {bike.color} | Engine: {bike.engineNumber} | Chassis: {bike.chassisNumber} | DO: {bike.deliveryOrder?.doNumber || 'N/A'}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
 
                         <div className="form-row">
                             <div className="form-group">

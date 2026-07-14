@@ -325,6 +325,20 @@ const CashCollectionSchema = new Schema<ICashCollection>({
 
 export const CashCollection: Model<ICashCollection> = models.CashCollection || mongoose.model<ICashCollection>('CashCollection', CashCollectionSchema);
 
+// ── Monthly Plan ───────────────────────────────────────────────────────────────
+export interface IMonthlyPlan {
+    _id?: string;
+    month: string; // 'YYYY-MM'
+    targets: Record<string, number>; // keyed by full model name from HONDA_BIKE_MODELS
+}
+
+const MonthlyPlanSchema = new Schema<IMonthlyPlan>({
+    month: { type: String, required: true, unique: true },
+    targets: { type: Schema.Types.Mixed, default: {} },
+}, { timestamps: true });
+
+export const MonthlyPlan: Model<IMonthlyPlan> = models.MonthlyPlan || mongoose.model<IMonthlyPlan>('MonthlyPlan', MonthlyPlanSchema);
+
 // ── Workshop Deposit ──────────────────────────────────────────────────────────
 export interface IWorkshopDeposit {
     _id?: string;

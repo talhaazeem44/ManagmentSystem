@@ -6,6 +6,7 @@ import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import Loader from '@/components/Loader';
+import { HONDA_BIKE_MODELS } from '@/lib/constants';
 
 interface SaleRecord {
     id: string;
@@ -41,7 +42,7 @@ interface Stats {
         expenseCash: number; cashInHand: number; bankTransfer: number; cashDepositOnly: number;
         modelBreakdown?: Record<string, number>;
     };
-    allTime: { totalBikes: number; availableBikes: number; soldBikes: number; modelBreakdown?: Record<string, number> };
+    allTime: { totalBikes: number; availableBikes: number; soldBikes: number; modelBreakdown?: Record<string, number>; availableModelBreakdown?: Record<string, number> };
     creditSales: CreditSale[];
     advanceBookings: {
         pendingCount: number; pendingMargin: number;
@@ -77,6 +78,51 @@ export default function DashboardPage() {
     const [showCustomBreakdown, setShowCustomBreakdown] = useState(false);
     const [loadingCustom, setLoadingCustom] = useState(false);
     const [monthModelBreakdown, setMonthModelBreakdown] = useState<Record<string, number> | null>(null);
+    const [planTargets, setPlanTargets] = useState<Record<string, number>>({});
+    const [editingPlan, setEditingPlan] = useState(false);
+    const [editTargets, setEditTargets] = useState<Record<string, string>>({});
+    const [savingPlan, setSavingPlan] = useState(false);
+    const currentMonth = new Date().toISOString().slice(0, 7);
+
+    const fetchPlan = async () => {
+        try {
+            const res = await fetch(`/api/monthly-plan?month=${currentMonth}`);
+            if (res.ok) { const d = await res.json(); setPlanTargets(d.targets ?? {}); }
+        } catch {
+            // ignore
+        }
+    };
+
+    const startEditPlan = () => {
+        const initial: Record<string, string> = {};
+        for (const model of HONDA_BIKE_MODELS) initial[model] = String(planTargets[model] ?? 0);
+        setEditTargets(initial);
+        setEditingPlan(true);
+    };
+
+    const savePlan = async () => {
+        setSavingPlan(true);
+        try {
+            const targets: Record<string, number> = {};
+            for (const model of HONDA_BIKE_MODELS) targets[model] = Number(editTargets[model]) || 0;
+            const res = await fetch('/api/monthly-plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ month: currentMonth, targets }),
+            });
+            if (res.ok) {
+                setPlanTargets(targets);
+                setEditingPlan(false);
+                showToast('Plan saved', 'success');
+            } else {
+                showToast('Failed to save plan', 'error');
+            }
+        } catch {
+            showToast('Error saving plan', 'error');
+        } finally {
+            setSavingPlan(false);
+        }
+    };
 
     const fetchData = async (searchFilters = filters) => {
         setLoading(true);
@@ -165,7 +211,7 @@ export default function DashboardPage() {
         }
     };
 
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => { fetchData(); fetchPlan(); }, []);
 
     const handleDeleteSale = async (id: string) => {
         if (!confirm('Delete this sale? Bike will be marked AVAILABLE again.')) return;
@@ -297,6 +343,66 @@ export default function DashboardPage() {
 
                     </div>
                 )}
+
+                {/* ── Monthly Plan vs Remaining Stock ── */}
+                <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>
+                            {new Date().toLocaleDateString('en-PK', { month: 'long', year: 'numeric' })} — Honda Plan vs Stock
+                        </div>
+                        {editingPlan ? (
+                            <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <button onClick={() => setEditingPlan(false)} className="btn btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}>Cancel</button>
+                                <button onClick={savePlan} disabled={savingPlan} className="btn btn-primary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}>
+                                    {savingPlan ? 'Saving...' : 'Save'}
+                                </button>
+                            </div>
+                        ) : (
+                            <button onClick={startEditPlan} className="btn btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}>✏️ Edit Plan</button>
+                        )}
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                    {['Model', 'Plan', 'Sold', 'Remaining'].map((h, i) => (
+                                        <th key={h} style={{ padding: '5px 8px', textAlign: i === 0 ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {HONDA_BIKE_MODELS
+                                    .filter(model => editingPlan || (planTargets[model] ?? 0) > 0 || (monthModelBreakdown?.[model] ?? 0) > 0 || (stats?.allTime?.availableModelBreakdown?.[model] ?? 0) > 0)
+                                    .map(model => {
+                                        const plan = planTargets[model] ?? 0;
+                                        const sold = monthModelBreakdown?.[model] ?? 0;
+                                        const remaining = stats?.allTime?.availableModelBreakdown?.[model] ?? 0;
+                                        return (
+                                            <tr key={model} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                                <td style={{ padding: '5px 8px' }}>{model}</td>
+                                                <td style={{ padding: '5px 8px', textAlign: 'right' }}>
+                                                    {editingPlan ? (
+                                                        <input
+                                                            type="number"
+                                                            className="input"
+                                                            value={editTargets[model] ?? '0'}
+                                                            onChange={e => setEditTargets(t => ({ ...t, [model]: e.target.value }))}
+                                                            style={{ width: '70px', fontSize: '0.8rem', padding: '0.2rem 0.4rem', textAlign: 'right' }}
+                                                            min="0"
+                                                        />
+                                                    ) : (
+                                                        <strong>{plan}</strong>
+                                                    )}
+                                                </td>
+                                                <td style={{ padding: '5px 8px', textAlign: 'right', color: '#10b981', fontWeight: 600 }}>{sold}</td>
+                                                <td style={{ padding: '5px 8px', textAlign: 'right', color: '#f59e0b', fontWeight: 600 }}>{remaining}</td>
+                                            </tr>
+                                        );
+                                    })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
                 {/* ── Chart + Credit Summary ── */}
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.25rem', marginBottom: '1.5rem' }}>
