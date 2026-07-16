@@ -265,13 +265,13 @@ export default function ProfitPage() {
                                 </button>
                             </div>
                             {/* Extra Amount card */}
-                            <div className="card" style={{ padding: '1.5rem', borderLeft: `4px solid ${(monthStats?.extraCash ?? 0) >= 0 ? '#00e676' : '#f87171'}` }}>
+                            <div className="card" style={{ padding: '1.5rem', borderLeft: '4px solid #00e676' }}>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>{monthName} — Extra Amount</div>
-                                <div style={{ fontSize: '2rem', fontWeight: 800, color: (monthStats?.extraCash ?? 0) >= 0 ? '#00e676' : '#f87171', marginBottom: '0.3rem' }}>
-                                    {(monthStats?.extraCash ?? 0) >= 0 ? '+' : ''}Rs. {(monthStats?.extraCash ?? 0).toLocaleString()}
+                                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#00e676', marginBottom: '0.3rem' }}>
+                                    +Rs. {(monthStats?.extraCash ?? 0).toLocaleString()}
                                 </div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>
-                                    {(monthStats?.extraCash ?? 0) >= 0 ? 'Earned above standard price' : 'Lost below standard price'}
+                                    Earned above standard price
                                 </div>
                                 <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--color-border)' }}>
                                     {monthStats?.sales ?? 0} bikes · avg Rs. {monthStats?.sales ? Math.round((monthStats.extraCash ?? 0) / monthStats.sales).toLocaleString() : '0'} extra/bike
