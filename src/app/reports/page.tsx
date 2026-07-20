@@ -40,6 +40,7 @@ interface RangeData {
 
 interface CashBreakdownItem {
     saleDate?: string;
+    buyerName?: string;
     bikeModel: string;
     paymentMode: string;
     price: number;
@@ -540,8 +541,8 @@ export default function ReportsPage() {
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                                         <thead>
                                             <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
-                                                {['Date', 'Model', 'Mode', 'Price', 'Cash', 'Bank', 'Extra', 'Less', 'Bike Profit', 'Reg Profit', 'Total'].map(h => (
-                                                    <th key={h} style={{ padding: '6px 8px', textAlign: h === 'Date' || h === 'Model' || h === 'Mode' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+                                                {['Date', 'Buyer', 'Model', 'Mode', 'Price', 'Cash', 'Bank', 'Extra', 'Less', 'Bike Profit', 'Reg Profit', 'Total'].map(h => (
+                                                    <th key={h} style={{ padding: '6px 8px', textAlign: h === 'Date' || h === 'Buyer' || h === 'Model' || h === 'Mode' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
                                                 ))}
                                             </tr>
                                         </thead>
@@ -551,6 +552,7 @@ export default function ReportsPage() {
                                                     <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', color: 'var(--color-text-muted)' }}>
                                                         {row.saleDate ? new Date(row.saleDate).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' }) : '—'}
                                                     </td>
+                                                    <td style={{ padding: '6px 8px' }}>{row.buyerName || '—'}</td>
                                                     <td style={{ padding: '6px 8px', fontWeight: 600 }}>{row.bikeModel}</td>
                                                     <td style={{ padding: '6px 8px' }}>
                                                         <span style={{ fontSize: '0.72rem', padding: '1px 6px', borderRadius: '4px', background: row.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : row.paymentMode === 'ADVANCE' ? 'rgba(139,92,246,0.12)' : 'rgba(16,185,129,0.12)', color: row.paymentMode === 'CREDIT' ? '#ef4444' : row.paymentMode === 'ADVANCE' ? '#8b5cf6' : '#10b981', fontWeight: 700 }}>
@@ -580,7 +582,7 @@ export default function ReportsPage() {
                                         </tbody>
                                         <tfoot>
                                             <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 700 }}>
-                                                <td colSpan={3} style={{ padding: '6px 8px', color: 'var(--color-text-muted)' }}>TOTAL</td>
+                                                <td colSpan={4} style={{ padding: '6px 8px', color: 'var(--color-text-muted)' }}>TOTAL</td>
                                                 <td style={{ padding: '6px 8px', textAlign: 'right' }}>{(data?.cashBreakdown ?? []).reduce((s, r) => s + r.price, 0).toLocaleString()}</td>
                                                 <td style={{ padding: '6px 8px', textAlign: 'right' }}>{(data?.cashBreakdown ?? []).reduce((s, r) => s + r.receivedCash, 0).toLocaleString()}</td>
                                                 <td style={{ padding: '6px 8px', textAlign: 'right' }}>{(data?.cashBreakdown ?? []).reduce((s, r) => s + r.bankTransferAmount, 0).toLocaleString()}</td>
