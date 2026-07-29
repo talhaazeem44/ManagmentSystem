@@ -1,11 +1,51 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import styles from './receipt.module.css';
 import { BIKE_STANDARD_PRICES } from '@/lib/constants';
 import Loader from '@/components/Loader';
+
+const COLOUR_OPTIONS = ['Red', 'Blk', 'Blu', 'Slv', 'Wht'];
+
+function matchColour(colour: string) {
+    const c = (colour || '').toLowerCase();
+    if (c.startsWith('red')) return 'Red';
+    if (c.startsWith('bl') && c.includes('ack')) return 'Blk';
+    if (c.startsWith('blu')) return 'Blu';
+    if (c.startsWith('sil') || c.startsWith('slv')) return 'Slv';
+    if (c.startsWith('wh')) return 'Wht';
+    return null;
+}
+
+function digitGroups(raw: string, groups: number[]) {
+    const digits = (raw || '').replace(/[^0-9]/g, '');
+    let idx = 0;
+    return groups.map(count => {
+        const chars: string[] = [];
+        for (let i = 0; i < count; i++) {
+            chars.push(digits[idx] ?? '');
+            idx++;
+        }
+        return chars;
+    });
+}
+
+function DigitBoxes({ value, groups }: { value: string; groups: number[] }) {
+    return (
+        <div className={styles.digitBoxes}>
+            {digitGroups(value, groups).map((group, gi) => (
+                <Fragment key={gi}>
+                    {gi > 0 && <span className={styles.digitDash}>-</span>}
+                    {group.map((ch, ci) => (
+                        <span key={ci} className={styles.digitBox}>{ch}</span>
+                    ))}
+                </Fragment>
+            ))}
+        </div>
+    );
+}
 
 interface Payment {
     amount: number;
@@ -210,150 +250,160 @@ export default function ReceiptPage() {
 
                 {/* ── Printable receipt ── */}
                 <div className={styles.receipt}>
-                    <div className={styles.header}>
-                        <div className={styles.logo}>
-                            <span style={{ fontSize: '1.5rem', fontWeight: 900, letterSpacing: '0.05em' }}>HONDA</span>
+                    <div className={styles.topBar}>
+                        <div className={styles.hondaLogo}>HONDA</div>
+                        <div className={styles.badgeArea}>
+                            <div className={styles.badgeStripe}><span /><span /><span /></div>
+                            <div className={styles.badgeRow}>
+                                <div className={styles.badgeCircle}>3S</div>
+                                <div className={styles.badgeText}>SALES<br />SERVICE<br />SPARE PARTS</div>
+                            </div>
+                            <div className={styles.antennaShop}>📡 ANTENNA SHOP FACILITIES</div>
                         </div>
-                        <div className={styles.receiptTitle}>SALE RECEIPT</div>
-                        <div className={styles.receiptNumber}>
-                            <div style={{ fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.2rem' }}>3S SALES SERVICE SPARE PARTS</div>
-                            <div>{sale.receiptNumber || `#${sale.id}`}</div>
+                    </div>
+
+                    <div className={styles.titleRow}>
+                        <div className={styles.serialNumber}>{sale.receiptNumber || sale.id}</div>
+                        <div className={styles.receiptTitleBox}>SALE RECEIPT</div>
+                    </div>
+
+                    <div className={styles.idRow}>
+                        <div className={styles.digitField}>
+                            <span className={styles.digitLabel}>C.N.I.C #:</span>
+                            <DigitBoxes value={sale.customer.cnic} groups={[5, 7, 1]} />
+                        </div>
+                        <div className={styles.digitField}>
+                            <span className={styles.digitLabel}>Dated:</span>
+                            <DigitBoxes
+                                value={new Date(sale.saleDate).toLocaleDateString('en-GB').replace(/\//g, '')}
+                                groups={[2, 2, 4]}
+                            />
                         </div>
                     </div>
 
                     <div className={styles.section}>
-                        <div className={styles.row}>
-                            <div className={styles.field}>
-                                <span className={styles.label}>C.N.I.C #:</span>
-                                <span className={styles.value}>{sale.customer.cnic}</span>
-                            </div>
-                            <div className={styles.field}>
-                                <span className={styles.label}>Dated:</span>
-                                <span className={styles.value}>{new Date(sale.saleDate).toLocaleDateString()}</span>
-                            </div>
-                        </div>
                         <div className={styles.field}>
-                            <span className={styles.label}>Customer's Name:</span>
+                            <span className={styles.label}>Customer&apos;s Name:</span>
                             <span className={styles.value}>{sale.customer.name}</span>
                         </div>
                         <div className={styles.field}>
                             <span className={styles.label}>Father/Husband Name:</span>
-                            <span className={styles.value}>{sale.customer.fatherName || '-'}</span>
+                            <span className={styles.value}>{sale.customer.fatherName || ''}</span>
                         </div>
                         <div className={styles.field}>
                             <span className={styles.label}>Address:</span>
-                            <span className={styles.value}>{sale.customer.address || '-'}</span>
+                            <span className={styles.value}>{sale.customer.address || ''}</span>
                         </div>
                         <div className={styles.field}>
                             <span className={styles.label}>Mobile #:</span>
-                            <span className={styles.value}>{sale.customer.mobile || '-'}</span>
+                            <span className={styles.value}>{sale.customer.mobile || ''}</span>
                         </div>
                     </div>
 
-                    <div className={styles.section}>
-                        <div className={styles.bikeModels}>
-                            <span className={styles.modelLabel}>Honda:</span>
-                            <div className={styles.models}>
-                                {['CD70','DREAM','PRIDOR','CG 125','CG125S.SE','CB125F.SE','CB150F'].map(m => (
-                                    <label key={m} className={sale.bike.model === m || (m === 'CG125S.SE' && sale.bike.model.includes('CG125')) || (m === 'CB125F.SE' && sale.bike.model.includes('CB125')) ? styles.checked : ''}>
-                                        <input type="checkbox" readOnly
-                                            checked={sale.bike.model === m || (m === 'CG125S.SE' && sale.bike.model.includes('CG125')) || (m === 'CB125F.SE' && sale.bike.model.includes('CB125'))} /> {m}
+                    <div className={styles.bikeModels}>
+                        <span className={styles.modelLabel}>Honda:</span>
+                        <div className={styles.models}>
+                            {['CD70', 'DREAM', 'PRIDOR', 'CG 125', 'CG125S.SE', 'CB125F.SE', 'CB150F'].map(m => {
+                                const isChecked = sale.bike.model === m
+                                    || (m === 'CG125S.SE' && sale.bike.model.includes('CG125'))
+                                    || (m === 'CB125F.SE' && sale.bike.model.includes('CB125'));
+                                return (
+                                    <label key={m} className={isChecked ? styles.checked : ''}>
+                                        <input type="checkbox" readOnly checked={isChecked} /> {m}
                                     </label>
-                                ))}
-                            </div>
+                                );
+                            })}
                         </div>
-                        <div className={styles.row}>
-                            <div className={styles.field}>
-                                <span className={styles.label}>Model:</span>
-                                <span className={styles.value}>{new Date(sale.saleDate).getFullYear()}</span>
-                            </div>
-                            <div className={styles.field}>
-                                <span className={styles.label}>Colour:</span>
-                                <span className={styles.value}>{sale.bike.color}</span>
-                            </div>
-                        </div>
-                        <div className={styles.field}>
+                    </div>
+
+                    <div className={styles.field}>
+                        <span className={styles.label}>Model:</span>
+                        <span className={styles.value}>{new Date(sale.saleDate).getFullYear()}</span>
+                    </div>
+
+                    <div className={styles.specsRow}>
+                        <div className={styles.boxedField}>
                             <span className={styles.label}>Engine #:</span>
                             <span className={styles.value}>{sale.bike.engineNumber}</span>
                         </div>
-                        <div className={styles.field}>
+                        <div className={styles.boxedField}>
                             <span className={styles.label}>Chassis #:</span>
                             <span className={styles.value}>{sale.bike.chassisNumber}</span>
                         </div>
                     </div>
 
-                    <div className={styles.section}>
+                    <div className={styles.colourPaymentRow}>
+                        <div className={styles.colourText}>
+                            Colour: {COLOUR_OPTIONS.map((c, i) => (
+                                <Fragment key={c}>
+                                    {i > 0 && ' / '}
+                                    {matchColour(sale.bike.color) === c ? <strong>{c}</strong> : c}
+                                </Fragment>
+                            ))}
+                        </div>
                         <div className={styles.paymentModes}>
-                            {['CASH','CREDIT','LEASE','ONLINE'].map(m => (
+                            {['CASH', 'CREDIT', 'LEASE'].map(m => (
                                 <label key={m} className={sale.paymentMode === m ? styles.checked : ''}>
                                     <input type="checkbox" readOnly checked={sale.paymentMode === m} /> {m}
                                 </label>
                             ))}
                         </div>
+                    </div>
 
-                        <div className={styles.paymentDetails}>
-                            <div className={styles.paymentCol}>
-                                <div className={styles.field}>
-                                    <span className={styles.label}>Cash Price:</span>
-                                    <span className={styles.value}>
-                                        {(BIKE_STANDARD_PRICES[sale.bike.model] || Number(sale.price)).toLocaleString()}
-                                    </span>
-                                </div>
-                                <div className={styles.field}>
-                                    <span className={styles.label}>Advance Amount:</span>
-                                    <span className={styles.value}>{sale.advanceAmount || '-'}</span>
-                                </div>
-                                <div className={styles.field}>
-                                    <span className={styles.label}>Received Cash:</span>
-                                    <span className={styles.value}>
-                                        {sale.paymentMode === 'CASH' || sale.paymentMode === 'ONLINE'
-                                            ? (BIKE_STANDARD_PRICES[sale.bike.model] || Number(sale.price)).toLocaleString()
-                                            : Number(sale.receivedCash || 0).toLocaleString()}
-                                    </span>
-                                </div>
-                                {sale.bankTransferAmount ? (
-                                    <div className={styles.field}>
-                                        <span className={styles.label}>Bank Transfer:</span>
-                                        <span className={styles.value}>{Number(sale.bankTransferAmount).toLocaleString()}</span>
-                                    </div>
-                                ) : null}
-                                <div className={styles.field}>
-                                    <span className={styles.label}>Balance:</span>
-                                    <span className={styles.value}>
-                                        {sale.balance ? Number(sale.balance).toLocaleString() : '-'}
-                                    </span>
-                                </div>
-                                <div className={styles.field}>
-                                    <span className={styles.label}>Registration Fees:</span>
-                                    <span className={styles.value}>
-                                        {sale.registrationCost ? Number(sale.registrationCost).toLocaleString() : '-'}
-                                    </span>
-                                </div>
-
-                                {/* Payment history inside receipt (visible on print) */}
-                                {payments.length > 0 && (
-                                    <div style={{ marginTop: '0.75rem', borderTop: '1px solid #ccc', paddingTop: '0.5rem' }}>
-                                        <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.35rem' }}>Payment History:</div>
-                                        {payments.map((p, i) => (
-                                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '0.2rem' }}>
-                                                <span>{new Date(p.date).toLocaleDateString()}{p.note ? ` — ${p.note}` : ''}</span>
-                                                <strong>Rs. {Number(p.amount).toLocaleString()}</strong>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className={styles.urduSection}>
-                                <div className={styles.urduBox}>
-                                    <p className={styles.urduText}>نوٹ:</p>
-                                    <p className={styles.urduText}>یہ رسید رجسٹریشن کیلئے استعمال نہیں ہو سکتی۔</p>
-                                    <p className={styles.urduText}>اصل کاغذات کے حصول کیلئے سیل رسید اور</p>
-                                    <p className={styles.urduText}>اصل شناختی کارڈ ضرور لائیں۔ نیز موٹر سائیکل</p>
-                                    <p className={styles.urduText}>کی تاریخ خرید اور گاہک کا نام تبدیل نہ ہوگا۔</p>
-                                </div>
-                            </div>
+                    <div className={styles.priceSection}>
+                        <div className={styles.field}>
+                            <span className={styles.label}>Cash Price:</span>
+                            <span className={styles.value}>
+                                {(BIKE_STANDARD_PRICES[sale.bike.model] || Number(sale.price)).toLocaleString()}
+                            </span>
                         </div>
+                        <div className={styles.field}>
+                            <span className={styles.label}>Advance Amount:</span>
+                            <span className={styles.value}>{sale.advanceAmount || ''}</span>
+                        </div>
+                        <div className={styles.field}>
+                            <span className={styles.label}>Received Cash:</span>
+                            <span className={styles.value}>
+                                {sale.paymentMode === 'CASH' || sale.paymentMode === 'ONLINE'
+                                    ? (BIKE_STANDARD_PRICES[sale.bike.model] || Number(sale.price)).toLocaleString()
+                                    : Number(sale.receivedCash || 0).toLocaleString()}
+                            </span>
+                        </div>
+                        {sale.bankTransferAmount ? (
+                            <div className={styles.field}>
+                                <span className={styles.label}>Bank Transfer:</span>
+                                <span className={styles.value}>{Number(sale.bankTransferAmount).toLocaleString()}</span>
+                            </div>
+                        ) : null}
+                        <div className={styles.field}>
+                            <span className={styles.label}>Balance:</span>
+                            <span className={styles.value}>
+                                {sale.balance ? Number(sale.balance).toLocaleString() : ''}
+                            </span>
+                        </div>
+                        <div className={styles.field}>
+                            <span className={styles.label}>Registration Fees:</span>
+                            <span className={styles.value}>
+                                {sale.registrationCost ? Number(sale.registrationCost).toLocaleString() : ''}
+                            </span>
+                        </div>
+
+                        {/* Payment history inside receipt (visible on print) */}
+                        {payments.length > 0 && (
+                            <div style={{ marginTop: '0.6rem', borderTop: '1px solid #ccc', paddingTop: '0.4rem' }}>
+                                <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.3rem' }}>Payment History:</div>
+                                {payments.map((p, i) => (
+                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.15rem' }}>
+                                        <span>{new Date(p.date).toLocaleDateString()}{p.note ? ` — ${p.note}` : ''}</span>
+                                        <strong>Rs. {Number(p.amount).toLocaleString()}</strong>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className={styles.urduBox}>
+                        <p className={styles.urduText}>نوٹ: یہ رسید رجسٹریشن کیلئے استعمال نہیں ہو سکتی۔ اصل کاغذات کے حصول کیلئے یہ رسید اور اصل شناختی کارڈ ضرور لائیں۔ نیز موٹر سائیکل کی تاریخ خرید اور گاہک کا نام تبدیل نہ ہوگا۔</p>
                     </div>
 
                     <div className={styles.footer}>
