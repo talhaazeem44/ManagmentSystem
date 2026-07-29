@@ -370,6 +370,15 @@
         padding: 0.75rem 1.25rem !important;
         border: 2px solid #000 !important;
         box-shadow: none !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+
+    .receipt * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
     }
 
     .topBar        { padding-bottom: 0.35rem !important; margin-bottom: 0.4rem !important; }
