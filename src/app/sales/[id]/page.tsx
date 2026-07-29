@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Image from 'next/image';
 import DashboardLayout from '@/components/DashboardLayout';
 import styles from './receipt.module.css';
 import { BIKE_STANDARD_PRICES } from '@/lib/constants';
@@ -251,20 +252,20 @@ export default function ReceiptPage() {
                 {/* ── Printable receipt ── */}
                 <div className={styles.receipt}>
                     <div className={styles.topBar}>
-                        <div className={styles.hondaLogo}>HONDA</div>
+                        <Image src="/honda-logo.png" alt="Honda" width={160} height={110} className={styles.hondaLogo} priority />
+
+                        <div className={styles.titleRow}>
+                            <div className={styles.serialNumber}>{sale.receiptNumber || sale.id}</div>
+                            <div className={styles.receiptTitleBox}>SALE RECEIPT</div>
+                        </div>
+
                         <div className={styles.badgeArea}>
                             <div className={styles.badgeStripe}><span /><span /><span /></div>
                             <div className={styles.badgeRow}>
                                 <div className={styles.badgeCircle}>3S</div>
                                 <div className={styles.badgeText}>SALES<br />SERVICE<br />SPARE PARTS</div>
                             </div>
-                            <div className={styles.antennaShop}>📡 ANTENNA SHOP FACILITIES</div>
                         </div>
-                    </div>
-
-                    <div className={styles.titleRow}>
-                        <div className={styles.serialNumber}>{sale.receiptNumber || sale.id}</div>
-                        <div className={styles.receiptTitleBox}>SALE RECEIPT</div>
                     </div>
 
                     <div className={styles.idRow}>
