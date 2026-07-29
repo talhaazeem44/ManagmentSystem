@@ -364,6 +364,7 @@
     .receipt {
         box-sizing: border-box !important;
         max-width: 100% !important;
+        min-height: 269mm !important;
         max-height: 269mm !important;
         margin: 0 !important;
         padding: 1.25rem 2rem !important;
@@ -420,12 +421,12 @@
     .signature p   { font-size: 0.92rem !important; }
     .footer {
         margin-top: auto !important;
-        padding-top: 1.5rem !important;
+        padding-top: 1rem !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
         break-before: avoid !important;
         page-break-before: avoid !important;
     }
-    .dealerInfo    { font-size: 0.95rem !important; line-height: 1.6 !important; }
-    .dealerInfo strong { font-size: 1.3rem !important; }
+    .dealerInfo    { font-size: 0.85rem !important; line-height: 1.5 !important; }
+    .dealerInfo strong { font-size: 1.1rem !important; }
 }
