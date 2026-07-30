@@ -65,6 +65,7 @@ interface Sale {
     bankTransferAmount?: number;
     paymentMode: string;
     receiptNumber: string | null;
+    receiptColour?: string | null;
     payments?: Payment[];
     bike: {
         model: string;
@@ -347,7 +348,7 @@ export default function ReceiptPage() {
                             Colour: {COLOUR_OPTIONS.map((c, i) => (
                                 <Fragment key={c}>
                                     {i > 0 && ' / '}
-                                    {matchColour(sale.bike.color) === c ? <strong>{c}</strong> : c}
+                                    {(sale.receiptColour || matchColour(sale.bike.color)) === c ? <strong>{c}</strong> : c}
                                 </Fragment>
                             ))}
                         </div>
@@ -400,21 +401,21 @@ export default function ReceiptPage() {
 
                         {/* Payment history inside receipt (visible on print) — capped so it can never push the receipt past one A4 page */}
                         {payments.length > 0 && (() => {
-                            const MAX_ROWS = 5;
+                            const MAX_ROWS = 3;
                             const shown = payments.slice(0, MAX_ROWS);
                             const hiddenCount = payments.length - shown.length;
-                            const rowFont = payments.length > MAX_ROWS ? '0.72rem' : '0.85rem';
+                            const rowFont = payments.length > MAX_ROWS ? '0.68rem' : '0.75rem';
                             return (
-                                <div style={{ marginTop: '0.6rem', borderTop: '1px solid #ccc', paddingTop: '0.4rem' }}>
-                                    <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.3rem' }}>Payment History:</div>
+                                <div style={{ marginTop: '0.4rem', borderTop: '1px solid #ccc', paddingTop: '0.3rem' }}>
+                                    <div style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '0.2rem' }}>Payment History:</div>
                                     {shown.map((p, i) => (
-                                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: rowFont, marginBottom: '0.15rem' }}>
+                                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: rowFont, marginBottom: '0.1rem' }}>
                                             <span>{new Date(p.date).toLocaleDateString()}{p.note ? ` — ${p.note}` : ''}</span>
                                             <strong>Rs. {Number(p.amount).toLocaleString()}</strong>
                                         </div>
                                     ))}
                                     {hiddenCount > 0 && (
-                                        <div style={{ fontSize: '0.72rem', fontStyle: 'italic', color: '#555' }}>
+                                        <div style={{ fontSize: '0.68rem', fontStyle: 'italic', color: '#555' }}>
                                             +{hiddenCount} more payment{hiddenCount > 1 ? 's' : ''} — see Khata for full history
                                         </div>
                                     )}

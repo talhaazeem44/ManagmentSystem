@@ -358,17 +358,17 @@
 @media print {
     @page {
         size: A4;
-        margin: 14mm;
+        margin: 10mm;
     }
 
     .receipt {
         box-sizing: border-box !important;
         max-width: 100% !important;
         margin: 0 !important;
-        padding: 1.25rem 2rem !important;
+        padding: 0.9rem 1.6rem !important;
         border: 2px solid #000 !important;
         box-shadow: none !important;
-        font-size: 1rem !important;
+        font-size: 0.9rem !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         color-adjust: exact !important;
@@ -384,42 +384,40 @@
         color-adjust: exact !important;
     }
 
-    .topBar        { padding-bottom: 0.75rem !important; margin-bottom: 1rem !important; grid-template-columns: 1fr auto 1fr !important; }
-    .hondaLogo     { width: 105px !important; }
-    .badgeCircle   { width: 36px !important; height: 36px !important; font-size: 0.85rem !important; }
-    .badgeText     { font-size: 0.75rem !important; }
-    .badgeStripe   { width: 100px !important; height: 7px !important; }
-    .receiptTitleBox { font-size: 1.15rem !important; padding: 0.4rem 1.5rem !important; }
-    .serialNumber  { font-size: 1.05rem !important; }
-    .idRow         { margin-bottom: 1rem !important; flex-direction: row !important; flex-wrap: nowrap !important; justify-content: space-between !important; }
+    .topBar        { padding-bottom: 0.5rem !important; margin-bottom: 0.7rem !important; grid-template-columns: 1fr auto 1fr !important; }
+    .hondaLogo     { width: 85px !important; }
+    .badgeCircle   { width: 30px !important; height: 30px !important; font-size: 0.7rem !important; }
+    .badgeText     { font-size: 0.65rem !important; }
+    .badgeStripe   { width: 85px !important; height: 6px !important; }
+    .receiptTitleBox { font-size: 1rem !important; padding: 0.3rem 1.2rem !important; }
+    .serialNumber  { font-size: 0.9rem !important; }
+    .idRow         { margin-bottom: 0.7rem !important; flex-direction: row !important; flex-wrap: nowrap !important; justify-content: space-between !important; }
     .digitField    { flex-shrink: 0 !important; }
-    .digitLabel    { font-size: 1rem !important; }
-    .digitBox      { width: 19px !important; height: 24px !important; font-size: 0.9rem !important; }
-    .section       { margin-bottom: 0.8rem !important; break-inside: avoid !important; page-break-inside: avoid !important; }
-    .field         { margin-bottom: 0.5rem !important; font-size: 1rem !important; }
-    .label         { font-size: 1rem !important; min-width: 190px !important; }
-    .value         { font-size: 1rem !important; }
-    .bikeModels    { margin-bottom: 0.8rem !important; }
-    .modelLabel    { font-size: 1rem !important; }
-    .models label  { padding: 0.22rem 0.45rem !important; font-size: 0.85rem !important; }
-    .models input[type="checkbox"] { width: 13px !important; height: 13px !important; }
-    .specsRow      { margin-bottom: 0.8rem !important; flex-direction: row !important; flex-wrap: nowrap !important; }
-    .boxedField    { padding: 0.45rem 0.7rem !important; font-size: 1rem !important; }
-    .colourPaymentRow { margin: 0.75rem 0 1rem !important; flex-direction: row !important; flex-wrap: nowrap !important; justify-content: space-between !important; align-items: center !important; }
-    .colourText    { font-size: 1rem !important; }
-    .paymentModes label { padding: 0.28rem 0.7rem !important; font-size: 0.92rem !important; }
-    .paymentModes input[type="checkbox"] { width: 16px !important; height: 16px !important; }
-    .urduBox       { padding: 0.6rem 1.1rem !important; margin: 0.85rem 0 !important; }
-    .urduText      { font-size: 0.85rem !important; line-height: 1.5 !important; }
-    .signatureLine { height: 46px !important; width: 220px !important; }
-    .signature p   { font-size: 0.92rem !important; }
+    .digitLabel    { font-size: 0.9rem !important; }
+    .digitBox      { width: 16px !important; height: 20px !important; font-size: 0.8rem !important; }
+    .section       { margin-bottom: 0.55rem !important; break-inside: avoid !important; page-break-inside: avoid !important; }
+    .field         { margin-bottom: 0.32rem !important; font-size: 0.9rem !important; }
+    .label         { font-size: 0.9rem !important; min-width: 175px !important; }
+    .value         { font-size: 0.9rem !important; }
+    .bikeModels    { margin-bottom: 0.55rem !important; }
+    .modelLabel    { font-size: 0.9rem !important; }
+    .models label  { padding: 0.16rem 0.35rem !important; font-size: 0.75rem !important; }
+    .models input[type="checkbox"] { width: 11px !important; height: 11px !important; }
+    .specsRow      { margin-bottom: 0.55rem !important; flex-direction: row !important; flex-wrap: nowrap !important; }
+    .boxedField    { padding: 0.32rem 0.55rem !important; font-size: 0.9rem !important; }
+    .colourPaymentRow { margin: 0.5rem 0 0.7rem !important; flex-direction: row !important; flex-wrap: nowrap !important; justify-content: space-between !important; align-items: center !important; }
+    .colourText    { font-size: 0.9rem !important; }
+    .paymentModes label { padding: 0.2rem 0.55rem !important; font-size: 0.8rem !important; }
+    .paymentModes input[type="checkbox"] { width: 14px !important; height: 14px !important; }
+    .urduBox       { padding: 0.45rem 0.9rem !important; margin: 0.6rem 0 !important; }
+    .urduText      { font-size: 0.72rem !important; line-height: 1.35 !important; }
+    .signatureLine { height: 38px !important; width: 200px !important; }
+    .signature p   { font-size: 0.8rem !important; }
     .footer {
-        margin-top: 0.6rem !important;
-        padding-top: 1rem !important;
+        margin-top: 0.4rem !important;
+        padding-top: 0.7rem !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
-        break-before: avoid !important;
-        page-break-before: avoid !important;
     }
     .dealerInfo    { font-size: 0.85rem !important; line-height: 1.5 !important; }
     .dealerInfo strong { font-size: 1.1rem !important; }

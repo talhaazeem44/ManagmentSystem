@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
             taxAmount,
             paymentMode,
             bankTransferAmount,
+            receiptColour,
         } = body;
 
         // Validate required fields
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
             paymentMode: paymentMode || 'CASH',
             bankTransferAmount: parsedBank,
             receiptNumber: autoReceiptNumber,
+            receiptColour: receiptColour || undefined,
         });
 
         // Update bike status

@@ -7,6 +7,22 @@ import { BIKE_STANDARD_PRICES } from '@/lib/constants';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 
+const RECEIPT_COLOURS = [
+    { label: 'Red', match: 'red' },
+    { label: 'Blk', match: 'black' },
+    { label: 'Blu', match: 'blue' },
+    { label: 'Slv', match: 'silver' },
+    { label: 'Wht', match: 'white' },
+    { label: 'grn', match: 'green' },
+    { label: '2tone', match: '2tone' },
+];
+
+function guessReceiptColour(colour: string): string {
+    const c = (colour || '').toLowerCase();
+    const found = RECEIPT_COLOURS.find(rc => c.startsWith(rc.match) || c.includes(rc.match));
+    return found ? found.label : '';
+}
+
 interface Bike {
     id: string;
     model: string;
@@ -57,6 +73,7 @@ export default function NewSalePage() {
     const [bankTransferAmount, setBankTransferAmount] = useState('');
     const [taxAmount] = useState('1000');
     const [receiptNumber, setReceiptNumber] = useState('...');
+    const [receiptColour, setReceiptColour] = useState('');
 
     // Auto-calculate balance for credit sales
     useEffect(() => {
@@ -92,12 +109,14 @@ export default function NewSalePage() {
         if (selectedBikeId) {
             const bike = bikes.find(b => b.id === selectedBikeId);
             setSelectedBike(bike || null);
+            setReceiptColour(bike ? guessReceiptColour(bike.color) : '');
             if (bike && bike.purchasePrice) {
                 const suggested = getSuggestedPrice(bike.model);
                 if (suggested > 0) setPrice(String(suggested));
             }
         } else {
             setSelectedBike(null);
+            setReceiptColour('');
         }
     }, [selectedBikeId, bikes]);
 
@@ -129,7 +148,7 @@ export default function NewSalePage() {
         ? bikes.filter(b =>
             b.engineNumber?.toLowerCase().includes(bikeSearchQuery) ||
             b.chassisNumber?.toLowerCase().includes(bikeSearchQuery)
-          ).slice(0, 8)
+        ).slice(0, 8)
         : [];
 
     const selectBikeFromSearch = (bike: Bike) => {
@@ -194,7 +213,8 @@ export default function NewSalePage() {
                     taxAmount: taxAmount || 0,
                     paymentMode,
                     bankTransferAmount: bankTransferAmount || 0,
-                    receiptNumber
+                    receiptNumber,
+                    receiptColour: receiptColour || undefined,
                 })
             });
 
@@ -300,6 +320,20 @@ export default function NewSalePage() {
                                     <div>
                                         <span style={{ color: 'var(--color-text-muted)' }}>Color:</span>
                                         <strong style={{ marginLeft: '0.5rem' }}>{selectedBike.color}</strong>
+                                    </div>
+                                    <div>
+                                        <span style={{ color: 'var(--color-text-muted)' }}>Receipt Colour:</span>
+                                        <select
+                                            className="select"
+                                            style={{ marginLeft: '0.5rem', width: 'auto', display: 'inline-block', padding: '0.25rem 0.5rem', fontSize: '0.85rem' }}
+                                            value={receiptColour}
+                                            onChange={(e) => setReceiptColour(e.target.value)}
+                                        >
+                                            <option value="">— not marked —</option>
+                                            {RECEIPT_COLOURS.map(rc => (
+                                                <option key={rc.label} value={rc.label}>{rc.label}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                     <div>
                                         <span style={{ color: 'var(--color-text-muted)' }}>Engine #:</span>

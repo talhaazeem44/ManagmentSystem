@@ -112,6 +112,7 @@ export interface ISale {
     paymentMode: string;
     bankTransferAmount?: number;
     receiptNumber?: string;
+    receiptColour?: string;
     payments?: IPayment[];
     createdAt?: Date;
     updatedAt?: Date;
@@ -136,6 +137,7 @@ const SaleSchema = new Schema<ISale>({
     paymentMode: { type: String, default: 'CASH' },
     bankTransferAmount: { type: Number, default: 0 },
     receiptNumber: { type: String },
+    receiptColour: { type: String },
     payments: { type: [PaymentSchema], default: [] },
 }, {
     timestamps: true
