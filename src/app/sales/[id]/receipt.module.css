@@ -364,14 +364,11 @@
     .receipt {
         box-sizing: border-box !important;
         max-width: 100% !important;
-        min-height: 269mm !important;
         margin: 0 !important;
         padding: 1.25rem 2rem !important;
         border: 2px solid #000 !important;
         box-shadow: none !important;
         font-size: 1rem !important;
-        display: flex !important;
-        flex-direction: column !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         color-adjust: exact !important;
@@ -412,13 +409,12 @@
     .colourText    { font-size: 1rem !important; }
     .paymentModes label { padding: 0.28rem 0.7rem !important; font-size: 0.92rem !important; }
     .paymentModes input[type="checkbox"] { width: 16px !important; height: 16px !important; }
-    .priceSection  { flex: 1 !important; }
     .urduBox       { padding: 0.6rem 1.1rem !important; margin: 0.85rem 0 !important; }
     .urduText      { font-size: 0.85rem !important; line-height: 1.5 !important; }
     .signatureLine { height: 46px !important; width: 220px !important; }
     .signature p   { font-size: 0.92rem !important; }
     .footer {
-        margin-top: auto !important;
+        margin-top: 0.6rem !important;
         padding-top: 1rem !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
