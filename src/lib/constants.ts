@@ -73,7 +73,7 @@ export const REGISTRATION_ACTUAL_COST_BY_MODEL: Record<string, number> = {
 // book price with NO base margin added — selling at exactly book price means
 // zero profit. (For every other model, Khata margin = base margin + (price
 // − retail standard price), which assumes a dealer paying near retail.)
-export const KHATA_BOOK_PRICE_MODELS: string[] = ['PRIDOR', 'CB150F', 'CG150 2-Tone', 'CG125S.SE'];
+export const KHATA_BOOK_PRICE_MODELS: string[] = ['PRIDOR', 'CB150F', 'CG150 2-Tone', 'CB125F.SE'];
 
 export function getKhataMargin(model: string, pricePerUnit: number): { referencePrice: number; baseMargin: number; margin: number } {
     if (KHATA_BOOK_PRICE_MODELS.includes(model)) {
