@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { KhataParty } from '@/models';
-import { BIKE_UNIT_MARGINS, getKhataReferencePrice } from '@/lib/constants';
+import { BIKE_UNIT_MARGINS, BIKE_STANDARD_PRICES } from '@/lib/constants';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     await dbConnect();
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
                 const model = item.model;
                 const quantity = Number(item.quantity);
                 const pricePerUnit = Number(item.pricePerUnit);
-                const standardPrice = getKhataReferencePrice(model);
+                const standardPrice = BIKE_STANDARD_PRICES[model] || 0;
                 const baseMargin = BIKE_UNIT_MARGINS[model] || 0;
                 const extra = pricePerUnit - standardPrice;
                 const totalMargin = quantity * (baseMargin + extra);

@@ -68,20 +68,6 @@ export const REGISTRATION_ACTUAL_COST_BY_MODEL: Record<string, number> = {
     'CG150 2-Tone': 6500,
 };
 
-// Models where Khata margin calc compares the entered price-per-unit against
-// the rounded BOOK price instead of the retail standard price — these are
-// sometimes given to non-dealers at plain unit price rather than marked-up
-// retail price, so using the retail standard price as the reference would
-// show a false loss.
-export const KHATA_BOOK_PRICE_MODELS: string[] = ['PRIDOR', 'CB150F', 'CG150 2-Tone'];
-
-export function getKhataReferencePrice(model: string): number {
-    if (KHATA_BOOK_PRICE_MODELS.includes(model)) {
-        return BIKE_BOOK_PRICES[model] || BIKE_STANDARD_PRICES[model] || 0;
-    }
-    return BIKE_STANDARD_PRICES[model] || 0;
-}
-
 // Password to unlock margin section on dashboard
 export const MARGIN_PASSWORD = '786';
 

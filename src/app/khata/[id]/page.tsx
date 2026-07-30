@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 import Loader from '@/components/Loader';
-import { HONDA_BIKE_MODELS, BIKE_UNIT_MARGINS, getKhataReferencePrice } from '@/lib/constants';
+import { HONDA_BIKE_MODELS, BIKE_STANDARD_PRICES, BIKE_UNIT_MARGINS } from '@/lib/constants';
 
 interface KhataItem {
     model: string;
@@ -89,7 +89,7 @@ export default function KhataDetailPage() {
     const computeRow = (row: BikeRow) => {
         const qty = Number(row.quantity) || 0;
         const price = Number(row.pricePerUnit) || 0;
-        const stdPrice = getKhataReferencePrice(row.model);
+        const stdPrice = BIKE_STANDARD_PRICES[row.model] || 0;
         const baseMargin = BIKE_UNIT_MARGINS[row.model] || 0;
         const extra = price - stdPrice;
         const marginPerBike = baseMargin + extra;
@@ -372,7 +372,7 @@ export default function KhataDetailPage() {
                                                 </td>
                                                 <td style={{ padding: '6px 8px', minWidth: '130px' }}>
                                                     <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '110px', textAlign: 'right' }}
-                                                        placeholder={row.model ? String(getKhataReferencePrice(row.model) || '') : '0'}
+                                                        placeholder={row.model ? String(BIKE_STANDARD_PRICES[row.model] || '') : '0'}
                                                         value={row.pricePerUnit}
                                                         onChange={e => updateRow(row.key, 'pricePerUnit', e.target.value)} />
                                                 </td>
@@ -568,7 +568,7 @@ export default function KhataDetailPage() {
                                                         </td>
                                                         <td style={{ padding: '6px 8px', minWidth: '130px' }}>
                                                             <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '110px', textAlign: 'right' }}
-                                                                placeholder={row.model ? String(getKhataReferencePrice(row.model) || '') : '0'}
+                                                                placeholder={row.model ? String(BIKE_STANDARD_PRICES[row.model] || '') : '0'}
                                                                 value={row.pricePerUnit} onChange={e => updateEditRow(row.key, 'pricePerUnit', e.target.value)} />
                                                         </td>
                                                         <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
