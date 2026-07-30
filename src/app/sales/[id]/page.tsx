@@ -398,18 +398,29 @@ export default function ReceiptPage() {
                             </span>
                         </div>
 
-                        {/* Payment history inside receipt (visible on print) */}
-                        {payments.length > 0 && (
-                            <div style={{ marginTop: '0.6rem', borderTop: '1px solid #ccc', paddingTop: '0.4rem' }}>
-                                <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.3rem' }}>Payment History:</div>
-                                {payments.map((p, i) => (
-                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.15rem' }}>
-                                        <span>{new Date(p.date).toLocaleDateString()}{p.note ? ` — ${p.note}` : ''}</span>
-                                        <strong>Rs. {Number(p.amount).toLocaleString()}</strong>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        {/* Payment history inside receipt (visible on print) — capped so it can never push the receipt past one A4 page */}
+                        {payments.length > 0 && (() => {
+                            const MAX_ROWS = 5;
+                            const shown = payments.slice(0, MAX_ROWS);
+                            const hiddenCount = payments.length - shown.length;
+                            const rowFont = payments.length > MAX_ROWS ? '0.72rem' : '0.85rem';
+                            return (
+                                <div style={{ marginTop: '0.6rem', borderTop: '1px solid #ccc', paddingTop: '0.4rem' }}>
+                                    <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.3rem' }}>Payment History:</div>
+                                    {shown.map((p, i) => (
+                                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: rowFont, marginBottom: '0.15rem' }}>
+                                            <span>{new Date(p.date).toLocaleDateString()}{p.note ? ` — ${p.note}` : ''}</span>
+                                            <strong>Rs. {Number(p.amount).toLocaleString()}</strong>
+                                        </div>
+                                    ))}
+                                    {hiddenCount > 0 && (
+                                        <div style={{ fontSize: '0.72rem', fontStyle: 'italic', color: '#555' }}>
+                                            +{hiddenCount} more payment{hiddenCount > 1 ? 's' : ''} — see Khata for full history
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     <div className={styles.urduBox}>
