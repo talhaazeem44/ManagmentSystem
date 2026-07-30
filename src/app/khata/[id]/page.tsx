@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 import Loader from '@/components/Loader';
-import { HONDA_BIKE_MODELS, BIKE_STANDARD_PRICES, BIKE_UNIT_MARGINS } from '@/lib/constants';
+import { HONDA_BIKE_MODELS, getKhataMargin } from '@/lib/constants';
 
 interface KhataItem {
     model: string;
@@ -89,10 +89,7 @@ export default function KhataDetailPage() {
     const computeRow = (row: BikeRow) => {
         const qty = Number(row.quantity) || 0;
         const price = Number(row.pricePerUnit) || 0;
-        const stdPrice = BIKE_STANDARD_PRICES[row.model] || 0;
-        const baseMargin = BIKE_UNIT_MARGINS[row.model] || 0;
-        const extra = price - stdPrice;
-        const marginPerBike = baseMargin + extra;
+        const { referencePrice: stdPrice, baseMargin, margin: marginPerBike } = getKhataMargin(row.model, price);
         return {
             stdPrice,
             baseMargin,
@@ -102,10 +99,11 @@ export default function KhataDetailPage() {
         };
     };
 
-    const bikesTotal = bikeRows.reduce((s, r) => s + computeRow(r).rowTotal, 0);
+    const isRowComplete = (r: BikeRow) => !!r.model && Number(r.quantity) > 0 && Number(r.pricePerUnit) > 0;
+    const bikesTotal = bikeRows.filter(isRowComplete).reduce((s, r) => s + computeRow(r).rowTotal, 0);
     const totalAmount = bikesTotal + (Number(otherAmount) || 0);
-    const totalMargin = bikeRows.reduce((s, r) => s + computeRow(r).rowMargin, 0);
-    const stockFormValid = bikeRows.some(r => r.model && Number(r.quantity) > 0 && Number(r.pricePerUnit) > 0);
+    const totalMargin = bikeRows.filter(isRowComplete).reduce((s, r) => s + computeRow(r).rowMargin, 0);
+    const stockFormValid = bikeRows.some(isRowComplete);
 
     const handleAddStock = async () => {
         setSubmitting(true);
@@ -237,10 +235,10 @@ export default function KhataDetailPage() {
         }
     };
 
-    const editBikesTotal = editBikeRows.reduce((s, r) => s + computeRow(r).rowTotal, 0);
+    const editBikesTotal = editBikeRows.filter(isRowComplete).reduce((s, r) => s + computeRow(r).rowTotal, 0);
     const editTotalAmount = editBikesTotal + (Number(editOtherAmount) || 0);
-    const editTotalMargin = editBikeRows.reduce((s, r) => s + computeRow(r).rowMargin, 0);
-    const editStockValid = editBikeRows.some(r => r.model && Number(r.quantity) > 0 && Number(r.pricePerUnit) > 0);
+    const editTotalMargin = editBikeRows.filter(isRowComplete).reduce((s, r) => s + computeRow(r).rowMargin, 0);
+    const editStockValid = editBikeRows.some(isRowComplete);
 
     const allMonths = Array.from(new Set(
         (party?.transactions || []).map(t => {
@@ -372,7 +370,7 @@ export default function KhataDetailPage() {
                                                 </td>
                                                 <td style={{ padding: '6px 8px', minWidth: '130px' }}>
                                                     <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '110px', textAlign: 'right' }}
-                                                        placeholder={row.model ? String(BIKE_STANDARD_PRICES[row.model] || '') : '0'}
+                                                        placeholder={row.model ? String(getKhataMargin(row.model, 0).referencePrice || '') : '0'}
                                                         value={row.pricePerUnit}
                                                         onChange={e => updateRow(row.key, 'pricePerUnit', e.target.value)} />
                                                 </td>
@@ -568,7 +566,7 @@ export default function KhataDetailPage() {
                                                         </td>
                                                         <td style={{ padding: '6px 8px', minWidth: '130px' }}>
                                                             <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '110px', textAlign: 'right' }}
-                                                                placeholder={row.model ? String(BIKE_STANDARD_PRICES[row.model] || '') : '0'}
+                                                                placeholder={row.model ? String(getKhataMargin(row.model, 0).referencePrice || '') : '0'}
                                                                 value={row.pricePerUnit} onChange={e => updateEditRow(row.key, 'pricePerUnit', e.target.value)} />
                                                         </td>
                                                         <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>

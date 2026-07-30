@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { KhataParty } from '@/models';
-import { BIKE_UNIT_MARGINS, BIKE_STANDARD_PRICES } from '@/lib/constants';
+import { getKhataMargin } from '@/lib/constants';
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string; txId: string }> }) {
     await dbConnect();
@@ -39,10 +39,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
                 const model = item.model;
                 const quantity = Number(item.quantity);
                 const pricePerUnit = Number(item.pricePerUnit);
-                const standardPrice = BIKE_STANDARD_PRICES[model] || 0;
-                const baseMargin = BIKE_UNIT_MARGINS[model] || 0;
-                const extra = pricePerUnit - standardPrice;
-                const totalMargin = quantity * (baseMargin + extra);
+                const { referencePrice: standardPrice, baseMargin, margin: marginPerUnit } = getKhataMargin(model, pricePerUnit);
+                const totalMargin = quantity * marginPerUnit;
                 return { model, quantity, pricePerUnit, standardPrice, baseMargin, totalMargin };
             });
         if (items.length === 0) return NextResponse.json({ message: 'No valid bike items' }, { status: 400 });

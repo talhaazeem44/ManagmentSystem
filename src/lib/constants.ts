@@ -68,6 +68,23 @@ export const REGISTRATION_ACTUAL_COST_BY_MODEL: Record<string, number> = {
     'CG150 2-Tone': 6500,
 };
 
+// Models where Khata stock is sometimes given to non-dealers at plain
+// unit/book price. For these, margin must be measured directly against the
+// book price with NO base margin added — selling at exactly book price means
+// zero profit. (For every other model, Khata margin = base margin + (price
+// − retail standard price), which assumes a dealer paying near retail.)
+export const KHATA_BOOK_PRICE_MODELS: string[] = ['PRIDOR', 'CB150F', 'CG150 2-Tone', 'CG125S.SE'];
+
+export function getKhataMargin(model: string, pricePerUnit: number): { referencePrice: number; baseMargin: number; margin: number } {
+    if (KHATA_BOOK_PRICE_MODELS.includes(model)) {
+        const bookPrice = BIKE_BOOK_PRICES[model] || 0;
+        return { referencePrice: bookPrice, baseMargin: 0, margin: pricePerUnit - bookPrice };
+    }
+    const standardPrice = BIKE_STANDARD_PRICES[model] || 0;
+    const baseMargin = BIKE_UNIT_MARGINS[model] || 0;
+    return { referencePrice: standardPrice, baseMargin, margin: baseMargin + (pricePerUnit - standardPrice) };
+}
+
 // Password to unlock margin section on dashboard
 export const MARGIN_PASSWORD = '786';
 
