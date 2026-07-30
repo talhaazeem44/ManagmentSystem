@@ -304,13 +304,22 @@ export default function ReceiptPage() {
                     <div className={styles.bikeModels}>
                         <span className={styles.modelLabel}>Honda:</span>
                         <div className={styles.models}>
-                            {['CD70', 'DREAM', 'PRIDOR', 'CG 125', 'CG125S.SE', 'CB125F.SE', 'CB150F'].map(m => {
-                                const isChecked = sale.bike.model === m
-                                    || (m === 'CG125S.SE' && sale.bike.model.includes('CG125'))
-                                    || (m === 'CB125F.SE' && sale.bike.model.includes('CB125'));
+                            {[
+                                { label: 'CD70', match: 'CD70' },
+                                { label: 'DREAM', match: 'DREAM' },
+                                { label: 'PRIDOR', match: 'PRIDOR' },
+                                { label: 'CG 125', match: 'CG 125' },
+                                { label: 'CG125S.SE', match: 'CG125S.SE' },
+                                { label: 'CG125GOLD', match: 'CG125GOLD' },
+                                { label: 'CB125F.SE', match: 'CB125F.SE' },
+                                { label: 'CB150F', match: 'CB150F' },
+                                { label: 'CB150FSE', match: 'CB150FSE' },
+                                { label: 'CG 150', match: 'CG150 2-Tone' },
+                            ].map(({ label, match }) => {
+                                const isChecked = sale.bike.model === match;
                                 return (
-                                    <label key={m} className={isChecked ? styles.checked : ''}>
-                                        <input type="checkbox" readOnly checked={isChecked} /> {m}
+                                    <label key={label} className={isChecked ? styles.checked : ''}>
+                                        <input type="checkbox" readOnly checked={isChecked} /> {label}
                                     </label>
                                 );
                             })}

@@ -365,13 +365,11 @@
         box-sizing: border-box !important;
         max-width: 100% !important;
         min-height: 269mm !important;
-        max-height: 269mm !important;
         margin: 0 !important;
         padding: 1.25rem 2rem !important;
         border: 2px solid #000 !important;
         box-shadow: none !important;
         font-size: 1rem !important;
-        overflow: hidden !important;
         display: flex !important;
         flex-direction: column !important;
         -webkit-print-color-adjust: exact !important;
