@@ -31,6 +31,7 @@ interface RangeData {
     bankTransfer: number;
     expenseCash: number;
     expenseMargin: number;
+    extraCash: number;
     expensesByCategory: Record<string, number>;
     expenseList: ExpenseItem[];
     modelBreakdown?: Record<string, number>;
@@ -199,18 +200,19 @@ export default function ReportsPage() {
             ['Generated:', new Date().toLocaleString('en-PK')],
             [],
             ['METRIC', 'AMOUNT (Rs.)'],
-            ['Bikes Sold (Count)', r.sales],
-            ['Bike Sales Profit', r.bikeProfit - r.advanceMargin],
-            ['Advance Bookings Profit', r.advanceMargin],
-            ['Registration Profit', r.regProfit],
+            ['Total Bikes Sold (Count)', r.sales],
+            ['Bike Sales Margin', r.bikeProfit - r.advanceMargin],
+            ['Advance Bookings Margin', r.advanceMargin],
+            ['Registration Margin', r.regProfit],
             ['Workshop / Parts Profit', r.workshopProfit],
+            ['Extra Amount (above standard price)', r.extraCash ?? 0],
             [],
-            ['Total Profit (before expenses)', profitBeforeExp],
-            ['Expenses — from Margin', r.expenseMargin],
+            ['Total Margin Gross (Before Exp.)', profitBeforeExp],
+            ['Margin Expenses', r.expenseMargin],
             ['Expenses — from Cash', r.expenseCash],
-            ['Total Expenses', totalAllExp],
+            ['Total Expenses (cash + margin)', totalAllExp],
             [],
-            ['Net Profit (after margin expenses)', r.profit],
+            ['Net Margin (bike margin − margin exp.)', totalNetProfit],
             [],
             ['--- EXPENSE BREAKDOWN BY CATEGORY ---', ''],
             ...Object.entries(r.expensesByCategory ?? {}).map(([cat, amt]) => [cat, amt]),
@@ -367,21 +369,45 @@ export default function ReportsPage() {
                         {/* ── Profit Summary ── */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
                             <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid var(--color-success)' }}>
-                                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.4rem' }}>Bikes Sold</div>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.4rem' }}>Total Bikes Sold</div>
                                 <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-success)', lineHeight: 1 }}>{r?.sales ?? 0}</div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>units</div>
                             </div>
 
-                            <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #10b981' }}>
-                                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.4rem' }}>Bike Profit</div>
-                                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981', lineHeight: 1 }}>Rs. {((r?.bikeProfit ?? 0) - (r?.advanceMargin ?? 0)).toLocaleString()}</div>
-                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>from bike sales</div>
+                            <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #06b6d4' }}>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.4rem' }}>Total Margin Gross (Before Exp.)</div>
+                                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#06b6d4', lineHeight: 1 }}>Rs. {profitBeforeExp.toLocaleString()}</div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>bike + reg + workshop</div>
+                            </div>
+
+                            <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #ef4444' }}>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.4rem' }}>Margin Expenses</div>
+                                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ef4444', lineHeight: 1 }}>Rs. {(r?.expenseMargin ?? 0).toLocaleString()}</div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>deducted from margin</div>
+                            </div>
+
+                            <div className="card" style={{ padding: '1.25rem', borderLeft: `4px solid ${totalNetProfit >= 0 ? '#10b981' : '#ef4444'}` }}>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.4rem' }}>Net Margin</div>
+                                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: totalNetProfit >= 0 ? '#10b981' : '#ef4444', lineHeight: 1 }}>Rs. {totalNetProfit.toLocaleString()}</div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>bike margin − margin exp.</div>
+                            </div>
+
+                            <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #f59e0b' }}>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.4rem' }}>Extra Amount</div>
+                                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f59e0b', lineHeight: 1 }}>Rs. {(r?.extraCash ?? 0).toLocaleString()}</div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>received above standard price</div>
                             </div>
 
                             <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #8b5cf6' }}>
-                                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.4rem' }}>Reg Profit</div>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.4rem' }}>Registration Margin</div>
                                 <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#8b5cf6', lineHeight: 1 }}>Rs. {(r?.regProfit ?? 0).toLocaleString()}</div>
-                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>from registration</div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>charged − actual cost</div>
+                            </div>
+
+                            <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #10b981' }}>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.4rem' }}>Bike Sales Margin</div>
+                                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981', lineHeight: 1 }}>Rs. {((r?.bikeProfit ?? 0) - (r?.advanceMargin ?? 0)).toLocaleString()}</div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>from bike sales only</div>
                             </div>
 
                             <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #f59e0b' }}>
@@ -390,22 +416,10 @@ export default function ReportsPage() {
                                 <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>parts + service</div>
                             </div>
 
-                            <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #06b6d4' }}>
-                                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.4rem' }}>Profit Before Exp.</div>
-                                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#06b6d4', lineHeight: 1 }}>Rs. {profitBeforeExp.toLocaleString()}</div>
-                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>before deductions</div>
-                            </div>
-
                             <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #ef4444' }}>
                                 <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.4rem' }}>Total Expenses</div>
                                 <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ef4444', lineHeight: 1 }}>Rs. {totalAllExp.toLocaleString()}</div>
-                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>all categories</div>
-                            </div>
-
-                            <div className="card" style={{ padding: '1.25rem', borderLeft: `4px solid ${(r?.profit ?? 0) >= 0 ? '#10b981' : '#ef4444'}`, gridColumn: 'span 1' }}>
-                                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.4rem' }}>Net Profit</div>
-                                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: totalNetProfit >= 0 ? '#10b981' : '#ef4444', lineHeight: 1 }}>Rs. {totalNetProfit.toLocaleString()}</div>
-                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>after margin expenses</div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>cash + margin combined</div>
                             </div>
                         </div>
 
