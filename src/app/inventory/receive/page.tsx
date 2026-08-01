@@ -304,11 +304,17 @@ export default function ReceiveInventoryPage() {
                 setDate(new Date().toISOString().split('T')[0]);
                 setBikes([{ id: '1', orderNumber: '', model: '', color: '', engineNumber: '', chassisNumber: '', purchasePrice: '' }]);
             } else {
-                const error = await response.json();
-                showToast(`Error: ${error.message || 'Failed to save delivery order'}`, 'error');
+                let message = 'Failed to save delivery order';
+                try {
+                    const error = await response.json();
+                    message = error.message || message;
+                } catch {
+                    message = `Server error (${response.status}). Try submitting a smaller batch of bikes.`;
+                }
+                showToast(`Error: ${message}`, 'error');
             }
         } catch (error) {
-            showToast('Failed to submit delivery order. Please ensure the database is running.', 'error');
+            showToast('Could not reach the server — check your internet connection and try again.', 'error');
             console.error(error);
         } finally {
             setIsSubmitting(false);
