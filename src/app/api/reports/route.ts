@@ -209,7 +209,7 @@ export async function GET(request: NextRequest) {
         const rangeBikeProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).bikeProfit, 0) + rangeAdvanceMargin + khataMarginInRange;
         const rangeRegProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).regProfit, 0);
         // Extra = amount received above standard price (per bike; bikes sold at/below standard contribute 0, never negative)
-        const rangeExtraCash = filteredSales.reduce((s, sale: any) => {
+        const rangeExtraCashFromSales = filteredSales.reduce((s, sale: any) => {
             const model = sale.bikeId?.model || '';
             const standardPrice = BIKE_STANDARD_PRICES[model] || Number(sale.price || 0);
             const totalReceived = sale.paymentMode === 'CREDIT'
@@ -217,6 +217,14 @@ export async function GET(request: NextRequest) {
                 : (Number(sale.receivedCash || 0) + Number(sale.bankTransferAmount || 0)) || Number(sale.price || 0);
             return s + Math.max(0, totalReceived - standardPrice);
         }, 0);
+        // Extra from Khata stock given above the item's base margin (works for both the retail-price-referenced
+        // formula and the book-price-referenced one, since baseMargin is stored as 0 for the book-price models —
+        // so totalMargin - baseMargin always isolates the "above expected price" portion either way)
+        const rangeExtraCashFromKhata = (allKhataParties as any[]).flatMap(p => p.transactions || [])
+            .filter((t: any) => t.type === 'STOCK_GIVEN' && new Date(t.date) >= filterStartDate && new Date(t.date) < filterEndDate)
+            .flatMap((t: any) => t.items || [])
+            .reduce((s: number, item: any) => s + Math.max(0, Number(item.totalMargin || 0) - Number(item.quantity || 0) * Number(item.baseMargin || 0)), 0);
+        const rangeExtraCash = rangeExtraCashFromSales + rangeExtraCashFromKhata;
 
         // ── Range: workshop ────────────────────────────────────────────────────
         const rangeWorkshopRevenue = filteredServices.reduce((s, svc: any) => s + Number(svc.totalAmount || 0), 0);
