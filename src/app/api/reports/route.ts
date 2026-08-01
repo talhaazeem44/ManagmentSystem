@@ -176,7 +176,13 @@ export async function GET(request: NextRequest) {
         const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || 0), 0) + rangeAdvanceCash + creditPaymentsInRange;
         const rangeRegistration = filteredSales.reduce((s, sale: any) => s + Number(sale.registrationCost || 0), 0);
         const rangeBankTransfer = filteredSales.reduce((s, sale: any) => s + Number(sale.bankTransferAmount || 0), 0);
-        const rangeTotalCashIn = rangeCashReceived + rangeRegistration;
+
+        // Cash payments received from Khata dealers paying down their balance
+        const rangeKhataCashReceived = (allKhataParties as any[]).flatMap(p => p.transactions || [])
+            .filter((t: any) => t.type === 'PAYMENT' && t.paymentMode === 'CASH' && new Date(t.date) >= filterStartDate && new Date(t.date) < filterEndDate)
+            .reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
+
+        const rangeTotalCashIn = rangeCashReceived + rangeRegistration + rangeKhataCashReceived;
         const rangeCashToDeposit = filteredSales.reduce((s, sale: any) => {
             const model = sale.bikeId?.model || '';
             return s + Number(sale.bikeId?.purchasePrice || BIKE_BOOK_PRICES[model] || 0);
@@ -329,6 +335,7 @@ export async function GET(request: NextRequest) {
                 workshopProfit: rangeWorkshopProfit,
                 profit: rangeProfit,
                 cashReceived: rangeCashReceived,
+                khataCashReceived: rangeKhataCashReceived,
                 registrationCollected: rangeRegistration,
                 totalCashIn: rangeTotalCashIn,
                 bankTransfer: rangeBankTransfer,
