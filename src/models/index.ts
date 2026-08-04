@@ -366,6 +366,9 @@ export interface IKhataItem {
     standardPrice: number;
     baseMargin: number;
     totalMargin: number;
+    bikeId?: mongoose.Types.ObjectId | string;
+    engineNumber?: string;
+    chassisNumber?: string;
 }
 
 export interface IKhataTransaction {
@@ -404,6 +407,9 @@ const KhataTransactionSchema = new Schema<IKhataTransaction>({
         standardPrice: { type: Number },
         baseMargin: { type: Number },
         totalMargin: { type: Number },
+        bikeId: { type: Schema.Types.ObjectId, ref: 'Bike' },
+        engineNumber: { type: String },
+        chassisNumber: { type: String },
     }],
     paymentMode: { type: String, enum: ['CASH', 'BANK_TRANSFER', 'CREDIT'] },
     note: { type: String },

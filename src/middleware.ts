@@ -12,9 +12,7 @@ export async function middleware(request: NextRequest) {
     const isScratchPage = pathname.startsWith('/scratch');
     const isWorkshopPage = pathname.startsWith('/workshop');
     const isWorkshopApi = pathname.startsWith('/api/workshop');
-
     const isApiSeedStock = pathname.startsWith('/api/seed-stock');
-
     const isSetup = pathname === '/setup' || pathname.startsWith('/api/setup');
 
     if (isApiAuth || isApiUsers || isScratchPage || isApiSeedStock || isSetup) {

@@ -15,6 +15,17 @@ interface KhataItem {
     standardPrice: number;
     baseMargin: number;
     totalMargin: number;
+    bikeId?: string;
+    engineNumber?: string;
+    chassisNumber?: string;
+}
+
+interface AvailableBike {
+    id: string;
+    model: string;
+    color: string;
+    engineNumber: string;
+    chassisNumber: string;
 }
 
 interface KhataTransaction {
@@ -46,10 +57,126 @@ interface BikeRow {
     model: string;
     quantity: string;
     pricePerUnit: string;
+    bikeId?: string;
+    engineNumber?: string;
+    chassisNumber?: string;
+    bikeSearch: string;
 }
 
 const emptyPaymentForm = { amount: '', paymentMode: 'CASH' as 'CASH' | 'BANK_TRANSFER' | 'CREDIT', note: '', date: '' };
-const newBikeRow = (): BikeRow => ({ key: Math.random().toString(36).slice(2), model: '', quantity: '1', pricePerUnit: '' });
+const newBikeRow = (): BikeRow => ({ key: Math.random().toString(36).slice(2), model: '', quantity: '1', pricePerUnit: '', bikeSearch: '' });
+
+interface ComputedRow { stdPrice: number; baseMargin: number; marginPerBike: number; rowTotal: number; rowMargin: number }
+
+function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
+    rows: BikeRow[];
+    setRows: React.Dispatch<React.SetStateAction<BikeRow[]>>;
+    computeRow: (row: BikeRow) => ComputedRow;
+    availableBikes: AvailableBike[];
+}) {
+    const updateField = (key: string, field: keyof BikeRow, value: string) =>
+        setRows(rs => rs.map(r => r.key === key ? { ...r, [field]: value } : r));
+
+    const selectBike = (key: string, bike: AvailableBike) =>
+        setRows(rs => rs.map(r => r.key === key ? {
+            ...r, bikeId: bike.id, engineNumber: bike.engineNumber, chassisNumber: bike.chassisNumber,
+            model: bike.model, quantity: '1', bikeSearch: '',
+        } : r));
+
+    const clearBike = (key: string) =>
+        setRows(rs => rs.map(r => r.key === key ? { ...r, bikeId: undefined, engineNumber: undefined, chassisNumber: undefined } : r));
+
+    const removeRow = (key: string) => setRows(rs => rs.filter(r => r.key !== key));
+
+    return (
+        <div style={{ overflowX: 'auto', marginBottom: '0.75rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                <thead>
+                    <tr style={{ borderBottom: '2px solid var(--color-border)', background: 'var(--color-bg-elevated)' }}>
+                        {['Model', 'Bike (Engine/Chassis)', 'Qty', 'Price / Bike (PKR)', 'Std Price', 'Margin / Bike', 'Row Total', ''].map(h => (
+                            <th key={h} style={{ padding: '7px 8px', textAlign: (h === 'Model' || h === 'Bike (Engine/Chassis)' || h === '') ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows.map(row => {
+                        const c = computeRow(row);
+                        const searchQuery = row.bikeSearch.trim().toLowerCase();
+                        const matches = searchQuery
+                            ? availableBikes.filter(b =>
+                                (b.engineNumber?.toLowerCase().includes(searchQuery) || b.chassisNumber?.toLowerCase().includes(searchQuery))
+                                && (!row.model || b.model === row.model)
+                            ).slice(0, 6)
+                            : [];
+                        return (
+                            <tr key={row.key} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                <td style={{ padding: '6px 8px', minWidth: '130px' }}>
+                                    <select className="select" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem' }}
+                                        value={row.model} disabled={!!row.bikeId}
+                                        onChange={e => updateField(row.key, 'model', e.target.value)}>
+                                        <option value="">Select model</option>
+                                        {HONDA_BIKE_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
+                                    </select>
+                                </td>
+                                <td style={{ padding: '6px 8px', minWidth: '170px', position: 'relative' }}>
+                                    {row.bikeId ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '6px', padding: '0.3rem 0.5rem' }}>
+                                            <span style={{ flex: 1 }}>{row.engineNumber} / {row.chassisNumber}</span>
+                                            <button type="button" onClick={() => clearBike(row.key)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700 }}>✕</button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <input type="text" className="input" placeholder="Search engine/chassis..."
+                                                style={{ fontSize: '0.78rem', padding: '0.3rem 0.5rem', width: '150px' }}
+                                                value={row.bikeSearch}
+                                                onChange={e => updateField(row.key, 'bikeSearch', e.target.value)} />
+                                            {matches.length > 0 && (
+                                                <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 10, background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: '6px', marginTop: '2px', minWidth: '220px', maxHeight: '200px', overflowY: 'auto' }}>
+                                                    {matches.map(b => (
+                                                        <div key={b.id} onClick={() => selectBike(row.key, b)}
+                                                            style={{ padding: '0.4rem 0.6rem', cursor: 'pointer', fontSize: '0.75rem', borderBottom: '1px solid var(--color-border)' }}>
+                                                            {b.model} - {b.color} | {b.engineNumber} / {b.chassisNumber}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </td>
+                                <td style={{ padding: '6px 8px', minWidth: '70px' }}>
+                                    <input type="number" min="1" className="input" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '60px', textAlign: 'right' }}
+                                        value={row.quantity} disabled={!!row.bikeId}
+                                        onChange={e => updateField(row.key, 'quantity', e.target.value)} />
+                                </td>
+                                <td style={{ padding: '6px 8px', minWidth: '130px' }}>
+                                    <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '110px', textAlign: 'right' }}
+                                        placeholder={row.model ? String(getKhataMargin(row.model, 0).referencePrice || '') : '0'}
+                                        value={row.pricePerUnit}
+                                        onChange={e => updateField(row.key, 'pricePerUnit', e.target.value)} />
+                                </td>
+                                <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+                                    {row.model ? `Rs. ${c.stdPrice.toLocaleString()}` : '—'}
+                                </td>
+                                <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: c.marginPerBike >= 0 ? '#10b981' : '#ef4444', whiteSpace: 'nowrap' }}>
+                                    {row.model && row.pricePerUnit ? `Rs. ${c.marginPerBike.toLocaleString()}` : '—'}
+                                </td>
+                                <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                                    {row.model && row.pricePerUnit && row.quantity ? `Rs. ${c.rowTotal.toLocaleString()}` : '—'}
+                                </td>
+                                <td style={{ padding: '6px 8px' }}>
+                                    {rows.length > 1 && (
+                                        <button onClick={() => removeRow(row.key)}
+                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1rem', padding: '0.2rem' }}>✕</button>
+                                    )}
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+    );
+}
 
 export default function KhataDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -72,6 +199,21 @@ export default function KhataDetailPage() {
     const [editNote, setEditNote] = useState('');
     const [editPaymentForm, setEditPaymentForm] = useState({ amount: '', paymentMode: 'CASH' as 'CASH' | 'BANK_TRANSFER' | 'CREDIT', note: '', date: '' });
     const [editSubmitting, setEditSubmitting] = useState(false);
+    const [availableBikes, setAvailableBikes] = useState<AvailableBike[]>([]);
+
+    const fetchAvailableBikes = async () => {
+        try {
+            const res = await fetch('/api/bikes');
+            if (res.ok) {
+                const data = await res.json();
+                setAvailableBikes(
+                    data
+                        .filter((b: any) => b.status === 'AVAILABLE')
+                        .map((b: any) => ({ id: b.id || b._id, model: b.model, color: b.color, engineNumber: b.engineNumber, chassisNumber: b.chassisNumber }))
+                );
+            }
+        } catch { /* ignore */ }
+    };
 
     const fetchParty = async () => {
         setLoading(true);
@@ -83,7 +225,7 @@ export default function KhataDetailPage() {
         }
     };
 
-    useEffect(() => { fetchParty(); }, [id]);
+    useEffect(() => { fetchParty(); fetchAvailableBikes(); }, [id]);
 
     // Compute derived values for each bike row
     const computeRow = (row: BikeRow) => {
@@ -110,7 +252,10 @@ export default function KhataDetailPage() {
         try {
             const items = bikeRows
                 .filter(r => r.model && Number(r.quantity) > 0 && Number(r.pricePerUnit) > 0)
-                .map(r => ({ model: r.model, quantity: Number(r.quantity), pricePerUnit: Number(r.pricePerUnit) }));
+                .map(r => ({
+                    model: r.model, quantity: Number(r.quantity), pricePerUnit: Number(r.pricePerUnit),
+                    bikeId: r.bikeId, engineNumber: r.engineNumber, chassisNumber: r.chassisNumber,
+                }));
 
             const res = await fetch(`/api/khata/${id}/transactions`, {
                 method: 'POST',
@@ -125,6 +270,7 @@ export default function KhataDetailPage() {
                 setOtherAmount('');
                 setActiveForm(null);
                 fetchParty();
+                fetchAvailableBikes();
             } else {
                 const err = await res.json();
                 showToast(err.message || 'Failed', 'error');
@@ -169,17 +315,13 @@ export default function KhataDetailPage() {
             showToast('Entry deleted', 'success');
             setConfirmDeleteTx(null);
             fetchParty();
+            fetchAvailableBikes();
         } else {
-            showToast('Delete failed', 'error');
+            const err = await res.json().catch(() => ({}));
+            showToast(err.message || 'Delete failed', 'error');
             setConfirmDeleteTx(null);
         }
     };
-
-    const updateRow = (key: string, field: keyof BikeRow, value: string) =>
-        setBikeRows(rows => rows.map(r => r.key === key ? { ...r, [field]: value } : r));
-
-    const updateEditRow = (key: string, field: keyof BikeRow, value: string) =>
-        setEditBikeRows(rows => rows.map(r => r.key === key ? { ...r, [field]: value } : r));
 
     const handleEditInit = (tx: KhataTransaction) => {
         setActiveForm(null);
@@ -194,7 +336,16 @@ export default function KhataDetailPage() {
             });
         } else {
             const rows: BikeRow[] = (tx.items && tx.items.length > 0)
-                ? tx.items.map(item => ({ key: Math.random().toString(36).slice(2), model: item.model, quantity: String(item.quantity), pricePerUnit: String(item.pricePerUnit) }))
+                ? tx.items.map(item => ({
+                    key: Math.random().toString(36).slice(2),
+                    model: item.model,
+                    quantity: String(item.quantity),
+                    pricePerUnit: String(item.pricePerUnit),
+                    bikeId: item.bikeId,
+                    engineNumber: item.engineNumber,
+                    chassisNumber: item.chassisNumber,
+                    bikeSearch: '',
+                }))
                 : [newBikeRow()];
             setEditBikeRows(rows);
             setEditOtherAmount('');
@@ -214,7 +365,10 @@ export default function KhataDetailPage() {
             } else {
                 const items = editBikeRows
                     .filter(r => r.model && Number(r.quantity) > 0 && Number(r.pricePerUnit) > 0)
-                    .map(r => ({ model: r.model, quantity: Number(r.quantity), pricePerUnit: Number(r.pricePerUnit) }));
+                    .map(r => ({
+                        model: r.model, quantity: Number(r.quantity), pricePerUnit: Number(r.pricePerUnit),
+                        bikeId: r.bikeId, engineNumber: r.engineNumber, chassisNumber: r.chassisNumber,
+                    }));
                 body = { type: 'STOCK_GIVEN', items, otherAmount: Number(editOtherAmount) || 0, date: editDate || undefined, note: editNote };
             }
             const res = await fetch(`/api/khata/${id}/transactions/${editingTx._id}`, {
@@ -226,6 +380,7 @@ export default function KhataDetailPage() {
                 showToast('Entry updated', 'success');
                 setEditingTx(null);
                 fetchParty();
+                fetchAvailableBikes();
             } else {
                 const err = await res.json();
                 showToast(err.message || 'Failed to update', 'error');
@@ -341,60 +496,7 @@ export default function KhataDetailPage() {
                         <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>📦 Add Stock Given</h3>
 
                         {/* Bike rows table */}
-                        <div style={{ overflowX: 'auto', marginBottom: '0.75rem' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
-                                <thead>
-                                    <tr style={{ borderBottom: '2px solid var(--color-border)', background: 'var(--color-bg-elevated)' }}>
-                                        {['Model', 'Qty', 'Price / Bike (PKR)', 'Std Price', 'Margin / Bike', 'Row Total', ''].map(h => (
-                                            <th key={h} style={{ padding: '7px 8px', textAlign: h === 'Model' || h === '' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {bikeRows.map(row => {
-                                        const c = computeRow(row);
-                                        return (
-                                            <tr key={row.key} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                                                <td style={{ padding: '6px 8px', minWidth: '130px' }}>
-                                                    <select className="select" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem' }}
-                                                        value={row.model}
-                                                        onChange={e => updateRow(row.key, 'model', e.target.value)}>
-                                                        <option value="">Select model</option>
-                                                        {HONDA_BIKE_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
-                                                    </select>
-                                                </td>
-                                                <td style={{ padding: '6px 8px', minWidth: '70px' }}>
-                                                    <input type="number" min="1" className="input" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '60px', textAlign: 'right' }}
-                                                        value={row.quantity}
-                                                        onChange={e => updateRow(row.key, 'quantity', e.target.value)} />
-                                                </td>
-                                                <td style={{ padding: '6px 8px', minWidth: '130px' }}>
-                                                    <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '110px', textAlign: 'right' }}
-                                                        placeholder={row.model ? String(getKhataMargin(row.model, 0).referencePrice || '') : '0'}
-                                                        value={row.pricePerUnit}
-                                                        onChange={e => updateRow(row.key, 'pricePerUnit', e.target.value)} />
-                                                </td>
-                                                <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-                                                    {row.model ? `Rs. ${(c.stdPrice).toLocaleString()}` : '—'}
-                                                </td>
-                                                <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: c.marginPerBike >= 0 ? '#10b981' : '#ef4444', whiteSpace: 'nowrap' }}>
-                                                    {row.model && row.pricePerUnit ? `Rs. ${c.marginPerBike.toLocaleString()}` : '—'}
-                                                </td>
-                                                <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                                                    {row.model && row.pricePerUnit && row.quantity ? `Rs. ${c.rowTotal.toLocaleString()}` : '—'}
-                                                </td>
-                                                <td style={{ padding: '6px 8px' }}>
-                                                    {bikeRows.length > 1 && (
-                                                        <button onClick={() => setBikeRows(r => r.filter(x => x.key !== row.key))}
-                                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1rem', padding: '0.2rem' }}>✕</button>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                        <BikeRowsTable rows={bikeRows} setRows={setBikeRows} computeRow={computeRow} availableBikes={availableBikes} />
 
                         <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.3rem 0.75rem', marginBottom: '1rem' }}
                             onClick={() => setBikeRows(r => [...r, newBikeRow()])}>
@@ -539,57 +641,7 @@ export default function KhataDetailPage() {
                             </div>
                         ) : (
                             <>
-                                <div style={{ overflowX: 'auto', marginBottom: '0.75rem' }}>
-                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
-                                        <thead>
-                                            <tr style={{ borderBottom: '2px solid var(--color-border)', background: 'var(--color-bg-elevated)' }}>
-                                                {['Model', 'Qty', 'Price / Bike (PKR)', 'Std Price', 'Margin / Bike', 'Row Total', ''].map(h => (
-                                                    <th key={h} style={{ padding: '7px 8px', textAlign: h === 'Model' || h === '' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {editBikeRows.map(row => {
-                                                const c = computeRow(row);
-                                                return (
-                                                    <tr key={row.key} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                                                        <td style={{ padding: '6px 8px', minWidth: '130px' }}>
-                                                            <select className="select" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem' }}
-                                                                value={row.model} onChange={e => updateEditRow(row.key, 'model', e.target.value)}>
-                                                                <option value="">Select model</option>
-                                                                {HONDA_BIKE_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
-                                                            </select>
-                                                        </td>
-                                                        <td style={{ padding: '6px 8px', minWidth: '70px' }}>
-                                                            <input type="number" min="1" className="input" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '60px', textAlign: 'right' }}
-                                                                value={row.quantity} onChange={e => updateEditRow(row.key, 'quantity', e.target.value)} />
-                                                        </td>
-                                                        <td style={{ padding: '6px 8px', minWidth: '130px' }}>
-                                                            <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '110px', textAlign: 'right' }}
-                                                                placeholder={row.model ? String(getKhataMargin(row.model, 0).referencePrice || '') : '0'}
-                                                                value={row.pricePerUnit} onChange={e => updateEditRow(row.key, 'pricePerUnit', e.target.value)} />
-                                                        </td>
-                                                        <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-                                                            {row.model ? `Rs. ${c.stdPrice.toLocaleString()}` : '—'}
-                                                        </td>
-                                                        <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: c.marginPerBike >= 0 ? '#10b981' : '#ef4444', whiteSpace: 'nowrap' }}>
-                                                            {row.model && row.pricePerUnit ? `Rs. ${c.marginPerBike.toLocaleString()}` : '—'}
-                                                        </td>
-                                                        <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                                                            {row.model && row.pricePerUnit && row.quantity ? `Rs. ${c.rowTotal.toLocaleString()}` : '—'}
-                                                        </td>
-                                                        <td style={{ padding: '6px 8px' }}>
-                                                            {editBikeRows.length > 1 && (
-                                                                <button onClick={() => setEditBikeRows(r => r.filter(x => x.key !== row.key))}
-                                                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1rem', padding: '0.2rem' }}>✕</button>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                <BikeRowsTable rows={editBikeRows} setRows={setEditBikeRows} computeRow={computeRow} availableBikes={availableBikes} />
                                 <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.3rem 0.75rem', marginBottom: '1rem' }}
                                     onClick={() => setEditBikeRows(r => [...r, newBikeRow()])}>+ Add Bike</button>
 
@@ -658,7 +710,10 @@ export default function KhataDetailPage() {
                                                     {tx.items && tx.items.length > 0 && (
                                                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.15rem' }}>
                                                             {tx.items.map((item, i) => (
-                                                                <span key={i}>{i > 0 ? ' · ' : ''}{item.quantity}× {item.model} @ Rs.{item.pricePerUnit.toLocaleString()}</span>
+                                                                <span key={i}>
+                                                                    {i > 0 ? ' · ' : ''}{item.quantity}× {item.model} @ Rs.{item.pricePerUnit.toLocaleString()}
+                                                                    {item.engineNumber && ` (${item.engineNumber} / ${item.chassisNumber})`}
+                                                                </span>
                                                             ))}
                                                         </div>
                                                     )}
