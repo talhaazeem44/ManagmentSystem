@@ -74,8 +74,18 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
     computeRow: (row: BikeRow) => ComputedRow;
     availableBikes: AvailableBike[];
 }) {
-    const updateField = (key: string, field: keyof BikeRow, value: string) =>
+    // The table wrapper below needs overflow-x:auto for small screens, which per the CSS spec forces
+    // overflow-y to clip too — that silently hides a position:absolute suggestion dropdown. Rendering it
+    // as position:fixed (using the input's live screen coordinates) escapes that clipping entirely.
+    const [dropdownRect, setDropdownRect] = useState<Record<string, { top: number; left: number; width: number }>>({});
+
+    const updateField = (key: string, field: keyof BikeRow, value: string, el?: HTMLInputElement) => {
         setRows(rs => rs.map(r => r.key === key ? { ...r, [field]: value } : r));
+        if (el) {
+            const rect = el.getBoundingClientRect();
+            setDropdownRect(d => ({ ...d, [key]: { top: rect.bottom, left: rect.left, width: rect.width } }));
+        }
+    };
 
     const selectBike = (key: string, bike: AvailableBike) =>
         setRows(rs => rs.map(r => r.key === key ? {
@@ -102,12 +112,14 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
                     {rows.map(row => {
                         const c = computeRow(row);
                         const searchQuery = row.bikeSearch.trim().toLowerCase();
+                        // Model is a hint, not a hard filter — a mismatched model string (casing, spacing)
+                        // on an older inventory record would otherwise silently hide an otherwise-correct match.
                         const matches = searchQuery
                             ? availableBikes.filter(b =>
-                                (b.engineNumber?.toLowerCase().includes(searchQuery) || b.chassisNumber?.toLowerCase().includes(searchQuery))
-                                && (!row.model || b.model === row.model)
-                            ).slice(0, 6)
+                                b.engineNumber?.toLowerCase().includes(searchQuery) || b.chassisNumber?.toLowerCase().includes(searchQuery)
+                            ).slice(0, 8)
                             : [];
+                        const rect = dropdownRect[row.key];
                         return (
                             <tr key={row.key} style={{ borderBottom: '1px solid var(--color-border)' }}>
                                 <td style={{ padding: '6px 8px', minWidth: '130px' }}>
@@ -129,15 +141,20 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
                                             <input type="text" className="input" placeholder="Search engine/chassis..."
                                                 style={{ fontSize: '0.78rem', padding: '0.3rem 0.5rem', width: '150px' }}
                                                 value={row.bikeSearch}
-                                                onChange={e => updateField(row.key, 'bikeSearch', e.target.value)} />
-                                            {matches.length > 0 && (
-                                                <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 10, background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: '6px', marginTop: '2px', minWidth: '220px', maxHeight: '200px', overflowY: 'auto' }}>
-                                                    {matches.map(b => (
+                                                onChange={e => updateField(row.key, 'bikeSearch', e.target.value, e.target)}
+                                                onFocus={e => updateField(row.key, 'bikeSearch', row.bikeSearch, e.target)} />
+                                            {searchQuery && rect && (
+                                                <div style={{ position: 'fixed', top: rect.top + 2, left: rect.left, zIndex: 1000, background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: '6px', minWidth: Math.max(rect.width, 240), maxHeight: '220px', overflowY: 'auto', boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>
+                                                    {matches.length > 0 ? matches.map(b => (
                                                         <div key={b.id} onClick={() => selectBike(row.key, b)}
                                                             style={{ padding: '0.4rem 0.6rem', cursor: 'pointer', fontSize: '0.75rem', borderBottom: '1px solid var(--color-border)' }}>
                                                             {b.model} - {b.color} | {b.engineNumber} / {b.chassisNumber}
                                                         </div>
-                                                    ))}
+                                                    )) : (
+                                                        <div style={{ padding: '0.5rem 0.6rem', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                                            No available bike matches &quot;{row.bikeSearch}&quot;
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </>
