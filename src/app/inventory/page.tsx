@@ -20,6 +20,14 @@ interface Bike {
     };
 }
 
+interface DeliveryOrderRow {
+    _id: string;
+    doNumber: string;
+    date: string;
+    dealerName: string;
+    bikes: { status: string }[];
+}
+
 export default function InventoryPage() {
     const { toasts, showToast, removeToast } = useToast();
     const [bikes, setBikes] = useState<Bike[]>([]);
@@ -30,9 +38,13 @@ export default function InventoryPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [editingBike, setEditingBike] = useState<Bike | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [deliveryOrders, setDeliveryOrders] = useState<DeliveryOrderRow[]>([]);
+    const [showDOs, setShowDOs] = useState(false);
+    const [deletingDoId, setDeletingDoId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchBikes();
+        fetchDeliveryOrders();
     }, []);
 
     const fetchBikes = async () => {
@@ -46,6 +58,36 @@ export default function InventoryPage() {
             console.error('Failed to fetch bikes:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchDeliveryOrders = async () => {
+        try {
+            const response = await fetch('/api/delivery-orders');
+            if (response.ok) setDeliveryOrders(await response.json());
+        } catch (error) {
+            console.error('Failed to fetch delivery orders:', error);
+        }
+    };
+
+    const handleDeleteDO = async (doId: string, doNumber: string, bikeCount: number) => {
+        if (!confirm(`Delete delivery order "${doNumber}" and all ${bikeCount} bike(s) under it? This can't be undone.`)) return;
+        setDeletingDoId(doId);
+        try {
+            const response = await fetch(`/api/delivery-orders/${doId}`, { method: 'DELETE' });
+            if (response.ok) {
+                showToast('Delivery order deleted', 'success');
+                fetchDeliveryOrders();
+                fetchBikes();
+            } else {
+                const error = await response.json();
+                showToast(error.message || 'Failed to delete', 'error');
+            }
+        } catch (error) {
+            console.error('Delete DO error:', error);
+            showToast('An error occurred while deleting', 'error');
+        } finally {
+            setDeletingDoId(null);
         }
     };
 
@@ -126,6 +168,58 @@ export default function InventoryPage() {
                         <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Sold</p>
                         <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-error)' }}>{stats.sold}</p>
                     </div>
+                </div>
+
+                <div className="card" style={{ marginBottom: 'var(--spacing-lg)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                        onClick={() => setShowDOs(s => !s)}>
+                        <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>📋 Delivery Orders ({deliveryOrders.length})</h2>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{showDOs ? '▲ Hide' : '▼ Show'}</span>
+                    </div>
+                    {showDOs && (
+                        <div style={{ marginTop: 'var(--spacing-lg)', overflowX: 'auto' }}>
+                            {deliveryOrders.length === 0 ? (
+                                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>No delivery orders yet.</p>
+                            ) : (
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                    <thead>
+                                        <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                                            {['DO Number', 'Date', 'Dealer', 'Total', 'Available', 'Sold', ''].map(h => (
+                                                <th key={h} style={{ padding: '6px 8px', textAlign: h === 'DO Number' || h === 'Dealer' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {deliveryOrders.map(order => {
+                                            const total = order.bikes?.length ?? 0;
+                                            const sold = order.bikes?.filter(b => b.status === 'SOLD').length ?? 0;
+                                            const available = total - sold;
+                                            return (
+                                                <tr key={order._id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                                    <td style={{ padding: '6px 8px', fontWeight: 600 }}>{order.doNumber}</td>
+                                                    <td style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>{new Date(order.date).toLocaleDateString()}</td>
+                                                    <td style={{ padding: '6px 8px' }}>{order.dealerName}</td>
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right' }}>{total}</td>
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--color-success)' }}>{available}</td>
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right', color: sold > 0 ? 'var(--color-error)' : 'var(--color-text-muted)' }}>{sold}</td>
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+                                                        <button
+                                                            onClick={() => handleDeleteDO(order._id, order.doNumber, total)}
+                                                            disabled={sold > 0 || deletingDoId === order._id}
+                                                            title={sold > 0 ? 'Cannot delete — some bikes from this DO are already sold' : 'Delete this delivery order and its bikes'}
+                                                            className="btn"
+                                                            style={{ padding: '0.25rem 0.6rem', fontSize: '0.72rem', background: sold > 0 ? 'var(--color-bg-elevated)' : 'rgba(239,68,68,0.1)', color: sold > 0 ? 'var(--color-text-muted)' : '#ef4444', border: sold > 0 ? '1px solid var(--color-border)' : '1px solid rgba(239,68,68,0.3)', cursor: sold > 0 ? 'not-allowed' : 'pointer' }}>
+                                                            {deletingDoId === order._id ? 'Deleting...' : '🗑️ Delete'}
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className="card">

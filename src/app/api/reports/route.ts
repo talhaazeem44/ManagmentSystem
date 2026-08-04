@@ -200,6 +200,21 @@ export async function GET(request: NextRequest) {
             const model = sale.bikeId?.model || 'Unknown';
             modelBreakdown[model] = (modelBreakdown[model] || 0) + 1;
         }
+        // Khata items linked to an actual inventory bike (bikeId set) represent real stock leaving —
+        // count those toward "bikes sold by model" too. Free-form bulk khata rows (no bikeId) aren't
+        // tied to specific inventory and are excluded here.
+        for (const party of allKhataParties as any[]) {
+            for (const tx of party.transactions || []) {
+                if (tx.type !== 'STOCK_GIVEN') continue;
+                const txDate = new Date(tx.date);
+                if (txDate < filterStartDate || txDate >= filterEndDate) continue;
+                for (const item of tx.items || []) {
+                    if (!item.bikeId) continue;
+                    const model = item.model || 'Unknown';
+                    modelBreakdown[model] = (modelBreakdown[model] || 0) + Number(item.quantity || 1);
+                }
+            }
+        }
 
         // Khata dealer sale margins in this date range
         const khataMarginInRange = (allKhataParties as any[]).flatMap(p => p.transactions || [])
@@ -237,6 +252,16 @@ export async function GET(request: NextRequest) {
         for (const sale of allSales as any[]) {
             const model = sale.bikeId?.model || 'Unknown';
             allTimeModelBreakdown[model] = (allTimeModelBreakdown[model] || 0) + 1;
+        }
+        for (const party of allKhataParties as any[]) {
+            for (const tx of party.transactions || []) {
+                if (tx.type !== 'STOCK_GIVEN') continue;
+                for (const item of tx.items || []) {
+                    if (!item.bikeId) continue;
+                    const model = item.model || 'Unknown';
+                    allTimeModelBreakdown[model] = (allTimeModelBreakdown[model] || 0) + Number(item.quantity || 1);
+                }
+            }
         }
         const availableModelBreakdown: Record<string, number> = {};
         for (const bike of bikes as any[]) {

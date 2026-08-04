@@ -144,15 +144,21 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
                                                 onChange={e => updateField(row.key, 'bikeSearch', e.target.value, e.target)}
                                                 onFocus={e => updateField(row.key, 'bikeSearch', row.bikeSearch, e.target)} />
                                             {searchQuery && rect && (
-                                                <div style={{ position: 'fixed', top: rect.top + 2, left: rect.left, zIndex: 1000, background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: '6px', minWidth: Math.max(rect.width, 240), maxHeight: '220px', overflowY: 'auto', boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>
+                                                <div style={{
+                                                    position: 'fixed', top: rect.top + 2, left: rect.left,
+                                                    zIndex: 1000, background: 'var(--color-bg-card)', border: '1px solid var(--color-border)',
+                                                    borderRadius: '6px', width: rect.width,
+                                                    maxHeight: '220px', overflowY: 'auto', overflowX: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                                                }}>
                                                     {matches.length > 0 ? matches.map(b => (
                                                         <div key={b.id} onClick={() => selectBike(row.key, b)}
-                                                            style={{ padding: '0.4rem 0.6rem', cursor: 'pointer', fontSize: '0.75rem', borderBottom: '1px solid var(--color-border)' }}>
-                                                            {b.model} - {b.color} | {b.engineNumber} / {b.chassisNumber}
+                                                            style={{ padding: '0.35rem 0.5rem', cursor: 'pointer', borderBottom: '1px solid var(--color-border)' }}>
+                                                            <div style={{ fontSize: '0.72rem', fontWeight: 600, wordBreak: 'break-all' }}>{b.engineNumber} / {b.chassisNumber}</div>
+                                                            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>{b.model} · {b.color}</div>
                                                         </div>
                                                     )) : (
-                                                        <div style={{ padding: '0.5rem 0.6rem', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                                                            No available bike matches &quot;{row.bikeSearch}&quot;
+                                                        <div style={{ padding: '0.5rem 0.5rem', fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>
+                                                            No match for &quot;{row.bikeSearch}&quot;
                                                         </div>
                                                     )}
                                                 </div>
