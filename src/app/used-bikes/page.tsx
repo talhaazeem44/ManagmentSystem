@@ -85,6 +85,7 @@ export default function UsedBikesPage() {
 
     const handleSell = async (id: string) => {
         setSelling(true);
+        const isEdit = bikes.find(b => b._id === id)?.status === 'SOLD';
         try {
             const res = await fetch(`/api/used-bikes/${id}`, {
                 method: 'PATCH',
@@ -92,7 +93,7 @@ export default function UsedBikesPage() {
                 body: JSON.stringify({ sell: { soldPrice: Number(sellForm.soldPrice), soldDate: sellForm.soldDate, buyerName: sellForm.buyerName } }),
             });
             if (res.ok) {
-                showToast('Resale recorded — margin added', 'success');
+                showToast(isEdit ? 'Sale updated' : 'Resale recorded — margin added', 'success');
                 setSellingId(null);
                 setSellForm(emptySellForm);
                 fetchBikes();
@@ -275,20 +276,25 @@ export default function UsedBikesPage() {
                                                 </span>
                                             </td>
                                             <td style={{ padding: '8px 10px' }}>
-                                                {b.status === 'IN_STOCK' && (
-                                                    confirmDeleteId === b._id ? (
-                                                        <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                                            <button className="btn" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem', background: '#ef4444', color: '#fff', border: 'none' }} onClick={() => handleDelete(b._id)}>Yes</button>
-                                                            <button className="btn btn-secondary" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem' }} onClick={() => setConfirmDeleteId(null)}>No</button>
-                                                        </div>
-                                                    ) : sellingId === b._id ? null : (
-                                                        <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                                            <button className="btn btn-primary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
-                                                                onClick={() => { setSellingId(b._id); setSellForm(emptySellForm); }}>💰 Sell</button>
-                                                            <button className="btn" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }}
-                                                                onClick={() => setConfirmDeleteId(b._id)}>🗑️</button>
-                                                        </div>
-                                                    )
+                                                {confirmDeleteId === b._id ? (
+                                                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                        <button className="btn" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem', background: '#ef4444', color: '#fff', border: 'none' }} onClick={() => handleDelete(b._id)}>Yes</button>
+                                                        <button className="btn btn-secondary" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem' }} onClick={() => setConfirmDeleteId(null)}>No</button>
+                                                    </div>
+                                                ) : sellingId === b._id ? null : b.status === 'IN_STOCK' ? (
+                                                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                        <button className="btn btn-primary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
+                                                            onClick={() => { setSellingId(b._id); setSellForm(emptySellForm); }}>💰 Sell</button>
+                                                        <button className="btn" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }}
+                                                            onClick={() => setConfirmDeleteId(b._id)}>🗑️</button>
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                        <button className="btn" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}
+                                                            onClick={() => { setSellingId(b._id); setSellForm({ soldPrice: String(b.soldPrice ?? ''), soldDate: b.soldDate ? b.soldDate.split('T')[0] : new Date().toISOString().split('T')[0], buyerName: b.buyerName ?? '' }); }}>✏️ Edit</button>
+                                                        <button className="btn" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }}
+                                                            onClick={() => setConfirmDeleteId(b._id)}>🗑️</button>
+                                                    </div>
                                                 )}
                                             </td>
                                         </tr>
@@ -300,7 +306,7 @@ export default function UsedBikesPage() {
                         {sellingId && (
                             <div style={{ padding: '1rem 1.25rem', borderTop: '2px solid var(--color-border)', background: 'var(--color-bg-elevated)' }}>
                                 <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.75rem' }}>
-                                    Record resale — {bikes.find(b => b._id === sellingId)?.model}
+                                    {bikes.find(b => b._id === sellingId)?.status === 'SOLD' ? 'Edit sale' : 'Record resale'} — {bikes.find(b => b._id === sellingId)?.model}
                                 </div>
                                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                                     <div className="form-group" style={{ margin: 0 }}>
@@ -316,7 +322,7 @@ export default function UsedBikesPage() {
                                         <input className="input" value={sellForm.buyerName} onChange={e => setSellForm({ ...sellForm, buyerName: e.target.value })} />
                                     </div>
                                     <button className="btn btn-primary" disabled={selling || !sellForm.soldPrice} onClick={() => handleSell(sellingId)}>
-                                        {selling ? 'Saving...' : '✅ Confirm Sale'}
+                                        {selling ? 'Saving...' : bikes.find(b => b._id === sellingId)?.status === 'SOLD' ? '✅ Save Changes' : '✅ Confirm Sale'}
                                     </button>
                                     <button className="btn btn-secondary" onClick={() => setSellingId(null)}>Cancel</button>
                                 </div>

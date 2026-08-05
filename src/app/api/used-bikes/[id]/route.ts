@@ -14,19 +14,26 @@ export async function PATCH(
         const existing = await UsedBike.findById(id);
         if (!existing) return NextResponse.json({ message: 'Not found' }, { status: 404 });
 
-        // Recording the resale
+        // Recording the resale, or correcting an already-recorded one — same body shape either way
         if (body.sell) {
             const { soldPrice, soldDate, buyerName } = body.sell;
             if (!soldPrice || Number(soldPrice) <= 0) {
                 return NextResponse.json({ message: 'A valid sold price is required' }, { status: 400 });
             }
-            if (existing.status === 'SOLD') {
-                return NextResponse.json({ message: 'Already sold' }, { status: 400 });
-            }
             existing.soldPrice = Number(soldPrice);
             existing.soldDate = soldDate ? new Date(soldDate) : new Date();
             existing.buyerName = buyerName || undefined;
             existing.status = 'SOLD';
+            await existing.save();
+            return NextResponse.json(existing);
+        }
+
+        // Un-selling — puts it back in stock so the sale can be redone or the bike kept
+        if (body.unsell) {
+            existing.status = 'IN_STOCK';
+            existing.soldPrice = undefined;
+            existing.soldDate = undefined;
+            existing.buyerName = undefined;
             await existing.save();
             return NextResponse.json(existing);
         }
@@ -73,13 +80,8 @@ export async function DELETE(
         const existing = await UsedBike.findById(id);
         if (!existing) return NextResponse.json({ message: 'Not found' }, { status: 404 });
 
-        if (existing.status === 'SOLD') {
-            return NextResponse.json(
-                { message: 'Cannot delete — this bike has already been resold and is part of your margin history' },
-                { status: 400 }
-            );
-        }
-
+        // Margin/cash figures are computed live from this record (not cached), so deleting it — even
+        // after resale — correctly removes its contribution from past reports too, no cleanup needed there.
         if (existing.purchaseExpenseId) {
             await Expense.findByIdAndDelete(existing.purchaseExpenseId);
         }
