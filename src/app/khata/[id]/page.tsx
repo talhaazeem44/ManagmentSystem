@@ -53,19 +53,27 @@ interface KhataParty {
     balance: number;
 }
 
+interface BikeSlot {
+    slotKey: string;
+    bikeId?: string;
+    engineNumber?: string;
+    chassisNumber?: string;
+    search: string;
+}
+
 interface BikeRow {
     key: string;
     model: string;
     quantity: string;
     pricePerUnit: string;
-    bikeId?: string;
-    engineNumber?: string;
-    chassisNumber?: string;
-    bikeSearch: string;
+    // One slot per unit — lets a "3x CD70" row link 3 distinct real bikes instead of forcing quantity to 1.
+    // Slots left empty stay as an untracked bulk quantity; only filled slots become inventory-linked items.
+    bikeSlots: BikeSlot[];
 }
 
 const emptyPaymentForm = { amount: '', paymentMode: 'CASH' as 'CASH' | 'BANK_TRANSFER' | 'CREDIT', note: '', date: '' };
-const newBikeRow = (): BikeRow => ({ key: Math.random().toString(36).slice(2), model: '', quantity: '1', pricePerUnit: '', bikeSearch: '' });
+const newBikeSlot = (): BikeSlot => ({ slotKey: Math.random().toString(36).slice(2), search: '' });
+const newBikeRow = (): BikeRow => ({ key: Math.random().toString(36).slice(2), model: '', quantity: '1', pricePerUnit: '', bikeSlots: [newBikeSlot()] });
 
 interface ComputedRow { stdPrice: number; baseMargin: number; marginPerBike: number; rowTotal: number; rowMargin: number }
 
@@ -83,22 +91,53 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
     // listeners or manual re-sync needed, unlike a position:fixed version anchored to viewport coordinates.
     const [dropdownRect, setDropdownRect] = useState<Record<string, { top: number; left: number; width: number }>>({});
 
-    const updateField = (key: string, field: keyof BikeRow, value: string, el?: HTMLInputElement) => {
+    const updateField = (key: string, field: 'model' | 'pricePerUnit', value: string) =>
         setRows(rs => rs.map(r => r.key === key ? { ...r, [field]: value } : r));
+
+    // Changing model invalidates any already-picked bikes in this row (they belong to the old model).
+    const updateModel = (key: string, value: string) =>
+        setRows(rs => rs.map(r => r.key === key ? {
+            ...r, model: value,
+            bikeSlots: r.bikeSlots.map(s => ({ slotKey: s.slotKey, search: '' })),
+        } : r));
+
+    // Resizes bikeSlots to match the new quantity, keeping already-filled slots where possible.
+    const updateQuantity = (key: string, value: string) =>
+        setRows(rs => rs.map(r => {
+            if (r.key !== key) return r;
+            const n = Math.max(1, Number(value) || 1);
+            let slots = r.bikeSlots;
+            if (slots.length < n) slots = [...slots, ...Array.from({ length: n - slots.length }, newBikeSlot)];
+            else if (slots.length > n) slots = slots.slice(0, n);
+            return { ...r, quantity: value, bikeSlots: slots };
+        }));
+
+    const dropdownKey = (rowKey: string, slotKey: string) => `${rowKey}::${slotKey}`;
+
+    const updateSlotSearch = (rowKey: string, slotKey: string, value: string, el?: HTMLInputElement) => {
+        setRows(rs => rs.map(r => r.key !== rowKey ? r : {
+            ...r, bikeSlots: r.bikeSlots.map(s => s.slotKey === slotKey ? { ...s, search: value } : s),
+        }));
         if (el) {
             const rect = el.getBoundingClientRect();
-            setDropdownRect(d => ({ ...d, [key]: { top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, width: rect.width } }));
+            const dk = dropdownKey(rowKey, slotKey);
+            setDropdownRect(d => ({ ...d, [dk]: { top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, width: rect.width } }));
         }
     };
 
-    const selectBike = (key: string, bike: AvailableBike) =>
-        setRows(rs => rs.map(r => r.key === key ? {
-            ...r, bikeId: bike.id, engineNumber: bike.engineNumber, chassisNumber: bike.chassisNumber,
-            model: bike.model, quantity: '1', bikeSearch: '',
-        } : r));
+    const selectSlotBike = (rowKey: string, slotKey: string, bike: AvailableBike) =>
+        setRows(rs => rs.map(r => r.key !== rowKey ? r : {
+            ...r,
+            model: r.model || bike.model,
+            bikeSlots: r.bikeSlots.map(s => s.slotKey === slotKey
+                ? { slotKey, bikeId: bike.id, engineNumber: bike.engineNumber, chassisNumber: bike.chassisNumber, search: '' }
+                : s),
+        }));
 
-    const clearBike = (key: string) =>
-        setRows(rs => rs.map(r => r.key === key ? { ...r, bikeId: undefined, engineNumber: undefined, chassisNumber: undefined } : r));
+    const clearSlotBike = (rowKey: string, slotKey: string) =>
+        setRows(rs => rs.map(r => r.key !== rowKey ? r : {
+            ...r, bikeSlots: r.bikeSlots.map(s => s.slotKey === slotKey ? { slotKey, search: '' } : s),
+        }));
 
     const removeRow = (key: string) => setRows(rs => rs.filter(r => r.key !== key));
 
@@ -107,93 +146,108 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                 <thead>
                     <tr style={{ borderBottom: '2px solid var(--color-border)', background: 'var(--color-bg-elevated)' }}>
-                        {['Model', 'Bike (Engine/Chassis)', 'Qty', 'Price / Bike (PKR)', 'Std Price', 'Margin / Bike', 'Row Total', ''].map(h => (
-                            <th key={h} style={{ padding: '7px 8px', textAlign: (h === 'Model' || h === 'Bike (Engine/Chassis)' || h === '') ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+                        {['Model', 'Bike (Engine/Chassis) — one per unit', 'Qty', 'Price / Bike (PKR)', 'Std Price', 'Margin / Bike', 'Row Total', ''].map(h => (
+                            <th key={h} style={{ padding: '7px 8px', textAlign: (h.startsWith('Model') || h.startsWith('Bike') || h === '') ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
                     </tr>
                 </thead>
                 <tbody>
                     {rows.map(row => {
                         const c = computeRow(row);
-                        const searchQuery = row.bikeSearch.trim().toLowerCase();
-                        // Model is a hint, not a hard filter — a mismatched model string (casing, spacing)
-                        // on an older inventory record would otherwise silently hide an otherwise-correct match.
-                        const matches = searchQuery
-                            ? availableBikes.filter(b =>
-                                b.engineNumber?.toLowerCase().includes(searchQuery) || b.chassisNumber?.toLowerCase().includes(searchQuery)
-                            ).slice(0, 8)
-                            : [];
-                        const rect = dropdownRect[row.key];
+                        const filledCount = row.bikeSlots.filter(s => s.bikeId).length;
                         return (
                             <tr key={row.key} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                                <td style={{ padding: '6px 8px', minWidth: '130px' }}>
+                                <td style={{ padding: '6px 8px', minWidth: '130px', verticalAlign: 'top' }}>
                                     <select className="select" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem' }}
-                                        value={row.model} disabled={!!row.bikeId}
-                                        onChange={e => updateField(row.key, 'model', e.target.value)}>
+                                        value={row.model}
+                                        onChange={e => updateModel(row.key, e.target.value)}>
                                         <option value="">Select model</option>
                                         {HONDA_BIKE_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
                                     </select>
                                 </td>
-                                <td style={{ padding: '6px 8px', minWidth: '170px', maxWidth: '210px', position: 'relative' }}>
-                                    {row.bikeId ? (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '6px', padding: '0.3rem 0.5rem', maxWidth: '100%' }}>
-                                            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={`${row.engineNumber} / ${row.chassisNumber}`}>
-                                                {row.engineNumber} / {row.chassisNumber}
-                                            </span>
-                                            <button type="button" onClick={() => clearBike(row.key)} style={{ flexShrink: 0, background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700 }}>✕</button>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <input type="text" className="input" placeholder="Search engine/chassis..."
-                                                style={{ fontSize: '0.78rem', padding: '0.3rem 0.5rem', width: '150px' }}
-                                                value={row.bikeSearch}
-                                                onChange={e => updateField(row.key, 'bikeSearch', e.target.value, e.target)}
-                                                onFocus={e => updateField(row.key, 'bikeSearch', row.bikeSearch, e.target)} />
-                                            {searchQuery && rect && typeof document !== 'undefined' && createPortal(
-                                                <div style={{
-                                                    position: 'absolute', top: rect.top + 2, left: rect.left,
-                                                    zIndex: 1000, background: 'var(--color-bg-card)', border: '1px solid var(--color-border)',
-                                                    borderRadius: '6px', width: rect.width,
-                                                    maxHeight: '220px', overflowY: 'auto', overflowX: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                                                }}>
-                                                    {matches.length > 0 ? matches.map(b => (
-                                                        <div key={b.id} onClick={() => selectBike(row.key, b)}
-                                                            style={{ padding: '0.35rem 0.5rem', cursor: 'pointer', borderBottom: '1px solid var(--color-border)' }}>
-                                                            <div style={{ fontSize: '0.72rem', fontWeight: 600, wordBreak: 'break-all' }}>{b.engineNumber} / {b.chassisNumber}</div>
-                                                            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>{b.model} · {b.color}</div>
-                                                        </div>
-                                                    )) : (
-                                                        <div style={{ padding: '0.5rem 0.5rem', fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>
-                                                            No match for &quot;{row.bikeSearch}&quot;
-                                                        </div>
+                                <td style={{ padding: '6px 8px', minWidth: '170px', maxWidth: '210px', verticalAlign: 'top' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                        {row.bikeSlots.map((slot, i) => {
+                                            const searchQuery = slot.search.trim().toLowerCase();
+                                            const matches = searchQuery
+                                                ? availableBikes.filter(b =>
+                                                    b.engineNumber?.toLowerCase().includes(searchQuery) || b.chassisNumber?.toLowerCase().includes(searchQuery)
+                                                ).slice(0, 8)
+                                                : [];
+                                            const rect = dropdownRect[dropdownKey(row.key, slot.slotKey)];
+                                            return (
+                                                <div key={slot.slotKey} style={{ position: 'relative' }}>
+                                                    {row.bikeSlots.length > 1 && (
+                                                        <span style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)' }}>Unit {i + 1}</span>
                                                     )}
-                                                </div>,
-                                                document.body
-                                            )}
-                                        </>
-                                    )}
+                                                    {slot.bikeId ? (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '6px', padding: '0.25rem 0.5rem', maxWidth: '100%' }}>
+                                                            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={`${slot.engineNumber} / ${slot.chassisNumber}`}>
+                                                                {slot.engineNumber} / {slot.chassisNumber}
+                                                            </span>
+                                                            <button type="button" onClick={() => clearSlotBike(row.key, slot.slotKey)} style={{ flexShrink: 0, background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700 }}>✕</button>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <input type="text" className="input" placeholder="Search engine/chassis..."
+                                                                style={{ fontSize: '0.78rem', padding: '0.3rem 0.5rem', width: '150px' }}
+                                                                value={slot.search}
+                                                                onChange={e => updateSlotSearch(row.key, slot.slotKey, e.target.value, e.target)}
+                                                                onFocus={e => updateSlotSearch(row.key, slot.slotKey, slot.search, e.target)} />
+                                                            {searchQuery && rect && typeof document !== 'undefined' && createPortal(
+                                                                <div style={{
+                                                                    position: 'absolute', top: rect.top + 2, left: rect.left,
+                                                                    zIndex: 1000, background: 'var(--color-bg-card)', border: '1px solid var(--color-border)',
+                                                                    borderRadius: '6px', width: rect.width,
+                                                                    maxHeight: '220px', overflowY: 'auto', overflowX: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                                                                }}>
+                                                                    {matches.length > 0 ? matches.map(b => (
+                                                                        <div key={b.id} onClick={() => selectSlotBike(row.key, slot.slotKey, b)}
+                                                                            style={{ padding: '0.35rem 0.5rem', cursor: 'pointer', borderBottom: '1px solid var(--color-border)' }}>
+                                                                            <div style={{ fontSize: '0.72rem', fontWeight: 600, wordBreak: 'break-all' }}>{b.engineNumber} / {b.chassisNumber}</div>
+                                                                            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>{b.model} · {b.color}</div>
+                                                                        </div>
+                                                                    )) : (
+                                                                        <div style={{ padding: '0.5rem 0.5rem', fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>
+                                                                            No match for &quot;{slot.search}&quot;
+                                                                        </div>
+                                                                    )}
+                                                                </div>,
+                                                                document.body
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                        {filledCount > 0 && filledCount < row.bikeSlots.length && (
+                                            <span style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)' }}>
+                                                {filledCount}/{row.bikeSlots.length} units linked — rest stay untracked
+                                            </span>
+                                        )}
+                                    </div>
                                 </td>
-                                <td style={{ padding: '6px 8px', minWidth: '70px' }}>
+                                <td style={{ padding: '6px 8px', minWidth: '70px', verticalAlign: 'top' }}>
                                     <input type="number" min="1" className="input" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '60px', textAlign: 'right' }}
-                                        value={row.quantity} disabled={!!row.bikeId}
-                                        onChange={e => updateField(row.key, 'quantity', e.target.value)} />
+                                        value={row.quantity}
+                                        onChange={e => updateQuantity(row.key, e.target.value)} />
                                 </td>
-                                <td style={{ padding: '6px 8px', minWidth: '130px' }}>
+                                <td style={{ padding: '6px 8px', minWidth: '130px', verticalAlign: 'top' }}>
                                     <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '110px', textAlign: 'right' }}
                                         placeholder={row.model ? String(getKhataMargin(row.model, 0).referencePrice || '') : '0'}
                                         value={row.pricePerUnit}
                                         onChange={e => updateField(row.key, 'pricePerUnit', e.target.value)} />
                                 </td>
-                                <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+                                <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--color-text-muted)', whiteSpace: 'nowrap', verticalAlign: 'top' }}>
                                     {row.model ? `Rs. ${c.stdPrice.toLocaleString()}` : '—'}
                                 </td>
-                                <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: c.marginPerBike >= 0 ? '#10b981' : '#ef4444', whiteSpace: 'nowrap' }}>
+                                <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: c.marginPerBike >= 0 ? '#10b981' : '#ef4444', whiteSpace: 'nowrap', verticalAlign: 'top' }}>
                                     {row.model && row.pricePerUnit ? `Rs. ${c.marginPerBike.toLocaleString()}` : '—'}
                                 </td>
-                                <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                                <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap', verticalAlign: 'top' }}>
                                     {row.model && row.pricePerUnit && row.quantity ? `Rs. ${c.rowTotal.toLocaleString()}` : '—'}
                                 </td>
-                                <td style={{ padding: '6px 8px' }}>
+                                <td style={{ padding: '6px 8px', verticalAlign: 'top' }}>
                                     {rows.length > 1 && (
                                         <button onClick={() => removeRow(row.key)}
                                             style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1rem', padding: '0.2rem' }}>✕</button>
@@ -272,6 +326,25 @@ export default function KhataDetailPage() {
     };
 
     const isRowComplete = (r: BikeRow) => !!r.model && Number(r.quantity) > 0 && Number(r.pricePerUnit) > 0;
+
+    // Splits each row into one item per linked bike (quantity 1, tied to inventory) plus a single bulk
+    // item for whatever units in that row weren't assigned a specific bike — so "3x CD70" with 2 units
+    // picked from stock becomes 2 tracked items + 1 untracked item of quantity 1, instead of forcing the
+    // whole row to be all-or-nothing.
+    const expandRowsToItems = (rowsToExpand: BikeRow[]) =>
+        rowsToExpand
+            .filter(isRowComplete)
+            .flatMap(r => {
+                const pricePerUnit = Number(r.pricePerUnit);
+                const linked = r.bikeSlots.filter(s => s.bikeId);
+                const items = linked.map(s => ({
+                    model: r.model, quantity: 1, pricePerUnit,
+                    bikeId: s.bikeId, engineNumber: s.engineNumber, chassisNumber: s.chassisNumber,
+                }));
+                const remaining = Number(r.quantity) - linked.length;
+                if (remaining > 0) items.push({ model: r.model, quantity: remaining, pricePerUnit, bikeId: undefined, engineNumber: undefined, chassisNumber: undefined });
+                return items;
+            });
     const bikesTotal = bikeRows.filter(isRowComplete).reduce((s, r) => s + computeRow(r).rowTotal, 0);
     const totalAmount = bikesTotal + (Number(otherAmount) || 0);
     const totalMargin = bikeRows.filter(isRowComplete).reduce((s, r) => s + computeRow(r).rowMargin, 0);
@@ -280,12 +353,7 @@ export default function KhataDetailPage() {
     const handleAddStock = async () => {
         setSubmitting(true);
         try {
-            const items = bikeRows
-                .filter(r => r.model && Number(r.quantity) > 0 && Number(r.pricePerUnit) > 0)
-                .map(r => ({
-                    model: r.model, quantity: Number(r.quantity), pricePerUnit: Number(r.pricePerUnit),
-                    bikeId: r.bikeId, engineNumber: r.engineNumber, chassisNumber: r.chassisNumber,
-                }));
+            const items = expandRowsToItems(bikeRows);
 
             const res = await fetch(`/api/khata/${id}/transactions`, {
                 method: 'POST',
@@ -371,10 +439,11 @@ export default function KhataDetailPage() {
                     model: item.model,
                     quantity: String(item.quantity),
                     pricePerUnit: String(item.pricePerUnit),
-                    bikeId: item.bikeId,
-                    engineNumber: item.engineNumber,
-                    chassisNumber: item.chassisNumber,
-                    bikeSearch: '',
+                    // Bike-linked items are always stored as quantity 1 — one slot. Bulk (untracked) items
+                    // can have quantity > 1, so give them one empty slot per unit up front, ready to fill.
+                    bikeSlots: item.bikeId
+                        ? [{ slotKey: Math.random().toString(36).slice(2), bikeId: item.bikeId, engineNumber: item.engineNumber, chassisNumber: item.chassisNumber, search: '' }]
+                        : Array.from({ length: Math.max(1, item.quantity) }, newBikeSlot),
                 }))
                 : [newBikeRow()];
             setEditBikeRows(rows);
@@ -393,12 +462,7 @@ export default function KhataDetailPage() {
             if (editingTx.type === 'PAYMENT') {
                 body = { type: 'PAYMENT', amount: Number(editPaymentForm.amount), paymentMode: editPaymentForm.paymentMode, note: editPaymentForm.note, date: editPaymentForm.date || undefined };
             } else {
-                const items = editBikeRows
-                    .filter(r => r.model && Number(r.quantity) > 0 && Number(r.pricePerUnit) > 0)
-                    .map(r => ({
-                        model: r.model, quantity: Number(r.quantity), pricePerUnit: Number(r.pricePerUnit),
-                        bikeId: r.bikeId, engineNumber: r.engineNumber, chassisNumber: r.chassisNumber,
-                    }));
+                const items = expandRowsToItems(editBikeRows);
                 body = { type: 'STOCK_GIVEN', items, otherAmount: Number(editOtherAmount) || 0, date: editDate || undefined, note: editNote };
             }
             const res = await fetch(`/api/khata/${id}/transactions/${editingTx._id}`, {
