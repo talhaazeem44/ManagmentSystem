@@ -57,34 +57,38 @@ export async function PATCH(
                 return NextResponse.json({ message: 'Invalid payment index' }, { status: 400 });
             }
             const removedAmount = Number(payments[idx].amount || 0);
+            const removedMode = payments[idx].paymentMode === 'BANK_TRANSFER' ? 'BANK_TRANSFER' : 'CASH';
             payments.splice(idx, 1);
-            const sale = await Sale.findByIdAndUpdate(
-                id,
-                {
-                    $set: {
-                        payments,
-                        receivedCash: Math.max(0, Number(existing.receivedCash || 0) - removedAmount),
-                        balance: Number(existing.balance || 0) + removedAmount,
-                    },
-                },
-                { new: true }
-            );
+            const set: any = {
+                payments,
+                balance: Number(existing.balance || 0) + removedAmount,
+            };
+            if (removedMode === 'BANK_TRANSFER') {
+                set.bankTransferAmount = Math.max(0, Number(existing.bankTransferAmount || 0) - removedAmount);
+            } else {
+                set.receivedCash = Math.max(0, Number(existing.receivedCash || 0) - removedAmount);
+            }
+            const sale = await Sale.findByIdAndUpdate(id, { $set: set }, { new: true });
             return NextResponse.json(sale);
         }
 
         // Special handler: record a payment against a credit sale
         if (body.addPayment) {
-            const { amount, date, note } = body.addPayment;
+            const { amount, date, note, paymentMode } = body.addPayment;
+            const mode: 'CASH' | 'BANK_TRANSFER' = paymentMode === 'BANK_TRANSFER' ? 'BANK_TRANSFER' : 'CASH';
             const paymentAmount = Number(amount);
             const existing = await Sale.findById(id);
             if (!existing) return NextResponse.json({ message: 'Sale not found' }, { status: 404 });
 
             const newBalance = Math.max(0, Number(existing.balance ?? 0) - paymentAmount);
+            // Route the amount to receivedCash or bankTransferAmount based on how it actually came in,
+            // so cash-in-hand only ever reflects physical cash, never bank transfers.
+            const incField = mode === 'BANK_TRANSFER' ? 'bankTransferAmount' : 'receivedCash';
             const sale = await Sale.findByIdAndUpdate(
                 id,
                 {
-                    $push: { payments: { amount: paymentAmount, date: new Date(date), note: note || '' } },
-                    $inc: { receivedCash: paymentAmount },
+                    $push: { payments: { amount: paymentAmount, date: new Date(date), note: note || '', paymentMode: mode } },
+                    $inc: { [incField]: paymentAmount },
                     $set: { balance: newBalance },
                 },
                 { new: true }

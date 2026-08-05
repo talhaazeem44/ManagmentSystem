@@ -163,20 +163,26 @@ export async function GET(request: NextRequest) {
             amount: Number(e.amount || 0),
         }));
 
-        // Sum credit payments recorded within this date range (for sales whose saleDate may be outside the range)
-        const creditPaymentsInRange = (creditPaymentSales as any[]).reduce((total, sale) => {
-            // Exclude sales already counted via saleDate filter to avoid double-counting
+        // Sum credit payments recorded within this date range (for sales whose saleDate may be outside the range).
+        // Only CASH-mode payments count toward cash received — bank-transferred ones are tracked separately
+        // so cash-in-hand never includes money that never physically arrived as cash.
+        const crossBoundaryPayments = (creditPaymentSales as any[]).flatMap(sale => {
             const alreadyCounted = (filteredSales as any[]).some((fs: any) => fs._id.toString() === sale._id.toString());
-            if (alreadyCounted) return total;
-            const rangePayments = (sale.payments || []).filter((p: any) => {
+            if (alreadyCounted) return [];
+            return (sale.payments || []).filter((p: any) => {
                 const pd = new Date(p.date);
                 return pd >= filterStartDate && pd < filterEndDate;
             });
-            return total + rangePayments.reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
-        }, 0);
+        });
+        const creditPaymentsInRange = crossBoundaryPayments
+            .filter((p: any) => p.paymentMode !== 'BANK_TRANSFER')
+            .reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+        const creditBankPaymentsInRange = crossBoundaryPayments
+            .filter((p: any) => p.paymentMode === 'BANK_TRANSFER')
+            .reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
         const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || 0), 0) + rangeAdvanceCash + creditPaymentsInRange;
         const rangeRegistration = filteredSales.reduce((s, sale: any) => s + Number(sale.registrationCost || 0), 0);
-        const rangeBankTransfer = filteredSales.reduce((s, sale: any) => s + Number(sale.bankTransferAmount || 0), 0);
+        const rangeBankTransfer = filteredSales.reduce((s, sale: any) => s + Number(sale.bankTransferAmount || 0), 0) + creditBankPaymentsInRange;
 
         // Cash payments received from Khata dealers paying down their balance
         const rangeKhataCashReceived = (allKhataParties as any[]).flatMap(p => p.transactions || [])

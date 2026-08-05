@@ -52,6 +52,7 @@ interface Payment {
     amount: number;
     date: string;
     note?: string;
+    paymentMode?: 'CASH' | 'BANK_TRANSFER';
 }
 
 interface Sale {
@@ -89,7 +90,7 @@ export default function ReceiptPage() {
     const params = useParams();
     const [sale, setSale] = useState<Sale | null>(null);
     const [loading, setLoading] = useState(true);
-    const [payForm, setPayForm] = useState({ amount: '', date: today(), note: '' });
+    const [payForm, setPayForm] = useState({ amount: '', date: today(), note: '', paymentMode: 'CASH' as 'CASH' | 'BANK_TRANSFER' });
     const [paying, setPaying] = useState(false);
     const [payError, setPayError] = useState('');
     const [deletingPayment, setDeletingPayment] = useState<number | null>(null);
@@ -134,10 +135,10 @@ export default function ReceiptPage() {
             const res = await fetch(`/api/sales/${sale.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ addPayment: { amount: amt, date: payForm.date, note: payForm.note } }),
+                body: JSON.stringify({ addPayment: { amount: amt, date: payForm.date, note: payForm.note, paymentMode: payForm.paymentMode } }),
             });
             if (res.ok) {
-                setPayForm({ amount: '', date: today(), note: '' });
+                setPayForm({ amount: '', date: today(), note: '', paymentMode: 'CASH' });
                 await fetchSale(sale.id);
             } else {
                 const err = await res.json();
@@ -188,12 +189,20 @@ export default function ReceiptPage() {
                             </div>
                         </div>
                         <form onSubmit={handlePayment}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: '0.75rem', alignItems: 'end' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 2fr auto', gap: '0.75rem', alignItems: 'end' }}>
                                 <div>
                                     <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.3rem' }}>Amount (Rs.) *</label>
                                     <input type="text" inputMode="decimal" className="input" placeholder="50,000"
                                         value={payForm.amount}
                                         onChange={e => { setPayForm({ ...payForm, amount: e.target.value }); setPayError(''); }} required />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.3rem' }}>Payment Method *</label>
+                                    <select className="select" value={payForm.paymentMode}
+                                        onChange={e => setPayForm({ ...payForm, paymentMode: e.target.value as 'CASH' | 'BANK_TRANSFER' })}>
+                                        <option value="CASH">Cash</option>
+                                        <option value="BANK_TRANSFER">Bank Transfer</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.3rem' }}>Payment Date *</label>
@@ -226,6 +235,9 @@ export default function ReceiptPage() {
                                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '8px', flexWrap: 'wrap', gap: '0.5rem' }}>
                                     <div>
                                         <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Rs. {Number(p.amount).toLocaleString()}</span>
+                                        <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, marginLeft: '0.5rem', background: p.paymentMode === 'BANK_TRANSFER' ? 'rgba(59,130,246,0.12)' : 'rgba(16,185,129,0.12)', color: p.paymentMode === 'BANK_TRANSFER' ? '#3b82f6' : '#10b981' }}>
+                                            {p.paymentMode === 'BANK_TRANSFER' ? 'BANK' : 'CASH'}
+                                        </span>
                                         {p.note && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>{p.note}</span>}
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

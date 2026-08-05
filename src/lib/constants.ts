@@ -29,7 +29,7 @@ export const BIKE_BOOK_PRICES: Record<string, number> = {
 
 // Standard selling price to customer
 export const BIKE_STANDARD_PRICES: Record<string, number> = {
-    'CD70': 160000,
+    'CD70': 159900,
     'DREAM': 171000,
     'PRIDOR': 212000,
     'CG 125': 238500,

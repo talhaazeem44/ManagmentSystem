@@ -96,6 +96,7 @@ export interface IPayment {
     amount: number;
     date: Date;
     note?: string;
+    paymentMode?: 'CASH' | 'BANK_TRANSFER';
 }
 
 export interface ISale {
@@ -122,6 +123,7 @@ const PaymentSchema = new Schema<IPayment>({
     amount: { type: Number, required: true },
     date: { type: Date, default: Date.now },
     note: { type: String },
+    paymentMode: { type: String, enum: ['CASH', 'BANK_TRANSFER'], default: 'CASH' },
 }, { _id: false });
 
 const SaleSchema = new Schema<ISale>({
