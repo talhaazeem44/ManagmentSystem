@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import Toast from '@/components/Toast';
@@ -77,7 +77,10 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
     // The table wrapper below needs overflow-x:auto for small screens, which per the CSS spec forces
     // overflow-y to clip too — that silently hides a position:absolute suggestion dropdown. Rendering it
     // as position:fixed (using the input's live screen coordinates) escapes that clipping entirely.
+    // Because it's fixed, its position must be kept in sync while the page scrolls — otherwise it stays
+    // frozen at the coordinates captured when typing started, drifting away from the input as you scroll.
     const [dropdownRect, setDropdownRect] = useState<Record<string, { top: number; left: number; width: number }>>({});
+    const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
 
     const updateField = (key: string, field: keyof BikeRow, value: string, el?: HTMLInputElement) => {
         setRows(rs => rs.map(r => r.key === key ? { ...r, [field]: value } : r));
@@ -86,6 +89,31 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
             setDropdownRect(d => ({ ...d, [key]: { top: rect.bottom, left: rect.left, width: rect.width } }));
         }
     };
+
+    const activeSearchKeys = rows.filter(r => r.bikeSearch.trim() && !r.bikeId).map(r => r.key).join('|');
+    useEffect(() => {
+        if (!activeSearchKeys) return;
+        const keys = activeSearchKeys.split('|');
+        const syncPositions = () => {
+            setDropdownRect(d => {
+                const next = { ...d };
+                for (const key of keys) {
+                    const el = inputRefs.current.get(key);
+                    if (el) {
+                        const rect = el.getBoundingClientRect();
+                        next[key] = { top: rect.bottom, left: rect.left, width: rect.width };
+                    }
+                }
+                return next;
+            });
+        };
+        window.addEventListener('scroll', syncPositions, true);
+        window.addEventListener('resize', syncPositions);
+        return () => {
+            window.removeEventListener('scroll', syncPositions, true);
+            window.removeEventListener('resize', syncPositions);
+        };
+    }, [activeSearchKeys]);
 
     const selectBike = (key: string, bike: AvailableBike) =>
         setRows(rs => rs.map(r => r.key === key ? {
@@ -141,6 +169,7 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
                                     ) : (
                                         <>
                                             <input type="text" className="input" placeholder="Search engine/chassis..."
+                                                ref={el => { if (el) inputRefs.current.set(row.key, el); else inputRefs.current.delete(row.key); }}
                                                 style={{ fontSize: '0.78rem', padding: '0.3rem 0.5rem', width: '150px' }}
                                                 value={row.bikeSearch}
                                                 onChange={e => updateField(row.key, 'bikeSearch', e.target.value, e.target)}
