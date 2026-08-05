@@ -130,11 +130,13 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
                                         {HONDA_BIKE_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
                                     </select>
                                 </td>
-                                <td style={{ padding: '6px 8px', minWidth: '170px', position: 'relative' }}>
+                                <td style={{ padding: '6px 8px', minWidth: '170px', maxWidth: '210px', position: 'relative' }}>
                                     {row.bikeId ? (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '6px', padding: '0.3rem 0.5rem' }}>
-                                            <span style={{ flex: 1 }}>{row.engineNumber} / {row.chassisNumber}</span>
-                                            <button type="button" onClick={() => clearBike(row.key)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700 }}>✕</button>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '6px', padding: '0.3rem 0.5rem', maxWidth: '100%' }}>
+                                            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={`${row.engineNumber} / ${row.chassisNumber}`}>
+                                                {row.engineNumber} / {row.chassisNumber}
+                                            </span>
+                                            <button type="button" onClick={() => clearBike(row.key)} style={{ flexShrink: 0, background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700 }}>✕</button>
                                         </div>
                                     ) : (
                                         <>
