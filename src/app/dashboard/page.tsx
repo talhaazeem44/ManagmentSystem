@@ -39,6 +39,7 @@ interface Stats {
         sales: number; revenue: number; workshopRevenue: number; workshopProfit: number;
         bikeProfit: number; regProfit: number; profit: number; cashReceived: number;
         khataCashReceived: number;
+        usedBikeCashReceived: number;
         registrationCollected: number; totalCashIn: number; cashToDeposit: number;
         expenseCash: number; cashInHand: number; bankTransfer: number; cashDepositOnly: number;
         modelBreakdown?: Record<string, number>;
@@ -179,7 +180,7 @@ export default function DashboardPage() {
     const handleDeposit = async () => {
         if (!sinceStats) return;
         const extra = Number(manualCash) || 0;
-        const cashInHand = Math.max(0, (sinceStats.cashReceived ?? 0) + (sinceStats.khataCashReceived ?? 0) - (sinceStats.expenseCash ?? 0) + extra);
+        const cashInHand = Math.max(0, (sinceStats.cashReceived ?? 0) + (sinceStats.khataCashReceived ?? 0) + (sinceStats.usedBikeCashReceived ?? 0) - (sinceStats.expenseCash ?? 0) + extra);
         if (!confirm(`Mark Rs. ${cashInHand.toLocaleString()} as deposited to bank? Cash counter resets to zero.`)) return;
         setDepositing(true);
         try {
@@ -447,7 +448,7 @@ export default function DashboardPage() {
                                 )}
                             </div>
                             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b', marginBottom: '0.75rem' }}>
-                                Rs. {Math.max(0, (sinceStats?.cashReceived ?? 0) + (sinceStats?.khataCashReceived ?? 0) - (sinceStats?.expenseCash ?? 0) + (Number(manualCash) || 0)).toLocaleString()}
+                                Rs. {Math.max(0, (sinceStats?.cashReceived ?? 0) + (sinceStats?.khataCashReceived ?? 0) + (sinceStats?.usedBikeCashReceived ?? 0) - (sinceStats?.expenseCash ?? 0) + (Number(manualCash) || 0)).toLocaleString()}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.82rem', marginBottom: '0.75rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -458,6 +459,12 @@ export default function DashboardPage() {
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <span style={{ color: 'var(--color-text-muted)' }}>Khata Payments</span>
                                         <strong style={{ color: '#10b981' }}>+ Rs. {(sinceStats?.khataCashReceived ?? 0).toLocaleString()}</strong>
+                                    </div>
+                                )}
+                                {(sinceStats?.usedBikeCashReceived ?? 0) > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: 'var(--color-text-muted)' }}>Used Bike Resale</span>
+                                        <strong style={{ color: '#10b981' }}>+ Rs. {(sinceStats?.usedBikeCashReceived ?? 0).toLocaleString()}</strong>
                                     </div>
                                 )}
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -498,9 +505,9 @@ export default function DashboardPage() {
                             </div>
                             <button
                                 onClick={handleDeposit}
-                                disabled={depositing || Math.max(0, (sinceStats?.cashReceived ?? 0) + (sinceStats?.khataCashReceived ?? 0) - (sinceStats?.expenseCash ?? 0) + (Number(manualCash) || 0)) <= 0}
+                                disabled={depositing || Math.max(0, (sinceStats?.cashReceived ?? 0) + (sinceStats?.khataCashReceived ?? 0) + (sinceStats?.usedBikeCashReceived ?? 0) - (sinceStats?.expenseCash ?? 0) + (Number(manualCash) || 0)) <= 0}
                                 className="btn"
-                                style={{ width: '100%', fontSize: '0.8rem', padding: '0.4rem', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 700, cursor: depositing ? 'not-allowed' : 'pointer', opacity: Math.max(0, (sinceStats?.cashReceived ?? 0) + (sinceStats?.khataCashReceived ?? 0) - (sinceStats?.expenseCash ?? 0)) <= 0 ? 0.5 : 1 }}>
+                                style={{ width: '100%', fontSize: '0.8rem', padding: '0.4rem', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 700, cursor: depositing ? 'not-allowed' : 'pointer', opacity: Math.max(0, (sinceStats?.cashReceived ?? 0) + (sinceStats?.khataCashReceived ?? 0) + (sinceStats?.usedBikeCashReceived ?? 0) - (sinceStats?.expenseCash ?? 0)) <= 0 ? 0.5 : 1 }}>
                                 {depositing ? '⏳ Saving...' : '🏦 Deposit to Bank'}
                             </button>
                         </div>

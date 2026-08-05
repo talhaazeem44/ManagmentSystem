@@ -424,3 +424,48 @@ const KhataPartySchema = new Schema<IKhataParty>({
 }, { timestamps: true });
 
 export const KhataParty: Model<IKhataParty> = models.KhataParty || mongoose.model<IKhataParty>('KhataParty', KhataPartySchema);
+
+// ── Used Bikes (buyback / trade-in) ─────────────────────────────────────────────
+// A customer sells a previously-purchased bike back to the dealership; it's later resold.
+// Purchase cost is deducted from cash or margin (same choice as an Expense); resale profit
+// (soldPrice - purchasePrice) is added back into margin, and the resale amount into cash received.
+export interface IUsedBike {
+    _id?: string;
+    model: string;
+    color?: string;
+    engineNumber?: string;
+    chassisNumber?: string;
+    sourceName?: string;
+    sourceMobile?: string;
+    purchasePrice: number;
+    purchaseDate: Date;
+    purchaseDeductFrom: 'CASH' | 'MARGIN';
+    purchaseExpenseId?: mongoose.Types.ObjectId | string;
+    status: 'IN_STOCK' | 'SOLD';
+    soldPrice?: number;
+    soldDate?: Date;
+    buyerName?: string;
+    notes?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+const UsedBikeSchema = new Schema<IUsedBike>({
+    model: { type: String, required: true },
+    color: { type: String },
+    engineNumber: { type: String },
+    chassisNumber: { type: String },
+    sourceName: { type: String },
+    sourceMobile: { type: String },
+    purchasePrice: { type: Number, required: true },
+    purchaseDate: { type: Date, default: Date.now },
+    purchaseDeductFrom: { type: String, enum: ['CASH', 'MARGIN'], required: true },
+    purchaseExpenseId: { type: Schema.Types.ObjectId, ref: 'Expense' },
+    status: { type: String, enum: ['IN_STOCK', 'SOLD'], default: 'IN_STOCK' },
+    soldPrice: { type: Number },
+    soldDate: { type: Date },
+    buyerName: { type: String },
+    notes: { type: String },
+}, { timestamps: true });
+
+export const UsedBike: Model<IUsedBike> = models.UsedBike || mongoose.model<IUsedBike>('UsedBike', UsedBikeSchema);

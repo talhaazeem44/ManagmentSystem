@@ -565,6 +565,41 @@ export default function KhataDetailPage() {
         XLSX.writeFile(wb, `${party.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-statement.xlsx`);
     };
 
+    // Single-entry receipt for one transaction — same rule as the full statement: details and
+    // remaining balance only, no margin, safe to hand straight to the dealer.
+    const exportTransaction = async (tx: KhataTransaction & { runningBalance: number }) => {
+        if (!party) return;
+        const XLSX = await import('xlsx');
+
+        const rows: (string | number)[][] = [
+            [`${party.name} — Transaction Receipt`],
+            ...(party.mobile ? [[`Mobile: ${party.mobile}`]] : []),
+            [`Date: ${new Date(tx.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'long', year: 'numeric' })}`],
+            [],
+            ['Details', tx.description],
+        ];
+
+        if (tx.items && tx.items.length > 0) {
+            rows.push([]);
+            rows.push(['Model', 'Qty', 'Price / Unit (Rs.)', 'Total (Rs.)']);
+            for (const item of tx.items) {
+                const label = item.model + (item.engineNumber ? ` (${item.engineNumber} / ${item.chassisNumber})` : '');
+                rows.push([label, item.quantity, item.pricePerUnit, item.quantity * item.pricePerUnit]);
+            }
+        }
+
+        rows.push([]);
+        rows.push([tx.type === 'STOCK_GIVEN' ? 'Stock Given Amount (Rs.)' : 'Payment Received (Rs.)', tx.amount]);
+        rows.push(['Balance After This Entry (Rs.)', tx.runningBalance]);
+
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        ws['!cols'] = [{ wch: 34 }, { wch: 16 }, { wch: 18 }, { wch: 16 }];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Transaction');
+        const dateStr = new Date(tx.date).toISOString().slice(0, 10);
+        XLSX.writeFile(wb, `${party.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${dateStr}-${tx.type.toLowerCase()}.xlsx`);
+    };
+
     if (loading) return <DashboardLayout><Loader size={160} text="Loading khata..." fullPage /></DashboardLayout>;
     if (!party) return <DashboardLayout><div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>Party not found.</div></DashboardLayout>;
 
@@ -875,6 +910,8 @@ export default function KhataDetailPage() {
                                                         </div>
                                                     ) : (
                                                         <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                            <button className="btn" title="Export this transaction" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)' }}
+                                                                onClick={() => exportTransaction(tx)}>📤</button>
                                                             <button className="btn" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}
                                                                 onClick={() => { setConfirmDeleteTx(null); handleEditInit(tx); }}>✏️</button>
                                                             <button className="btn" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }} onClick={() => { setEditingTx(null); setConfirmDeleteTx(tx._id); }}>🗑️</button>

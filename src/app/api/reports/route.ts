@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { Sale, Bike, DeliveryOrder, ServiceSale, Customer, AdvanceBooking, Expense, KhataParty } from '@/models';
+import { Sale, Bike, DeliveryOrder, ServiceSale, Customer, AdvanceBooking, Expense, KhataParty, UsedBike } from '@/models';
 import {
     BIKE_BOOK_PRICES,
     BIKE_STANDARD_PRICES,
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
 
         const [filteredSales, filteredServices, allSales, allServices,
             totalBikesCount, availableBikesCount, soldBikesCount,
-            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings, filteredAdvanceBookings, filteredExpenses, weekSales, creditPaymentSales, allKhataParties] = await Promise.all([
+            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings, filteredAdvanceBookings, filteredExpenses, weekSales, creditPaymentSales, allKhataParties, allSoldUsedBikes] = await Promise.all([
             Sale.find({ saleDate: { $gte: filterStartDate, $lt: filterEndDate } }).populate('bikeId').populate('customerId').lean(),
             ServiceSale.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
             Sale.find().populate('bikeId').lean(),
@@ -86,6 +86,7 @@ export async function GET(request: NextRequest) {
             // Credit payments recorded in this date range (for sales whose saleDate is outside the range)
             Sale.find({ 'payments.date': { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
             KhataParty.find({}).lean(),
+            UsedBike.find({ status: 'SOLD' }).lean(),
         ]);
 
         // 7-day chart data
@@ -182,7 +183,12 @@ export async function GET(request: NextRequest) {
             .filter((t: any) => t.type === 'PAYMENT' && t.paymentMode === 'CASH' && new Date(t.date) >= filterStartDate && new Date(t.date) < filterEndDate)
             .reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
 
-        const rangeTotalCashIn = rangeCashReceived + rangeRegistration + rangeKhataCashReceived;
+        // Used bikes (buyback) resold in this range — resale amount counts as cash received
+        const usedBikesSoldInRange = (allSoldUsedBikes as any[]).filter(u => u.soldDate && new Date(u.soldDate) >= filterStartDate && new Date(u.soldDate) < filterEndDate);
+        const rangeUsedBikeCashReceived = usedBikesSoldInRange.reduce((s, u) => s + Number(u.soldPrice || 0), 0);
+        const rangeUsedBikeProfit = usedBikesSoldInRange.reduce((s, u) => s + (Number(u.soldPrice || 0) - Number(u.purchasePrice || 0)), 0);
+
+        const rangeTotalCashIn = rangeCashReceived + rangeRegistration + rangeKhataCashReceived + rangeUsedBikeCashReceived;
         const rangeCashToDeposit = filteredSales.reduce((s, sale: any) => {
             const model = sale.bikeId?.model || '';
             return s + Number(sale.bikeId?.purchasePrice || BIKE_BOOK_PRICES[model] || 0);
@@ -221,7 +227,7 @@ export async function GET(request: NextRequest) {
             .filter((t: any) => t.type === 'STOCK_GIVEN' && (t.margin || 0) !== 0 && new Date(t.date) >= filterStartDate && new Date(t.date) < filterEndDate)
             .reduce((s: number, t: any) => s + (t.margin || 0), 0);
 
-        const rangeBikeProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).bikeProfit, 0) + rangeAdvanceMargin + khataMarginInRange;
+        const rangeBikeProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).bikeProfit, 0) + rangeAdvanceMargin + khataMarginInRange + rangeUsedBikeProfit;
         const rangeRegProfit = filteredSales.reduce((s, sale: any) => s + calcSaleMargin(sale).regProfit, 0);
         // Extra = amount received above standard price (per bike; bikes sold at/below standard contribute 0, never negative)
         const rangeExtraCashFromSales = filteredSales.reduce((s, sale: any) => {
@@ -270,7 +276,8 @@ export async function GET(request: NextRequest) {
             availableModelBreakdown[model] = (availableModelBreakdown[model] || 0) + 1;
         }
         const allTimeRevenue = allSales.reduce((s, sale: any) => s + Number(sale.price || 0), 0);
-        const allTimeBikeProfit = allSales.reduce((s, sale: any) => s + calcSaleMargin(sale).totalProfit, 0);
+        const allTimeUsedBikeProfit = (allSoldUsedBikes as any[]).reduce((s, u) => s + (Number(u.soldPrice || 0) - Number(u.purchasePrice || 0)), 0);
+        const allTimeBikeProfit = allSales.reduce((s, sale: any) => s + calcSaleMargin(sale).totalProfit, 0) + allTimeUsedBikeProfit;
         const allTimeWorkshopRevenue = allServices.reduce((s, svc: any) => s + Number(svc.totalAmount || 0), 0);
         const allTimeWorkshopProfit = allServices.reduce((s, svc: any) => s + Number(svc.margin || 0), 0);
         const allTimeProfit = allTimeBikeProfit + allTimeWorkshopProfit;
@@ -369,6 +376,8 @@ export async function GET(request: NextRequest) {
                 profit: rangeProfit,
                 cashReceived: rangeCashReceived,
                 khataCashReceived: rangeKhataCashReceived,
+                usedBikeCashReceived: rangeUsedBikeCashReceived,
+                usedBikeProfit: rangeUsedBikeProfit,
                 registrationCollected: rangeRegistration,
                 totalCashIn: rangeTotalCashIn,
                 bankTransfer: rangeBankTransfer,
