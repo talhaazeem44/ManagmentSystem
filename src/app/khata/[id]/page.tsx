@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import Toast from '@/components/Toast';
@@ -75,45 +76,20 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
     availableBikes: AvailableBike[];
 }) {
     // The table wrapper below needs overflow-x:auto for small screens, which per the CSS spec forces
-    // overflow-y to clip too — that silently hides a position:absolute suggestion dropdown. Rendering it
-    // as position:fixed (using the input's live screen coordinates) escapes that clipping entirely.
-    // Because it's fixed, its position must be kept in sync while the page scrolls — otherwise it stays
-    // frozen at the coordinates captured when typing started, drifting away from the input as you scroll.
+    // overflow-y to clip too — that silently hides a position:absolute suggestion dropdown nested inside
+    // it. Rendering the dropdown through a portal straight into document.body sidesteps that entirely:
+    // it's no longer a descendant of the clipping container, and using document-relative coordinates
+    // (rect + scroll offset) with position:absolute means it scrolls naturally with the page — no scroll
+    // listeners or manual re-sync needed, unlike a position:fixed version anchored to viewport coordinates.
     const [dropdownRect, setDropdownRect] = useState<Record<string, { top: number; left: number; width: number }>>({});
-    const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
 
     const updateField = (key: string, field: keyof BikeRow, value: string, el?: HTMLInputElement) => {
         setRows(rs => rs.map(r => r.key === key ? { ...r, [field]: value } : r));
         if (el) {
             const rect = el.getBoundingClientRect();
-            setDropdownRect(d => ({ ...d, [key]: { top: rect.bottom, left: rect.left, width: rect.width } }));
+            setDropdownRect(d => ({ ...d, [key]: { top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, width: rect.width } }));
         }
     };
-
-    const activeSearchKeys = rows.filter(r => r.bikeSearch.trim() && !r.bikeId).map(r => r.key).join('|');
-    useEffect(() => {
-        if (!activeSearchKeys) return;
-        const keys = activeSearchKeys.split('|');
-        const syncPositions = () => {
-            setDropdownRect(d => {
-                const next = { ...d };
-                for (const key of keys) {
-                    const el = inputRefs.current.get(key);
-                    if (el) {
-                        const rect = el.getBoundingClientRect();
-                        next[key] = { top: rect.bottom, left: rect.left, width: rect.width };
-                    }
-                }
-                return next;
-            });
-        };
-        window.addEventListener('scroll', syncPositions, true);
-        window.addEventListener('resize', syncPositions);
-        return () => {
-            window.removeEventListener('scroll', syncPositions, true);
-            window.removeEventListener('resize', syncPositions);
-        };
-    }, [activeSearchKeys]);
 
     const selectBike = (key: string, bike: AvailableBike) =>
         setRows(rs => rs.map(r => r.key === key ? {
@@ -169,14 +145,13 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
                                     ) : (
                                         <>
                                             <input type="text" className="input" placeholder="Search engine/chassis..."
-                                                ref={el => { if (el) inputRefs.current.set(row.key, el); else inputRefs.current.delete(row.key); }}
                                                 style={{ fontSize: '0.78rem', padding: '0.3rem 0.5rem', width: '150px' }}
                                                 value={row.bikeSearch}
                                                 onChange={e => updateField(row.key, 'bikeSearch', e.target.value, e.target)}
                                                 onFocus={e => updateField(row.key, 'bikeSearch', row.bikeSearch, e.target)} />
-                                            {searchQuery && rect && (
+                                            {searchQuery && rect && typeof document !== 'undefined' && createPortal(
                                                 <div style={{
-                                                    position: 'fixed', top: rect.top + 2, left: rect.left,
+                                                    position: 'absolute', top: rect.top + 2, left: rect.left,
                                                     zIndex: 1000, background: 'var(--color-bg-card)', border: '1px solid var(--color-border)',
                                                     borderRadius: '6px', width: rect.width,
                                                     maxHeight: '220px', overflowY: 'auto', overflowX: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
@@ -192,7 +167,8 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
                                                             No match for &quot;{row.bikeSearch}&quot;
                                                         </div>
                                                     )}
-                                                </div>
+                                                </div>,
+                                                document.body
                                             )}
                                         </>
                                     )}
