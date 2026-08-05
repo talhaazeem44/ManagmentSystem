@@ -462,6 +462,38 @@ export default function KhataDetailPage() {
         .filter(t => t.type === 'STOCK_GIVEN')
         .reduce((s, t) => s + (t.margin || 0), 0);
 
+    // Dealer-facing statement — deliberately excludes margin, only stock given / paid / remaining.
+    const exportStatement = async () => {
+        if (!party) return;
+        const XLSX = await import('xlsx');
+
+        const rows: (string | number)[][] = [
+            [`${party.name} — Account Statement`],
+            ...(party.mobile ? [[`Mobile: ${party.mobile}`]] : []),
+            [`Generated: ${new Date().toLocaleString('en-PK')}`],
+            [`Period: ${selectedMonth === 'ALL' ? 'All Time' : monthLabel(selectedMonth)}`],
+            [],
+            ['Date', 'Details', 'Stock Given (Rs.)', 'Paid (Rs.)', 'Balance (Rs.)'],
+            ...runningRows.map(t => [
+                new Date(t.date).toLocaleDateString('en-PK'),
+                t.description,
+                t.type === 'STOCK_GIVEN' ? t.amount : '',
+                t.type === 'PAYMENT' ? t.amount : '',
+                t.runningBalance,
+            ]),
+            [],
+            ['Total Stock Given', '', filteredDebit],
+            ['Total Paid', '', '', filteredCredit],
+            ['Remaining / Outstanding Amount', '', '', '', party.balance],
+        ];
+
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        ws['!cols'] = [{ wch: 14 }, { wch: 38 }, { wch: 16 }, { wch: 14 }, { wch: 16 }];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Statement');
+        XLSX.writeFile(wb, `${party.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-statement.xlsx`);
+    };
+
     if (loading) return <DashboardLayout><Loader size={160} text="Loading khata..." fullPage /></DashboardLayout>;
     if (!party) return <DashboardLayout><div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>Party not found.</div></DashboardLayout>;
 
@@ -480,6 +512,9 @@ export default function KhataDetailPage() {
                         {party.notes && <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic', marginTop: '0.2rem' }}>{party.notes}</p>}
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <button className="btn btn-secondary" onClick={exportStatement}>
+                            📤 Export Statement
+                        </button>
                         <button className={`btn ${activeForm === 'STOCK' ? 'btn-secondary' : 'btn-primary'}`}
                             onClick={() => setActiveForm(activeForm === 'STOCK' ? null : 'STOCK')}>
                             {activeForm === 'STOCK' ? 'Cancel' : '📦 Stock Given'}
