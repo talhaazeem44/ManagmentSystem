@@ -185,9 +185,12 @@ export async function GET(request: NextRequest) {
         const rangeBankTransfer = filteredSales.reduce((s, sale: any) => s + Number(sale.bankTransferAmount || 0), 0) + creditBankPaymentsInRange;
 
         // Cash payments received from Khata dealers paying down their balance
-        const rangeKhataCashReceived = (allKhataParties as any[]).flatMap(p => p.transactions || [])
-            .filter((t: any) => t.type === 'PAYMENT' && t.paymentMode === 'CASH' && new Date(t.date) >= filterStartDate && new Date(t.date) < filterEndDate)
-            .reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
+        const khataCashPaymentsInRange = (allKhataParties as any[]).flatMap((p: any) => (p.transactions || []).map((t: any) => ({ ...t, partyName: p.name })))
+            .filter((t: any) => t.type === 'PAYMENT' && t.paymentMode === 'CASH' && new Date(t.date) >= filterStartDate && new Date(t.date) < filterEndDate);
+        const rangeKhataCashReceived = khataCashPaymentsInRange.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
+        const khataCashPaymentDetails = khataCashPaymentsInRange
+            .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .map((t: any) => ({ partyName: t.partyName, amount: Number(t.amount || 0), date: t.date, note: t.note || '' }));
 
         // Used bikes (buyback) resold in this range — resale amount counts as cash received
         const usedBikesSoldInRange = (allSoldUsedBikes as any[]).filter(u => u.soldDate && new Date(u.soldDate) >= filterStartDate && new Date(u.soldDate) < filterEndDate);
@@ -382,6 +385,7 @@ export async function GET(request: NextRequest) {
                 profit: rangeProfit,
                 cashReceived: rangeCashReceived,
                 khataCashReceived: rangeKhataCashReceived,
+                khataCashPaymentDetails,
                 usedBikeCashReceived: rangeUsedBikeCashReceived,
                 usedBikeProfit: rangeUsedBikeProfit,
                 registrationCollected: rangeRegistration,

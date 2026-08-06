@@ -39,6 +39,7 @@ interface Stats {
         sales: number; revenue: number; workshopRevenue: number; workshopProfit: number;
         bikeProfit: number; regProfit: number; profit: number; cashReceived: number;
         khataCashReceived: number;
+        khataCashPaymentDetails?: { partyName: string; amount: number; date: string; note: string }[];
         usedBikeCashReceived: number;
         registrationCollected: number; totalCashIn: number; cashToDeposit: number;
         expenseCash: number; cashInHand: number; bankTransfer: number; cashDepositOnly: number;
@@ -73,6 +74,7 @@ export default function DashboardPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [filters, setFilters] = useState({ cnic: '', engineNumber: '', chassisNumber: '', doNumber: '', startDate: '', endDate: '' });
     const [showBreakdown, setShowBreakdown] = useState(false);
+    const [showKhataDetails, setShowKhataDetails] = useState(false);
     const [yesterdayStats, setYesterdayStats] = useState<Stats | null>(null);
     const [showYesterdayBreakdown, setShowYesterdayBreakdown] = useState(false);
     const [customDate, setCustomDate] = useState('');
@@ -456,9 +458,27 @@ export default function DashboardPage() {
                                     <strong style={{ color: '#10b981' }}>Rs. {(sinceStats?.cashReceived ?? 0).toLocaleString()}</strong>
                                 </div>
                                 {(sinceStats?.khataCashReceived ?? 0) > 0 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ color: 'var(--color-text-muted)' }}>Khata Payments</span>
-                                        <strong style={{ color: '#10b981' }}>+ Rs. {(sinceStats?.khataCashReceived ?? 0).toLocaleString()}</strong>
+                                    <div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', cursor: 'pointer' }}
+                                            onClick={() => setShowKhataDetails(s => !s)}>
+                                            <span style={{ color: 'var(--color-text-muted)' }}>
+                                                Khata Payments {showKhataDetails ? '▲' : '▼'}
+                                            </span>
+                                            <strong style={{ color: '#10b981' }}>+ Rs. {(sinceStats?.khataCashReceived ?? 0).toLocaleString()}</strong>
+                                        </div>
+                                        {showKhataDetails && (sinceStats?.khataCashPaymentDetails?.length ?? 0) > 0 && (
+                                            <div style={{ marginTop: '0.3rem', marginBottom: '0.2rem', paddingLeft: '0.5rem', borderLeft: '2px solid rgba(16,185,129,0.25)', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                                {sinceStats!.khataCashPaymentDetails!.map((d, i) => (
+                                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem' }}>
+                                                        <span style={{ color: 'var(--color-text-muted)' }}>
+                                                            {d.partyName} · {new Date(d.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}
+                                                            {d.note ? ` — ${d.note}` : ''}
+                                                        </span>
+                                                        <span>Rs. {d.amount.toLocaleString()}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                                 {(sinceStats?.usedBikeCashReceived ?? 0) > 0 && (
