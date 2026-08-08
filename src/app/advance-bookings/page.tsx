@@ -15,6 +15,7 @@ interface AdvanceBooking {
     bikeModel?: string;
     bikeColor?: string;
     advancePaid: number;
+    advancePaymentMode?: 'CASH' | 'BANK_TRANSFER';
     totalPrice?: number;
     registrationFee?: number;
     margin?: number;
@@ -31,6 +32,7 @@ const emptyForm = {
     bikeModel: '',
     bikeColor: '',
     advancePaid: '',
+    advancePaymentMode: 'CASH' as 'CASH' | 'BANK_TRANSFER',
     totalPrice: '',
     registrationFee: '',
     notes: '',
@@ -173,6 +175,13 @@ export default function AdvanceBookingsPage() {
                                     <input type="text" inputMode="decimal" className="input" value={form.advancePaid} onChange={e => setForm({ ...form, advancePaid: e.target.value })} required placeholder="5000" />
                                 </div>
                                 <div className="form-group">
+                                    <label className="label">Payment Method *</label>
+                                    <select className="select" value={form.advancePaymentMode} onChange={e => setForm({ ...form, advancePaymentMode: e.target.value as 'CASH' | 'BANK_TRANSFER' })}>
+                                        <option value="CASH">Cash</option>
+                                        <option value="BANK_TRANSFER">Bank Transfer</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
                                     <label className="label">Registration Fees (PKR)</label>
                                     <input type="text" inputMode="decimal" className="input" value={form.registrationFee} onChange={e => setForm({ ...form, registrationFee: e.target.value })} placeholder="9000" />
                                 </div>
@@ -233,7 +242,11 @@ export default function AdvanceBookingsPage() {
                                                 {b.expectedDeliveryDate && <span style={{ color: isOverdue ? '#ef4444' : 'var(--color-text-muted)', fontWeight: isOverdue ? 700 : 400 }}>🚚 By {new Date(b.expectedDeliveryDate).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}</span>}
                                             </div>
                                             <div style={{ marginTop: '0.35rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.85rem' }}>
-                                                <span>Advance: <strong style={{ color: 'var(--color-success)' }}>Rs. {b.advancePaid.toLocaleString()}</strong></span>
+                                                <span>Advance: <strong style={{ color: 'var(--color-success)' }}>Rs. {b.advancePaid.toLocaleString()}</strong>{' '}
+                                                    <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, background: b.advancePaymentMode === 'BANK_TRANSFER' ? 'rgba(59,130,246,0.12)' : 'rgba(16,185,129,0.12)', color: b.advancePaymentMode === 'BANK_TRANSFER' ? '#3b82f6' : '#10b981' }}>
+                                                        {b.advancePaymentMode === 'BANK_TRANSFER' ? 'BANK' : 'CASH'}
+                                                    </span>
+                                                </span>
                                                 {b.totalPrice && <span>Total: <strong>Rs. {b.totalPrice.toLocaleString()}</strong></span>}
                                                 {remaining !== null && <span>Remaining: <strong style={{ color: '#ef4444' }}>Rs. {remaining.toLocaleString()}</strong></span>}
                                                 {b.registrationFee ? <span>Reg: <strong>Rs. {b.registrationFee.toLocaleString()}</strong></span> : null}

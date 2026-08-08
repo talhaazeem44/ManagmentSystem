@@ -122,8 +122,10 @@ export async function GET(request: NextRequest) {
                 advancePaid: b.advancePaid,
             }));
 
-        // Today's advance bookings cash and margin
-        const rangeAdvanceCash = filteredAdvanceBookings.reduce((s: number, b: any) => s + Number(b.advancePaid || 0), 0);
+        // Today's advance bookings cash and margin — only CASH-mode advances count as physical cash;
+        // bank-transferred ones go toward the bank transfer figure instead.
+        const rangeAdvanceCash = filteredAdvanceBookings.reduce((s: number, b: any) => b.advancePaymentMode === 'BANK_TRANSFER' ? s : s + Number(b.advancePaid || 0), 0);
+        const rangeAdvanceBankTransfer = filteredAdvanceBookings.reduce((s: number, b: any) => b.advancePaymentMode === 'BANK_TRANSFER' ? s + Number(b.advancePaid || 0) : s, 0);
         const rangeAdvanceMargin = filteredAdvanceBookings.reduce((s: number, b: any) => s + calcAdvanceMargin(b).bikeProfit, 0);
 
         // Attach customer info to credit sales
@@ -182,7 +184,7 @@ export async function GET(request: NextRequest) {
             .reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
         const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || 0), 0) + rangeAdvanceCash + creditPaymentsInRange;
         const rangeRegistration = filteredSales.reduce((s, sale: any) => s + Number(sale.registrationCost || 0), 0);
-        const rangeBankTransfer = filteredSales.reduce((s, sale: any) => s + Number(sale.bankTransferAmount || 0), 0) + creditBankPaymentsInRange;
+        const rangeBankTransfer = filteredSales.reduce((s, sale: any) => s + Number(sale.bankTransferAmount || 0), 0) + creditBankPaymentsInRange + rangeAdvanceBankTransfer;
 
         // Cash payments received from Khata dealers paying down their balance
         const khataCashPaymentsInRange = (allKhataParties as any[]).flatMap((p: any) => (p.transactions || []).map((t: any) => ({ ...t, partyName: p.name })))
