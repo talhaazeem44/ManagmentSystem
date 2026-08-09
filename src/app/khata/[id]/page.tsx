@@ -910,6 +910,10 @@ export default function KhataDetailPage() {
                                                         </div>
                                                     ) : (
                                                         <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                            {tx.type === 'STOCK_GIVEN' && (
+                                                                <button className="btn" title="Print / download receipt" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}
+                                                                    onClick={() => window.open(`/khata/${id}/receipt/${tx._id}`, '_blank')}>🧾</button>
+                                                            )}
                                                             <button className="btn" title="Export this transaction" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)' }}
                                                                 onClick={() => exportTransaction(tx)}>📤</button>
                                                             <button className="btn" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}
