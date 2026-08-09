@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { MARGIN_PASSWORD } from '@/lib/constants';
 import Loader from '@/components/Loader';
@@ -26,6 +26,8 @@ interface CollectionRecord {
 }
 
 interface BreakdownItem {
+    saleDate?: string;
+    buyerName?: string;
     bikeModel: string;
     paymentMode: string;
     price: number;
@@ -36,6 +38,14 @@ interface BreakdownItem {
     totalProfit: number;
     standardPrice: number;
     baseMargin: number;
+}
+
+interface LedgerRow {
+    date: string;
+    label: string;
+    amount: number;
+    balance: number;
+    isExpense: boolean;
 }
 
 interface ExpenseItem {
@@ -83,6 +93,11 @@ export default function ProfitPage() {
     const [showMonthBreakdown, setShowMonthBreakdown] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    // margin ledger (day-by-day, since last collection)
+    const [sinceBreakdown, setSinceBreakdown] = useState<BreakdownItem[]>([]);
+    const [sinceExpenseList, setSinceExpenseList] = useState<ExpenseItem[]>([]);
+    const [showLedger, setShowLedger] = useState(false);
+
     const handleUnlock = (e: React.FormEvent) => {
         e.preventDefault();
         if (password === MARGIN_PASSWORD) {
@@ -124,7 +139,12 @@ export default function ProfitPage() {
                 fetch(`/api/reports?startDate=${monthStart}&endDate=${nowISO}`),
             ]);
 
-            if (marginSinceRes.ok) { const d = await marginSinceRes.json(); setSinceStats(d.range); }
+            if (marginSinceRes.ok) {
+                const d = await marginSinceRes.json();
+                setSinceStats(d.range);
+                setSinceBreakdown(d.cashBreakdown ?? []);
+                setSinceExpenseList(d.range?.expenseList ?? []);
+            }
             if (monthMarginRes.ok) {
                 const d = await monthMarginRes.json();
                 setMonthStats(d.range);
@@ -170,6 +190,43 @@ export default function ProfitPage() {
 
     const marginSinceDate = lastMarginCol ? new Date(lastMarginCol.collectedAt) : (() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; })();
     const cashSinceDate   = lastCashCol   ? new Date(lastCashCol.collectedAt)   : (() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; })();
+
+    const marginLedger = useMemo<LedgerRow[]>(() => {
+        const events: { date: string; label: string; amount: number }[] = [];
+        for (const row of sinceBreakdown) {
+            if (!row.bikeProfit) continue; // skip zero-margin cash-flow rows (e.g. KHATA CASH/BANK payments)
+            const who = row.buyerName ? ` — ${row.buyerName}` : '';
+            events.push({
+                date: row.saleDate || '',
+                label: `${row.bikeModel} · ${row.paymentMode}${who}`,
+                amount: row.bikeProfit,
+            });
+        }
+        for (const e of sinceExpenseList) {
+            if (e.deductFrom !== 'MARGIN') continue;
+            events.push({
+                date: e.date,
+                label: e.description || e.category,
+                amount: -Number(e.amount || 0),
+            });
+        }
+        events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        let balance = 0;
+        return events.map(ev => {
+            balance += ev.amount;
+            return { date: ev.date, label: ev.label, amount: ev.amount, balance, isExpense: ev.amount < 0 };
+        });
+    }, [sinceBreakdown, sinceExpenseList]);
+
+    // Index of the row where the running balance first flips from negative to zero-or-positive
+    const turnedPositiveIndex = (() => {
+        let wasNegative = false;
+        for (let i = 0; i < marginLedger.length; i++) {
+            if (wasNegative && marginLedger[i].balance >= 0) return i;
+            if (marginLedger[i].balance < 0) wasNegative = true;
+        }
+        return -1;
+    })();
 
     const uncollectedMargin = sinceStats ? sinceStats.bikeProfit - (sinceStats.expenseMargin ?? 0) : 0;
     const monthMargin       = monthStats  ? monthStats.bikeProfit  - (monthStats.expenseMargin  ?? 0) : 0;
@@ -232,8 +289,12 @@ export default function ProfitPage() {
                                     {lastMarginCol ? <span> · {new Date(lastMarginCol.collectedAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}</span> : <span> · no previous collection</span>}
                                 </div>
                                 <button onClick={handleCollectMargin} disabled={collecting || uncollectedMargin <= 0}
-                                    className="btn btn-success" style={{ fontSize: '0.82rem', padding: '0.45rem 1.1rem', width: '100%' }}>
+                                    className="btn btn-success" style={{ fontSize: '0.82rem', padding: '0.45rem 1.1rem', width: '100%', marginBottom: '0.5rem' }}>
                                     {collecting ? '⏳ Saving...' : '✅ Collect Margin'}
+                                </button>
+                                <button onClick={() => setShowLedger(v => !v)}
+                                    style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '6px', padding: '0.3rem 0.75rem', cursor: 'pointer', width: '100%' }}>
+                                    {showLedger ? '▲ Hide day-by-day history' : '▼ See day-by-day history'}
                                 </button>
                             </div>
                             <div className="card" style={{ padding: '1.5rem', borderLeft: '4px solid #3b82f6' }}>
@@ -278,6 +339,65 @@ export default function ProfitPage() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* ── Margin Ledger (day-by-day since last collection) ── */}
+                        {showLedger && (
+                            <div className="card" style={{ marginBottom: '1.5rem', padding: '1.25rem', border: '1px solid rgba(16,185,129,0.25)' }}>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
+                                    Margin History — since {lastMarginCol ? new Date(lastMarginCol.collectedAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' }) : `${monthName} start`}
+                                </div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+                                    Running balance in chronological order — match this against your manual register to confirm the date it turned positive.
+                                </div>
+                                {marginLedger.length === 0 ? (
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', padding: '0.75rem 0' }}>No margin-affecting entries in this period yet.</div>
+                                ) : (
+                                    <div style={{ overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                                            <thead>
+                                                <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                                    {['Date', 'Entry', 'Amount', 'Running Balance'].map(h => (
+                                                        <th key={h} style={{ padding: '5px 8px', textAlign: h === 'Date' || h === 'Entry' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {marginLedger.map((row, i) => (
+                                                    <Fragment key={i}>
+                                                        <tr style={{ borderBottom: '1px solid var(--color-border-light)', background: i === turnedPositiveIndex ? 'rgba(16,185,129,0.08)' : undefined }}>
+                                                            <td style={{ padding: '5px 8px', whiteSpace: 'nowrap', color: 'var(--color-text-muted)' }}>{row.date ? new Date(row.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</td>
+                                                            <td style={{ padding: '5px 8px' }}>{row.label}</td>
+                                                            <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 700, color: row.isExpense ? '#ef4444' : '#10b981' }}>
+                                                                {row.amount >= 0 ? '+' : ''}Rs. {row.amount.toLocaleString()}
+                                                            </td>
+                                                            <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 800, color: row.balance < 0 ? '#ef4444' : '#10b981' }}>
+                                                                Rs. {row.balance.toLocaleString()}
+                                                            </td>
+                                                        </tr>
+                                                        {i === turnedPositiveIndex && (
+                                                            <tr key={`${i}-marker`}>
+                                                                <td colSpan={4} style={{ padding: '4px 8px', textAlign: 'center', fontSize: '0.72rem', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.05)' }}>
+                                                                    🎯 Balance turned positive here — {row.date ? new Date(row.date).toLocaleDateString('en-PK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : ''}
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                    </Fragment>
+                                                ))}
+                                            </tbody>
+                                            <tfoot>
+                                                <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 800, background: 'var(--color-bg-elevated)' }}>
+                                                    <td colSpan={3} style={{ padding: '6px 8px' }}>Final Balance</td>
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right', color: (marginLedger[marginLedger.length - 1]?.balance ?? 0) < 0 ? '#ef4444' : '#10b981' }}>
+                                                        Rs. {(marginLedger[marginLedger.length - 1]?.balance ?? 0).toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {/* ── Month Margin Breakdown ── */}
                         {showMonthBreakdown && (
                             <div className="card" style={{ marginBottom: '1rem', padding: '1.25rem', border: '1px solid rgba(59,130,246,0.25)' }}>
