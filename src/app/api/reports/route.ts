@@ -331,7 +331,6 @@ export async function GET(request: NextRequest) {
                 for (const item of (tx.items || [])) {
                     khataStockCount += Number(item.quantity) || 0;
                     khataBreakdownRows.push({
-                        saleDate: tx.date,
                         bikeModel: item.model || '?',
                         paymentMode: 'KHATA',
                         price: Number(item.quantity) * Number(item.pricePerUnit),
@@ -354,7 +353,6 @@ export async function GET(request: NextRequest) {
             ...filteredSales.map((sale: any) => {
                 const m = calcSaleMargin(sale);
                 return {
-                    saleDate: sale.saleDate,
                     bikeModel: sale.bikeId?.model || '?',
                     paymentMode: sale.paymentMode || 'CASH',
                     price: Number(sale.price || 0),
@@ -374,7 +372,6 @@ export async function GET(request: NextRequest) {
                 const am = calcAdvanceMargin(b);
                 const isBank = b.advancePaymentMode === 'BANK_TRANSFER';
                 return {
-                    saleDate: b.date,
                     bikeModel: b.bikeModel || 'Advance',
                     paymentMode: 'ADVANCE',
                     price: Number(b.totalPrice || 0),
@@ -391,45 +388,6 @@ export async function GET(request: NextRequest) {
                 };
             }),
             ...khataBreakdownRows,
-            // Khata dealer payments received (cash + bank) — margin already counted when the stock was
-            // given, so these carry zero profit here to avoid double-counting; they exist in this table
-            // purely to show the cash/bank movement.
-            ...khataPaymentsInRange.map((t: any) => {
-                const isBank = t.paymentMode === 'BANK_TRANSFER';
-                return {
-                    saleDate: t.date,
-                    bikeModel: '—',
-                    paymentMode: isBank ? 'KHATA BANK' : 'KHATA CASH',
-                    price: Number(t.amount || 0),
-                    receivedCash: isBank ? 0 : Number(t.amount || 0),
-                    bankTransferAmount: isBank ? Number(t.amount || 0) : 0,
-                    counted: Number(t.amount || 0),
-                    bikeProfit: 0,
-                    regProfit: 0,
-                    totalProfit: 0,
-                    standardPrice: 0,
-                    baseMargin: 0,
-                    buyerName: t.partyName || '',
-                    quantity: 0,
-                };
-            }),
-            // Used bike (buyback) resales — resale is always treated as cash received
-            ...usedBikesSoldInRange.map((u: any) => ({
-                saleDate: u.soldDate,
-                bikeModel: u.model || '?',
-                paymentMode: 'USED BIKE',
-                price: Number(u.soldPrice || 0),
-                receivedCash: Number(u.soldPrice || 0),
-                bankTransferAmount: 0,
-                counted: Number(u.soldPrice || 0),
-                bikeProfit: Number(u.soldPrice || 0) - Number(u.purchasePrice || 0),
-                regProfit: 0,
-                totalProfit: Number(u.soldPrice || 0) - Number(u.purchasePrice || 0),
-                standardPrice: Number(u.purchasePrice || 0),
-                baseMargin: 0,
-                buyerName: u.buyerName || '',
-                quantity: 1,
-            })),
         ];
 
         return NextResponse.json({
