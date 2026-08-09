@@ -184,20 +184,34 @@ export async function GET(request: NextRequest) {
             .reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
         const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || 0), 0) + rangeAdvanceCash + creditPaymentsInRange;
         const rangeRegistration = filteredSales.reduce((s, sale: any) => s + Number(sale.registrationCost || 0), 0);
-        const rangeBankTransfer = filteredSales.reduce((s, sale: any) => s + Number(sale.bankTransferAmount || 0), 0) + creditBankPaymentsInRange + rangeAdvanceBankTransfer;
 
-        // Cash payments received from Khata dealers paying down their balance
-        const khataCashPaymentsInRange = (allKhataParties as any[]).flatMap((p: any) => (p.transactions || []).map((t: any) => ({ ...t, partyName: p.name })))
-            .filter((t: any) => t.type === 'PAYMENT' && t.paymentMode === 'CASH' && new Date(t.date) >= filterStartDate && new Date(t.date) < filterEndDate);
-        const rangeKhataCashReceived = khataCashPaymentsInRange.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
-        const khataCashPaymentDetails = khataCashPaymentsInRange
+        // All Khata dealer payments in range (both Cash and Bank Transfer) — kept together for the
+        // dealer-payment detail list, but split by mode for the cash-in-hand vs bank-transfer totals.
+        const khataPaymentsInRange = (allKhataParties as any[]).flatMap((p: any) => (p.transactions || []).map((t: any) => ({ ...t, partyName: p.name })))
+            .filter((t: any) => t.type === 'PAYMENT' && new Date(t.date) >= filterStartDate && new Date(t.date) < filterEndDate);
+        const rangeKhataCashReceived = khataPaymentsInRange
+            .filter((t: any) => t.paymentMode !== 'BANK_TRANSFER')
+            .reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
+        const rangeKhataBankTransfer = khataPaymentsInRange
+            .filter((t: any) => t.paymentMode === 'BANK_TRANSFER')
+            .reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
+        const khataPaymentDetails = khataPaymentsInRange
             .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-            .map((t: any) => ({ partyName: t.partyName, amount: Number(t.amount || 0), date: t.date, note: t.note || '' }));
+            .map((t: any) => ({ partyName: t.partyName, amount: Number(t.amount || 0), date: t.date, note: t.note || '', paymentMode: t.paymentMode === 'BANK_TRANSFER' ? 'BANK_TRANSFER' : 'CASH' }));
+
+        const rangeBankTransfer = filteredSales.reduce((s, sale: any) => s + Number(sale.bankTransferAmount || 0), 0) + creditBankPaymentsInRange + rangeAdvanceBankTransfer + rangeKhataBankTransfer;
 
         // Used bikes (buyback) resold in this range — resale amount counts as cash received
         const usedBikesSoldInRange = (allSoldUsedBikes as any[]).filter(u => u.soldDate && new Date(u.soldDate) >= filterStartDate && new Date(u.soldDate) < filterEndDate);
         const rangeUsedBikeCashReceived = usedBikesSoldInRange.reduce((s, u) => s + Number(u.soldPrice || 0), 0);
         const rangeUsedBikeProfit = usedBikesSoldInRange.reduce((s, u) => s + (Number(u.soldPrice || 0) - Number(u.purchasePrice || 0)), 0);
+        const usedBikeSaleDetails = usedBikesSoldInRange
+            .sort((a: any, b: any) => new Date(b.soldDate).getTime() - new Date(a.soldDate).getTime())
+            .map((u: any) => ({
+                model: u.model, buyerName: u.buyerName || '', soldDate: u.soldDate,
+                soldPrice: Number(u.soldPrice || 0), purchasePrice: Number(u.purchasePrice || 0),
+                margin: Number(u.soldPrice || 0) - Number(u.purchasePrice || 0),
+            }));
 
         const rangeTotalCashIn = rangeCashReceived + rangeRegistration + rangeKhataCashReceived + rangeUsedBikeCashReceived;
         const rangeCashToDeposit = filteredSales.reduce((s, sale: any) => {
@@ -356,12 +370,13 @@ export async function GET(request: NextRequest) {
             }),
             ...filteredAdvanceBookings.map((b: any) => {
                 const am = calcAdvanceMargin(b);
+                const isBank = b.advancePaymentMode === 'BANK_TRANSFER';
                 return {
                     bikeModel: b.bikeModel || 'Advance',
                     paymentMode: 'ADVANCE',
                     price: Number(b.totalPrice || 0),
-                    receivedCash: Number(b.advancePaid || 0),
-                    bankTransferAmount: 0,
+                    receivedCash: isBank ? 0 : Number(b.advancePaid || 0),
+                    bankTransferAmount: isBank ? Number(b.advancePaid || 0) : 0,
                     counted: Number(b.advancePaid || 0),
                     bikeProfit: am.bikeProfit,
                     regProfit: 0,
@@ -387,9 +402,11 @@ export async function GET(request: NextRequest) {
                 profit: rangeProfit,
                 cashReceived: rangeCashReceived,
                 khataCashReceived: rangeKhataCashReceived,
-                khataCashPaymentDetails,
+                khataBankTransfer: rangeKhataBankTransfer,
+                khataPaymentDetails,
                 usedBikeCashReceived: rangeUsedBikeCashReceived,
                 usedBikeProfit: rangeUsedBikeProfit,
+                usedBikeSaleDetails,
                 registrationCollected: rangeRegistration,
                 totalCashIn: rangeTotalCashIn,
                 bankTransfer: rangeBankTransfer,

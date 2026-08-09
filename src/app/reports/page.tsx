@@ -17,6 +17,23 @@ const CATEGORY_ICONS: Record<string, string> = {
     'Other': '📌',
 };
 
+interface KhataPaymentDetail {
+    partyName: string;
+    amount: number;
+    date: string;
+    note: string;
+    paymentMode: 'CASH' | 'BANK_TRANSFER';
+}
+
+interface UsedBikeSaleDetail {
+    model: string;
+    buyerName: string;
+    soldDate: string;
+    soldPrice: number;
+    purchasePrice: number;
+    margin: number;
+}
+
 interface RangeData {
     sales: number;
     revenue: number;
@@ -27,6 +44,12 @@ interface RangeData {
     workshopProfit: number;
     profit: number;
     cashReceived: number;
+    khataCashReceived: number;
+    khataBankTransfer: number;
+    khataPaymentDetails: KhataPaymentDetail[];
+    usedBikeCashReceived: number;
+    usedBikeProfit: number;
+    usedBikeSaleDetails: UsedBikeSaleDetail[];
     registrationCollected: number;
     bankTransfer: number;
     expenseCash: number;
@@ -422,6 +445,128 @@ export default function ReportsPage() {
                                 <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>cash + margin combined</div>
                             </div>
                         </div>
+
+                        {/* ── Payment Method Summary — reconciles cash vs bank across every source ── */}
+                        {(() => {
+                            const totalCash = (r?.cashReceived ?? 0) + (r?.khataCashReceived ?? 0) + (r?.usedBikeCashReceived ?? 0);
+                            const totalBank = r?.bankTransfer ?? 0;
+                            const grandTotal = totalCash + totalBank + (r?.registrationCollected ?? 0);
+                            return (
+                                <div className="card" style={{ marginBottom: '1.25rem', padding: '1.25rem' }}>
+                                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+                                        Payment Method Summary — {rangeLabel}
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+                                        <div style={{ padding: '0.85rem 1rem', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '10px' }}>
+                                            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Total Cash</div>
+                                            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#10b981' }}>Rs. {totalCash.toLocaleString()}</div>
+                                        </div>
+                                        <div style={{ padding: '0.85rem 1rem', background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '10px' }}>
+                                            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Total Bank Transfer</div>
+                                            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#3b82f6' }}>Rs. {totalBank.toLocaleString()}</div>
+                                        </div>
+                                        <div style={{ padding: '0.85rem 1rem', background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '10px' }}>
+                                            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Registration Fees</div>
+                                            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#8b5cf6' }}>Rs. {(r?.registrationCollected ?? 0).toLocaleString()}</div>
+                                        </div>
+                                        <div style={{ padding: '0.85rem 1rem', background: 'rgba(204,0,0,0.05)', border: '1px solid rgba(204,0,0,0.2)', borderRadius: '10px' }}>
+                                            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Grand Total Received</div>
+                                            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--color-primary)' }}>Rs. {grandTotal.toLocaleString()}</div>
+                                        </div>
+                                    </div>
+                                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'flex', flexWrap: 'wrap', gap: '0.4rem 1rem' }}>
+                                        <span>Cash breakdown:</span>
+                                        <span>Bike Sales/Credit/Advance = Rs. {(r?.cashReceived ?? 0).toLocaleString()}</span>
+                                        <span>· Khata Payments = Rs. {(r?.khataCashReceived ?? 0).toLocaleString()}</span>
+                                        <span>· Used Bike Resale = Rs. {(r?.usedBikeCashReceived ?? 0).toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* ── Khata Dealer Payments ── */}
+                        {r?.khataPaymentDetails && r.khataPaymentDetails.length > 0 && (
+                            <div className="card" style={{ marginBottom: '1.25rem', padding: '1.25rem' }}>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+                                    Khata Dealer Payments Received — {rangeLabel}
+                                </div>
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                                                {['Date', 'Dealer', 'Note', 'Mode', 'Amount'].map(h => (
+                                                    <th key={h} style={{ padding: '6px 8px', textAlign: h === 'Amount' || h === 'Mode' ? 'right' : 'left', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {r.khataPaymentDetails.map((d, i) => (
+                                                <tr key={i} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                                    <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', color: 'var(--color-text-muted)' }}>{new Date(d.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}</td>
+                                                    <td style={{ padding: '6px 8px', fontWeight: 600 }}>{d.partyName}</td>
+                                                    <td style={{ padding: '6px 8px', color: 'var(--color-text-muted)' }}>{d.note || '—'}</td>
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+                                                        <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, background: d.paymentMode === 'BANK_TRANSFER' ? 'rgba(59,130,246,0.12)' : 'rgba(16,185,129,0.12)', color: d.paymentMode === 'BANK_TRANSFER' ? '#3b82f6' : '#10b981' }}>
+                                                            {d.paymentMode === 'BANK_TRANSFER' ? 'BANK' : 'CASH'}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>Rs. {d.amount.toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 700, background: 'var(--color-bg-elevated)' }}>
+                                                <td colSpan={3} style={{ padding: '6px 8px', color: 'var(--color-text-muted)' }}>Total</td>
+                                                <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+                                                    Cash Rs. {(r?.khataCashReceived ?? 0).toLocaleString()} · Bank Rs. {(r?.khataBankTransfer ?? 0).toLocaleString()}
+                                                </td>
+                                                <td style={{ padding: '6px 8px', textAlign: 'right' }}>Rs. {r.khataPaymentDetails.reduce((s, d) => s + d.amount, 0).toLocaleString()}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── Used Bike Resale Details ── */}
+                        {r?.usedBikeSaleDetails && r.usedBikeSaleDetails.length > 0 && (
+                            <div className="card" style={{ marginBottom: '1.25rem', padding: '1.25rem' }}>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+                                    Used Bike Resales — {rangeLabel}
+                                </div>
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                                                {['Date', 'Model', 'Buyer', 'Purchase', 'Sold', 'Margin'].map(h => (
+                                                    <th key={h} style={{ padding: '6px 8px', textAlign: h === 'Date' || h === 'Model' || h === 'Buyer' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {r.usedBikeSaleDetails.map((u, i) => (
+                                                <tr key={i} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                                    <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', color: 'var(--color-text-muted)' }}>{new Date(u.soldDate).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}</td>
+                                                    <td style={{ padding: '6px 8px', fontWeight: 600 }}>{u.model}</td>
+                                                    <td style={{ padding: '6px 8px' }}>{u.buyerName || '—'}</td>
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right', color: '#ef4444' }}>Rs. {u.purchasePrice.toLocaleString()}</td>
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right', color: '#10b981' }}>Rs. {u.soldPrice.toLocaleString()}</td>
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: u.margin >= 0 ? '#10b981' : '#ef4444' }}>Rs. {u.margin.toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 700, background: 'var(--color-bg-elevated)' }}>
+                                                <td colSpan={3} style={{ padding: '6px 8px', color: 'var(--color-text-muted)' }}>Total</td>
+                                                <td style={{ padding: '6px 8px', textAlign: 'right' }}>Rs. {r.usedBikeSaleDetails.reduce((s, u) => s + u.purchasePrice, 0).toLocaleString()}</td>
+                                                <td style={{ padding: '6px 8px', textAlign: 'right' }}>Rs. {r.usedBikeSaleDetails.reduce((s, u) => s + u.soldPrice, 0).toLocaleString()}</td>
+                                                <td style={{ padding: '6px 8px', textAlign: 'right', color: (r?.usedBikeProfit ?? 0) >= 0 ? '#10b981' : '#ef4444' }}>Rs. {(r?.usedBikeProfit ?? 0).toLocaleString()}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
 
                         {/* ── Sales by Model ── */}
                         {r?.modelBreakdown && Object.keys(r.modelBreakdown).length > 0 && (
