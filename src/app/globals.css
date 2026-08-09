@@ -388,6 +388,17 @@ a {
 
 /* Print Styles */
 @media print {
+  /* Entrance animations (e.g. .animate-fade-in, which starts at opacity:0)
+     can restart when the browser switches into print-preview rendering.
+     If the print snapshot is taken before the animation finishes, the
+     whole page can be captured mid-animation (invisible/blank) even
+     though layout and page count are computed correctly. Printed output
+     must never depend on a screen-only animation's timing. */
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
   body {
     background: white !important;
     color: black !important;
