@@ -7,15 +7,15 @@
 6 silly config load:file:/usr/local/etc/npmrc
 7 verbose title npm install puppeteer-core
 8 verbose argv "install" "--no-save" "puppeteer-core"
-9 verbose logfile logs-max:10 dir:/Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-08-09T10_44_36_520Z-
-10 verbose logfile /Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-08-09T10_44_36_520Z-debug-0.log
+9 verbose logfile logs-max:10 dir:/Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-08-09T17_49_53_017Z-
+10 verbose logfile /Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-08-09T17_49_53_017Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly packumentCache heap:2197815296 maxSize:549453824 maxEntrySize:274726912
 13 silly logfile done cleaning log files
 14 silly idealTree buildDeps
 15 silly fetch manifest puppeteer-core@*
 16 silly packumentCache full:https://registry.npmjs.org/puppeteer-core cache-miss
-17 http fetch GET 200 https://registry.npmjs.org/puppeteer-core 752ms (cache revalidated)
+17 http fetch GET 200 https://registry.npmjs.org/puppeteer-core 429ms (cache revalidated)
 18 silly packumentCache full:https://registry.npmjs.org/puppeteer-core set size:1558518 disposed:false
 19 silly placeDep ROOT puppeteer-core@25.5.0 OK for: honda-dms@0.1.0 want: *
 20 silly fetch manifest ws@^8.21.1
@@ -30,33 +30,33 @@
 29 silly packumentCache full:https://registry.npmjs.org/typed-query-selector cache-miss
 30 silly fetch manifest webdriver-bidi-protocol@0.4.2
 31 silly packumentCache full:https://registry.npmjs.org/webdriver-bidi-protocol cache-miss
-32 http fetch GET 200 https://registry.npmjs.org/typed-query-selector 185ms (cache revalidated)
-33 silly packumentCache full:https://registry.npmjs.org/typed-query-selector set size:100364 disposed:false
-34 http fetch GET 200 https://registry.npmjs.org/chromium-bidi 585ms (cache revalidated)
-35 silly packumentCache full:https://registry.npmjs.org/chromium-bidi set size:727195 disposed:false
-36 http fetch GET 200 https://registry.npmjs.org/webdriver-bidi-protocol 594ms (cache revalidated)
-37 silly packumentCache full:https://registry.npmjs.org/webdriver-bidi-protocol set size:87391 disposed:false
-38 http fetch GET 200 https://registry.npmjs.org/ws 707ms (cache revalidated)
-39 silly packumentCache full:https://registry.npmjs.org/ws set size:447661 disposed:false
-40 http fetch GET 200 https://registry.npmjs.org/devtools-protocol 762ms (cache revalidated)
-41 silly packumentCache full:https://registry.npmjs.org/devtools-protocol set size:3047983 disposed:false
-42 http fetch GET 200 https://registry.npmjs.org/@puppeteer%2fbrowsers 779ms (cache revalidated)
-43 silly packumentCache full:https://registry.npmjs.org/@puppeteer%2fbrowsers set size:275087 disposed:false
+32 http fetch GET 200 https://registry.npmjs.org/chromium-bidi 327ms (cache revalidated)
+33 silly packumentCache full:https://registry.npmjs.org/chromium-bidi set size:727195 disposed:false
+34 http fetch GET 200 https://registry.npmjs.org/@puppeteer%2fbrowsers 528ms (cache revalidated)
+35 silly packumentCache full:https://registry.npmjs.org/@puppeteer%2fbrowsers set size:275087 disposed:false
+36 http fetch GET 200 https://registry.npmjs.org/typed-query-selector 535ms (cache revalidated)
+37 silly packumentCache full:https://registry.npmjs.org/typed-query-selector set size:100364 disposed:false
+38 http fetch GET 200 https://registry.npmjs.org/devtools-protocol 540ms (cache revalidated)
+39 silly packumentCache full:https://registry.npmjs.org/devtools-protocol set size:3047983 disposed:false
+40 http fetch GET 200 https://registry.npmjs.org/webdriver-bidi-protocol 553ms (cache revalidated)
+41 silly packumentCache full:https://registry.npmjs.org/webdriver-bidi-protocol set size:87391 disposed:false
+42 http fetch GET 200 https://registry.npmjs.org/ws 896ms (cache revalidated)
+43 silly packumentCache full:https://registry.npmjs.org/ws set size:447661 disposed:false
 44 silly fetch manifest bufferutil@^4.0.1
 45 silly packumentCache full:https://registry.npmjs.org/bufferutil cache-miss
-46 http fetch GET 200 https://registry.npmjs.org/bufferutil 180ms (cache revalidated)
+46 http fetch GET 200 https://registry.npmjs.org/bufferutil 48ms (cache revalidated)
 47 silly packumentCache full:https://registry.npmjs.org/bufferutil set size:52668 disposed:false
 48 silly fetch manifest utf-8-validate@>=5.0.2
 49 silly packumentCache full:https://registry.npmjs.org/utf-8-validate cache-miss
-50 http fetch GET 200 https://registry.npmjs.org/utf-8-validate 154ms (cache revalidated)
+50 http fetch GET 200 https://registry.npmjs.org/utf-8-validate 148ms (cache revalidated)
 51 silly packumentCache full:https://registry.npmjs.org/utf-8-validate set size:77012 disposed:false
 52 silly fetch manifest proxy-agent@>=8.0.1
 53 silly packumentCache full:https://registry.npmjs.org/proxy-agent cache-miss
-54 http fetch GET 200 https://registry.npmjs.org/proxy-agent 151ms (cache revalidated)
+54 http fetch GET 200 https://registry.npmjs.org/proxy-agent 220ms (cache revalidated)
 55 silly packumentCache full:https://registry.npmjs.org/proxy-agent set size:81277 disposed:false
 56 silly fetch manifest yauzl@^2.10.0 || ^3.4.0
 57 silly packumentCache full:https://registry.npmjs.org/yauzl cache-miss
-58 http fetch GET 200 https://registry.npmjs.org/yauzl 175ms (cache revalidated)
+58 http fetch GET 200 https://registry.npmjs.org/yauzl 144ms (cache revalidated)
 59 silly packumentCache full:https://registry.npmjs.org/yauzl set size:114252 disposed:false
 60 silly placeDep ROOT @puppeteer/browsers@3.1.0 OK for: puppeteer-core@25.5.0 want: 3.1.0
 61 silly placeDep ROOT chromium-bidi@17.0.2 OK for: puppeteer-core@25.5.0 want: 17.0.2
@@ -72,14 +72,14 @@
 71 silly packumentCache full:https://registry.npmjs.org/mitt cache-miss
 72 silly fetch manifest zod@^3.24.1
 73 silly packumentCache full:https://registry.npmjs.org/zod cache-miss
-74 http fetch GET 200 https://registry.npmjs.org/yargs 164ms (cache revalidated)
+74 http fetch GET 200 https://registry.npmjs.org/yargs 71ms (cache revalidated)
 75 silly packumentCache full:https://registry.npmjs.org/yargs set size:759965 disposed:false
-76 http fetch GET 200 https://registry.npmjs.org/modern-tar 176ms (cache revalidated)
+76 http fetch GET 200 https://registry.npmjs.org/modern-tar 234ms (cache revalidated)
 77 silly packumentCache full:https://registry.npmjs.org/modern-tar set size:95141 disposed:false
-78 http fetch GET 200 https://registry.npmjs.org/zod 196ms (cache revalidated)
-79 silly packumentCache full:https://registry.npmjs.org/zod set size:3552562 disposed:false
-80 http fetch GET 200 https://registry.npmjs.org/mitt 216ms (cache revalidated)
-81 silly packumentCache full:https://registry.npmjs.org/mitt set size:61451 disposed:false
+78 http fetch GET 200 https://registry.npmjs.org/mitt 300ms (cache revalidated)
+79 silly packumentCache full:https://registry.npmjs.org/mitt set size:61451 disposed:false
+80 http fetch GET 200 https://registry.npmjs.org/zod 535ms (cache updated)
+81 silly packumentCache full:https://registry.npmjs.org/zod set size:undefined disposed:false
 82 silly placeDep ROOT modern-tar@0.7.7 OK for: @puppeteer/browsers@3.1.0 want: ^0.7.6
 83 silly placeDep node_modules/@puppeteer/browsers yargs@18.1.0 OK for: @puppeteer/browsers@3.1.0 want: ^18.0.0
 84 silly fetch manifest y18n@^5.0.5
@@ -90,14 +90,14 @@
 89 silly packumentCache full:https://registry.npmjs.org/string-width cache-miss
 90 silly fetch manifest yargs-parser@^22.0.0
 91 silly packumentCache full:https://registry.npmjs.org/yargs-parser cache-miss
-92 http fetch GET 200 https://registry.npmjs.org/y18n 150ms (cache revalidated)
+92 http fetch GET 200 https://registry.npmjs.org/y18n 54ms (cache revalidated)
 93 silly packumentCache full:https://registry.npmjs.org/y18n set size:76155 disposed:false
-94 http fetch GET 200 https://registry.npmjs.org/cliui 153ms (cache revalidated)
-95 silly packumentCache full:https://registry.npmjs.org/cliui set size:69089 disposed:false
-96 http fetch GET 200 https://registry.npmjs.org/string-width 170ms (cache revalidated)
+94 http fetch GET 200 https://registry.npmjs.org/yargs-parser 112ms (cache revalidated)
+95 silly packumentCache full:https://registry.npmjs.org/yargs-parser set size:238630 disposed:false
+96 http fetch GET 200 https://registry.npmjs.org/string-width 149ms (cache revalidated)
 97 silly packumentCache full:https://registry.npmjs.org/string-width set size:72458 disposed:false
-98 http fetch GET 200 https://registry.npmjs.org/yargs-parser 172ms (cache revalidated)
-99 silly packumentCache full:https://registry.npmjs.org/yargs-parser set size:238630 disposed:false
+98 http fetch GET 200 https://registry.npmjs.org/cliui 222ms (cache revalidated)
+99 silly packumentCache full:https://registry.npmjs.org/cliui set size:69089 disposed:false
 100 silly placeDep ROOT mitt@3.0.1 OK for: chromium-bidi@17.0.2 want: ^3.0.1
 101 silly placeDep node_modules/chromium-bidi zod@3.25.76 OK for: chromium-bidi@17.0.2 want: ^3.24.1
 102 silly placeDep node_modules/@puppeteer/browsers cliui@9.0.1 OK for: yargs@18.1.0 want: ^9.0.1
@@ -114,13 +114,13 @@
 113 silly packumentCache full:https://registry.npmjs.org/get-east-asian-width cache-miss
 114 silly fetch manifest strip-ansi@^7.1.2
 115 silly packumentCache full:https://registry.npmjs.org/strip-ansi cache-miss
-116 http fetch GET 200 https://registry.npmjs.org/get-east-asian-width 153ms (cache revalidated)
-117 silly packumentCache full:https://registry.npmjs.org/get-east-asian-width set size:20538 disposed:false
-118 http fetch GET 200 https://registry.npmjs.org/strip-ansi 157ms (cache revalidated)
-119 silly packumentCache full:https://registry.npmjs.org/strip-ansi set size:44998 disposed:false
-120 http fetch GET 200 https://registry.npmjs.org/wrap-ansi 188ms (cache revalidated)
-121 silly packumentCache full:https://registry.npmjs.org/wrap-ansi set size:55299 disposed:false
-122 http fetch GET 200 https://registry.npmjs.org/strip-ansi 190ms (cache revalidated)
+116 http fetch GET 200 https://registry.npmjs.org/wrap-ansi 147ms (cache revalidated)
+117 silly packumentCache full:https://registry.npmjs.org/wrap-ansi set size:55299 disposed:false
+118 http fetch GET 200 https://registry.npmjs.org/get-east-asian-width 235ms (cache revalidated)
+119 silly packumentCache full:https://registry.npmjs.org/get-east-asian-width set size:20538 disposed:false
+120 http fetch GET 200 https://registry.npmjs.org/strip-ansi 319ms (cache revalidated)
+121 silly packumentCache full:https://registry.npmjs.org/strip-ansi set size:44998 disposed:false
+122 http fetch GET 200 https://registry.npmjs.org/strip-ansi 341ms (cache revalidated)
 123 silly packumentCache full:https://registry.npmjs.org/strip-ansi set size:44998 disposed:false
 124 silly packumentCache full:https://registry.npmjs.org/strip-ansi dispose
 125 silly placeDep node_modules/@puppeteer/browsers/node_modules/cliui string-width@7.2.0 OK for: cliui@9.0.1 want: ^7.2.0
@@ -136,12 +136,12 @@
 135 silly packumentCache full:https://registry.npmjs.org/ansi-styles cache-miss
 136 silly fetch manifest string-width@^7.0.0
 137 silly packumentCache full:https://registry.npmjs.org/string-width cache-hit
-138 http fetch GET 200 https://registry.npmjs.org/ansi-regex 174ms (cache revalidated)
-139 silly packumentCache full:https://registry.npmjs.org/ansi-regex set size:43572 disposed:false
-140 http fetch GET 200 https://registry.npmjs.org/emoji-regex 176ms (cache revalidated)
-141 silly packumentCache full:https://registry.npmjs.org/emoji-regex set size:89064 disposed:false
-142 http fetch GET 200 https://registry.npmjs.org/ansi-styles 181ms (cache revalidated)
-143 silly packumentCache full:https://registry.npmjs.org/ansi-styles set size:71772 disposed:false
+138 http fetch GET 200 https://registry.npmjs.org/emoji-regex 148ms (cache revalidated)
+139 silly packumentCache full:https://registry.npmjs.org/emoji-regex set size:89064 disposed:false
+140 http fetch GET 200 https://registry.npmjs.org/ansi-styles 150ms (cache revalidated)
+141 silly packumentCache full:https://registry.npmjs.org/ansi-styles set size:71772 disposed:false
+142 http fetch GET 200 https://registry.npmjs.org/ansi-regex 225ms (cache revalidated)
+143 silly packumentCache full:https://registry.npmjs.org/ansi-regex set size:43572 disposed:false
 144 silly placeDep ROOT get-east-asian-width@1.6.0 OK for: string-width@8.2.2 want: ^1.5.0
 145 silly placeDep node_modules/@puppeteer/browsers ansi-regex@6.2.2 OK for: strip-ansi@7.2.0 want: ^6.2.2
 146 silly placeDep node_modules/@puppeteer/browsers ansi-styles@6.2.3 OK for: wrap-ansi@9.0.2 want: ^6.2.1
@@ -253,8 +253,11 @@
 150 silly audit   '@types/json-schema': [ '7.0.15' ],
 150 silly audit   '@types/json5': [ '0.0.29' ],
 150 silly audit   '@types/node': [ '20.19.30' ],
+150 silly audit   '@types/pako': [ '2.0.4' ],
+150 silly audit   '@types/raf': [ '3.4.3' ],
 150 silly audit   '@types/react': [ '19.2.8' ],
 150 silly audit   '@types/react-dom': [ '19.2.3' ],
+150 silly audit   '@types/trusted-types': [ '2.0.7' ],
 150 silly audit   '@types/use-sync-external-store': [ '0.0.6' ],
 150 silly audit   '@types/webidl-conversions': [ '7.0.3' ],
 150 silly audit   '@types/whatwg-url': [ '13.0.0' ],
@@ -313,6 +316,7 @@
 150 silly audit   'axe-core': [ '4.11.1' ],
 150 silly audit   'axobject-query': [ '4.1.0' ],
 150 silly audit   'balanced-match': [ '1.0.2' ],
+150 silly audit   'base64-arraybuffer': [ '1.0.2' ],
 150 silly audit   'baseline-browser-mapping': [ '2.9.15' ],
 150 silly audit   bcryptjs: [ '3.0.3' ],
 150 silly audit   braces: [ '3.0.3' ],
@@ -324,6 +328,7 @@
 150 silly audit   callsites: [ '3.1.0' ],
 150 silly audit   camelcase: [ '5.3.1' ],
 150 silly audit   'caniuse-lite': [ '1.0.30001764' ],
+150 silly audit   canvg: [ '3.0.11' ],
 150 silly audit   cfb: [ '1.2.2' ],
 150 silly audit   chalk: [ '4.1.2' ],
 150 silly audit   'client-only': [ '0.0.1' ],
@@ -335,8 +340,10 @@
 150 silly audit   'concat-map': [ '0.0.1' ],
 150 silly audit   'convert-source-map': [ '2.0.0' ],
 150 silly audit   cookie: [ '0.7.2' ],
+150 silly audit   'core-js': [ '3.50.0' ],
 150 silly audit   'crc-32': [ '1.2.2' ],
 150 silly audit   'cross-spawn': [ '7.0.6' ],
+150 silly audit   'css-line-break': [ '2.1.0' ],
 150 silly audit   csstype: [ '3.2.3' ],
 150 silly audit   'd3-array': [ '3.2.4' ],
 150 silly audit   'd3-color': [ '3.1.0' ],
@@ -362,6 +369,7 @@
 150 silly audit   'detect-libc': [ '2.1.2' ],
 150 silly audit   dijkstrajs: [ '1.0.3' ],
 150 silly audit   doctrine: [ '2.1.0' ],
+150 silly audit   dompurify: [ '3.4.13' ],
 150 silly audit   'dunder-proto': [ '1.0.1' ],
 150 silly audit   'electron-to-chromium': [ '1.5.267' ],
 150 silly audit   'emoji-regex': [ '9.2.2', '8.0.0', '10.6.0' ],
@@ -399,7 +407,9 @@
 150 silly audit   'glob-parent': [ '5.1.2', '6.0.2' ],
 150 silly audit   'fast-json-stable-stringify': [ '2.1.0' ],
 150 silly audit   'fast-levenshtein': [ '2.0.6' ],
+150 silly audit   'fast-png': [ '6.4.0' ],
 150 silly audit   fastq: [ '1.20.1' ],
+150 silly audit   fflate: [ '0.8.3' ],
 150 silly audit   'file-entry-cache': [ '8.0.0' ],
 150 silly audit   'fill-range': [ '7.1.1' ],
 150 silly audit   'find-up': [ '5.0.0', '4.1.0' ],
@@ -429,11 +439,13 @@
 150 silly audit   heic2any: [ '0.0.4' ],
 150 silly audit   'hermes-estree': [ '0.25.1' ],
 150 silly audit   'hermes-parser': [ '0.25.1' ],
+150 silly audit   html2canvas: [ '1.4.1' ],
 150 silly audit   'html5-qrcode': [ '2.3.8' ],
 150 silly audit   'import-fresh': [ '3.3.1' ],
 150 silly audit   imurmurhash: [ '0.1.4' ],
 150 silly audit   'internal-slot': [ '1.1.0' ],
 150 silly audit   internmap: [ '2.0.3' ],
+150 silly audit   iobuffer: [ '5.4.0' ],
 150 silly audit   'is-array-buffer': [ '3.0.5' ],
 150 silly audit   'is-async-function': [ '2.1.1' ],
 150 silly audit   'is-bigint': [ '1.1.0' ],
@@ -474,6 +486,7 @@
 150 silly audit   'json-schema-traverse': [ '0.4.1' ],
 150 silly audit   'json-stable-stringify-without-jsonify': [ '1.0.1' ],
 150 silly audit   json5: [ '2.2.3', '1.0.2' ],
+150 silly audit   jspdf: [ '4.2.1' ],
 150 silly audit   'jsx-ast-utils': [ '3.3.5' ],
 150 silly audit   kareem: [ '3.0.0' ],
 150 silly audit   keyv: [ '4.5.4' ],
@@ -521,10 +534,12 @@
 150 silly audit   'p-limit': [ '3.1.0', '2.3.0' ],
 150 silly audit   'p-locate': [ '5.0.0', '4.1.0' ],
 150 silly audit   'p-try': [ '2.2.0' ],
+150 silly audit   pako: [ '2.2.0' ],
 150 silly audit   'parent-module': [ '1.0.1' ],
 150 silly audit   'path-exists': [ '4.0.0' ],
 150 silly audit   'path-key': [ '3.1.1' ],
 150 silly audit   'path-parse': [ '1.0.7' ],
+150 silly audit   'performance-now': [ '2.1.0' ],
 150 silly audit   picocolors: [ '1.1.1' ],
 150 silly audit   picomatch: [ '2.3.1', '4.0.3' ],
 150 silly audit   pngjs: [ '5.0.0' ],
@@ -538,6 +553,7 @@
 150 silly audit   punycode: [ '2.3.1' ],
 150 silly audit   qrcode: [ '1.5.4' ],
 150 silly audit   'queue-microtask': [ '1.2.3' ],
+150 silly audit   raf: [ '3.4.1' ],
 150 silly audit   react: [ '19.2.3' ],
 150 silly audit   'react-dom': [ '19.2.3' ],
 150 silly audit   'react-is': [ '16.13.1' ],
@@ -546,6 +562,7 @@
 150 silly audit   redux: [ '5.0.1' ],
 150 silly audit   'redux-thunk': [ '3.1.0' ],
 150 silly audit   'reflect.getprototypeof': [ '1.0.10' ],
+150 silly audit   'regenerator-runtime': [ '0.13.11' ],
 150 silly audit   'regexp.prototype.flags': [ '1.5.4' ],
 150 silly audit   'require-directory': [ '2.1.1' ],
 150 silly audit   'require-main-filename': [ '2.0.0' ],
@@ -553,6 +570,7 @@
 150 silly audit   'resolve-from': [ '4.0.0' ],
 150 silly audit   'resolve-pkg-maps': [ '1.0.0' ],
 150 silly audit   reusify: [ '1.1.0' ],
+150 silly audit   rgbcolor: [ '1.0.1' ],
 150 silly audit   'run-parallel': [ '1.2.0' ],
 150 silly audit   'safe-array-concat': [ '1.1.3' ],
 150 silly audit   'safe-push-apply': [ '1.0.0' ],
@@ -574,6 +592,7 @@
 150 silly audit   'sparse-bitfield': [ '3.0.3' ],
 150 silly audit   ssf: [ '0.11.2' ],
 150 silly audit   'stable-hash': [ '0.0.5' ],
+150 silly audit   'stackblur-canvas': [ '2.7.0' ],
 150 silly audit   'stop-iteration-iterator': [ '1.1.0' ],
 150 silly audit   'string-width': [ '4.2.3', '8.2.2', '7.2.0' ],
 150 silly audit   'string.prototype.includes': [ '2.0.1' ],
@@ -588,6 +607,8 @@
 150 silly audit   'styled-jsx': [ '5.1.6' ],
 150 silly audit   'supports-color': [ '7.2.0' ],
 150 silly audit   'supports-preserve-symlinks-flag': [ '1.0.0' ],
+150 silly audit   'svg-pathdata': [ '6.0.3' ],
+150 silly audit   'text-segmentation': [ '1.0.3' ],
 150 silly audit   'tiny-invariant': [ '1.3.3' ],
 150 silly audit   tinyglobby: [ '0.2.15' ],
 150 silly audit   fdir: [ '6.5.0' ],
@@ -610,6 +631,7 @@
 150 silly audit   'update-browserslist-db': [ '1.2.3' ],
 150 silly audit   'uri-js': [ '4.4.1' ],
 150 silly audit   'use-sync-external-store': [ '1.6.0' ],
+150 silly audit   utrie: [ '1.0.2' ],
 150 silly audit   uuid: [ '8.3.2' ],
 150 silly audit   'victory-vendor': [ '37.3.6' ],
 150 silly audit   'webidl-conversions': [ '7.0.0' ],
@@ -642,30 +664,30 @@
 150 silly audit   mitt: [ '3.0.1' ],
 150 silly audit   'get-east-asian-width': [ '1.6.0' ]
 150 silly audit }
-151 http cache modern-tar@https://registry.npmjs.org/modern-tar/-/modern-tar-0.7.7.tgz 0ms (cache hit)
-152 http cache ws@https://registry.npmjs.org/ws/-/ws-8.21.3.tgz 0ms (cache hit)
-153 http cache webdriver-bidi-protocol@https://registry.npmjs.org/webdriver-bidi-protocol/-/webdriver-bidi-protocol-0.4.2.tgz 0ms (cache hit)
-154 http cache typed-query-selector@https://registry.npmjs.org/typed-query-selector/-/typed-query-selector-2.12.2.tgz 0ms (cache hit)
-155 http cache devtools-protocol@https://registry.npmjs.org/devtools-protocol/-/devtools-protocol-0.0.1653615.tgz 0ms (cache hit)
-156 http cache chromium-bidi@https://registry.npmjs.org/chromium-bidi/-/chromium-bidi-17.0.2.tgz 0ms (cache hit)
-157 http cache @puppeteer/browsers@https://registry.npmjs.org/@puppeteer/browsers/-/browsers-3.1.0.tgz 0ms (cache hit)
-158 http cache puppeteer-core@https://registry.npmjs.org/puppeteer-core/-/puppeteer-core-25.5.0.tgz 0ms (cache hit)
-159 http cache zod@https://registry.npmjs.org/zod/-/zod-3.25.76.tgz 0ms (cache hit)
-160 http cache emoji-regex@https://registry.npmjs.org/emoji-regex/-/emoji-regex-10.6.0.tgz 0ms (cache hit)
-161 http cache ansi-styles@https://registry.npmjs.org/ansi-styles/-/ansi-styles-6.2.3.tgz 0ms (cache hit)
-162 http cache ansi-regex@https://registry.npmjs.org/ansi-regex/-/ansi-regex-6.2.2.tgz 0ms (cache hit)
-163 http cache string-width@https://registry.npmjs.org/string-width/-/string-width-7.2.0.tgz 0ms (cache hit)
-164 http cache strip-ansi@https://registry.npmjs.org/strip-ansi/-/strip-ansi-7.2.0.tgz 0ms (cache hit)
-165 http cache yargs-parser@https://registry.npmjs.org/yargs-parser/-/yargs-parser-22.0.0.tgz 0ms (cache hit)
-166 http cache y18n@https://registry.npmjs.org/y18n/-/y18n-5.0.8.tgz 0ms (cache hit)
-167 http cache wrap-ansi@https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-9.0.2.tgz 0ms (cache hit)
-168 http cache cliui@https://registry.npmjs.org/cliui/-/cliui-9.0.1.tgz 0ms (cache hit)
+151 http cache get-east-asian-width@https://registry.npmjs.org/get-east-asian-width/-/get-east-asian-width-1.6.0.tgz 0ms (cache hit)
+152 http cache mitt@https://registry.npmjs.org/mitt/-/mitt-3.0.1.tgz 0ms (cache hit)
+153 http cache ws@https://registry.npmjs.org/ws/-/ws-8.21.3.tgz 0ms (cache hit)
+154 http cache modern-tar@https://registry.npmjs.org/modern-tar/-/modern-tar-0.7.7.tgz 0ms (cache hit)
+155 http cache webdriver-bidi-protocol@https://registry.npmjs.org/webdriver-bidi-protocol/-/webdriver-bidi-protocol-0.4.2.tgz 0ms (cache hit)
+156 http cache typed-query-selector@https://registry.npmjs.org/typed-query-selector/-/typed-query-selector-2.12.2.tgz 0ms (cache hit)
+157 http cache chromium-bidi@https://registry.npmjs.org/chromium-bidi/-/chromium-bidi-17.0.2.tgz 0ms (cache hit)
+158 http cache @puppeteer/browsers@https://registry.npmjs.org/@puppeteer/browsers/-/browsers-3.1.0.tgz 0ms (cache hit)
+159 http cache puppeteer-core@https://registry.npmjs.org/puppeteer-core/-/puppeteer-core-25.5.0.tgz 0ms (cache hit)
+160 http cache devtools-protocol@https://registry.npmjs.org/devtools-protocol/-/devtools-protocol-0.0.1653615.tgz 0ms (cache hit)
+161 http cache zod@https://registry.npmjs.org/zod/-/zod-3.25.76.tgz 0ms (cache hit)
+162 http cache emoji-regex@https://registry.npmjs.org/emoji-regex/-/emoji-regex-10.6.0.tgz 0ms (cache hit)
+163 http cache ansi-regex@https://registry.npmjs.org/ansi-regex/-/ansi-regex-6.2.2.tgz 0ms (cache hit)
+164 http cache ansi-styles@https://registry.npmjs.org/ansi-styles/-/ansi-styles-6.2.3.tgz 0ms (cache hit)
+165 http cache wrap-ansi@https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-9.0.2.tgz 0ms (cache hit)
+166 http cache string-width@https://registry.npmjs.org/string-width/-/string-width-7.2.0.tgz 0ms (cache hit)
+167 http cache strip-ansi@https://registry.npmjs.org/strip-ansi/-/strip-ansi-7.2.0.tgz 0ms (cache hit)
+168 http cache yargs-parser@https://registry.npmjs.org/yargs-parser/-/yargs-parser-22.0.0.tgz 0ms (cache hit)
 169 http cache string-width@https://registry.npmjs.org/string-width/-/string-width-8.2.2.tgz 0ms (cache hit)
-170 http cache string-width@https://registry.npmjs.org/string-width/-/string-width-7.2.0.tgz 0ms (cache hit)
-171 http cache yargs@https://registry.npmjs.org/yargs/-/yargs-18.1.0.tgz 0ms (cache hit)
-172 http cache mitt@https://registry.npmjs.org/mitt/-/mitt-3.0.1.tgz 0ms (cache hit)
-173 http cache get-east-asian-width@https://registry.npmjs.org/get-east-asian-width/-/get-east-asian-width-1.6.0.tgz 0ms (cache hit)
-174 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 338ms
+170 http cache y18n@https://registry.npmjs.org/y18n/-/y18n-5.0.8.tgz 0ms (cache hit)
+171 http cache cliui@https://registry.npmjs.org/cliui/-/cliui-9.0.1.tgz 0ms (cache hit)
+172 http cache string-width@https://registry.npmjs.org/string-width/-/string-width-7.2.0.tgz 0ms (cache hit)
+173 http cache yargs@https://registry.npmjs.org/yargs/-/yargs-18.1.0.tgz 0ms (cache hit)
+174 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 773ms
 175 silly audit report {
 175 silly audit report   '@anthropic-ai/sdk': [
 175 silly audit report     {
@@ -1364,77 +1386,77 @@
 189 silly packumentCache corgi:https://registry.npmjs.org/sharp cache-miss
 190 silly packumentCache corgi:https://registry.npmjs.org/uuid cache-miss
 191 silly packumentCache corgi:https://registry.npmjs.org/xlsx cache-miss
-192 http fetch GET 200 https://registry.npmjs.org/ajv 179ms (cache revalidated)
+192 http fetch GET 200 https://registry.npmjs.org/ajv 161ms (cache revalidated)
 193 silly packumentCache corgi:https://registry.npmjs.org/ajv set size:467559 disposed:false
-194 http fetch GET 200 https://registry.npmjs.org/next-auth 182ms (cache revalidated)
-195 silly packumentCache corgi:https://registry.npmjs.org/next-auth set size:1817421 disposed:false
-196 http fetch GET 200 https://registry.npmjs.org/minimatch 207ms (cache revalidated)
-197 silly packumentCache corgi:https://registry.npmjs.org/minimatch set size:169442 disposed:false
-198 http fetch GET 200 https://registry.npmjs.org/@babel%2fcore 214ms (cache revalidated)
-199 silly packumentCache corgi:https://registry.npmjs.org/@babel%2fcore set size:422446 disposed:false
-200 http fetch GET 200 https://registry.npmjs.org/nanoid 220ms (cache revalidated)
-201 silly packumentCache corgi:https://registry.npmjs.org/nanoid set size:158420 disposed:false
-202 http fetch GET 200 https://registry.npmjs.org/@anthropic-ai%2fsdk 242ms (cache revalidated)
-203 silly packumentCache corgi:https://registry.npmjs.org/@anthropic-ai%2fsdk set size:158423 disposed:false
-204 http fetch GET 200 https://registry.npmjs.org/xlsx 320ms (cache revalidated)
+194 http fetch GET 200 https://registry.npmjs.org/nanoid 166ms (cache revalidated)
+195 silly packumentCache corgi:https://registry.npmjs.org/nanoid set size:158420 disposed:false
+196 http fetch GET 200 https://registry.npmjs.org/postcss 167ms (cache revalidated)
+197 silly packumentCache corgi:https://registry.npmjs.org/postcss set size:355680 disposed:false
+198 http fetch GET 200 https://registry.npmjs.org/js-yaml 179ms (cache revalidated)
+199 silly packumentCache corgi:https://registry.npmjs.org/js-yaml set size:70542 disposed:false
+200 http fetch GET 200 https://registry.npmjs.org/uuid 190ms (cache revalidated)
+201 silly packumentCache corgi:https://registry.npmjs.org/uuid set size:82973 disposed:false
+202 http fetch GET 200 https://registry.npmjs.org/brace-expansion 196ms (cache revalidated)
+203 silly packumentCache corgi:https://registry.npmjs.org/brace-expansion set size:34964 disposed:false
+204 http fetch GET 200 https://registry.npmjs.org/xlsx 198ms (cache revalidated)
 205 silly packumentCache corgi:https://registry.npmjs.org/xlsx set size:134408 disposed:false
-206 http fetch GET 200 https://registry.npmjs.org/flatted 598ms (cache revalidated)
+206 http fetch GET 200 https://registry.npmjs.org/flatted 246ms (cache revalidated)
 207 silly packumentCache corgi:https://registry.npmjs.org/flatted set size:59752 disposed:false
-208 http fetch GET 200 https://registry.npmjs.org/mongoose 600ms (cache revalidated)
-209 silly packumentCache corgi:https://registry.npmjs.org/mongoose set size:1642170 disposed:false
-210 http fetch GET 200 https://registry.npmjs.org/next 631ms (cache revalidated)
-211 silly packumentCache corgi:https://registry.npmjs.org/next set size:25438637 disposed:false
-212 http fetch GET 200 https://registry.npmjs.org/postcss 1454ms (cache revalidated)
-213 silly packumentCache corgi:https://registry.npmjs.org/postcss set size:355680 disposed:false
-214 http fetch GET 200 https://registry.npmjs.org/sharp 1457ms (cache revalidated)
-215 silly packumentCache corgi:https://registry.npmjs.org/sharp set size:291503 disposed:false
-216 http fetch GET 200 https://registry.npmjs.org/js-yaml 1459ms (cache revalidated)
-217 silly packumentCache corgi:https://registry.npmjs.org/js-yaml set size:70542 disposed:false
-218 http fetch GET 200 https://registry.npmjs.org/brace-expansion 1461ms (cache revalidated)
-219 silly packumentCache corgi:https://registry.npmjs.org/brace-expansion set size:34964 disposed:false
-220 http fetch GET 200 https://registry.npmjs.org/uuid 1460ms (cache revalidated)
-221 silly packumentCache corgi:https://registry.npmjs.org/uuid set size:82973 disposed:false
-222 http fetch GET 200 https://registry.npmjs.org/picomatch 1460ms (cache revalidated)
-223 silly packumentCache corgi:https://registry.npmjs.org/picomatch set size:45123 disposed:false
+208 http fetch GET 200 https://registry.npmjs.org/sharp 290ms (cache revalidated)
+209 silly packumentCache corgi:https://registry.npmjs.org/sharp set size:291503 disposed:false
+210 http fetch GET 200 https://registry.npmjs.org/picomatch 416ms (cache revalidated)
+211 silly packumentCache corgi:https://registry.npmjs.org/picomatch set size:45123 disposed:false
+212 http fetch GET 200 https://registry.npmjs.org/@babel%2fcore 425ms (cache revalidated)
+213 silly packumentCache corgi:https://registry.npmjs.org/@babel%2fcore set size:422446 disposed:false
+214 http fetch GET 200 https://registry.npmjs.org/mongoose 493ms (cache revalidated)
+215 silly packumentCache corgi:https://registry.npmjs.org/mongoose set size:1642170 disposed:false
+216 http fetch GET 200 https://registry.npmjs.org/next 527ms (cache revalidated)
+217 silly packumentCache corgi:https://registry.npmjs.org/next set size:25438637 disposed:false
+218 http fetch GET 200 https://registry.npmjs.org/@anthropic-ai%2fsdk 1285ms (cache revalidated)
+219 silly packumentCache corgi:https://registry.npmjs.org/@anthropic-ai%2fsdk set size:158423 disposed:false
+220 http fetch GET 200 https://registry.npmjs.org/minimatch 1285ms (cache revalidated)
+221 silly packumentCache corgi:https://registry.npmjs.org/minimatch set size:169442 disposed:false
+222 http fetch GET 200 https://registry.npmjs.org/next-auth 1286ms (cache revalidated)
+223 silly packumentCache corgi:https://registry.npmjs.org/next-auth set size:1817421 disposed:false
 224 silly packumentCache corgi:https://registry.npmjs.org/@babel%2fhelper-module-transforms cache-miss
 225 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-react-hooks cache-miss
-226 http fetch GET 200 https://registry.npmjs.org/eslint-plugin-react-hooks 152ms (cache revalidated)
-227 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-react-hooks set size:4343159 disposed:false
-228 http fetch GET 200 https://registry.npmjs.org/@babel%2fhelper-module-transforms 176ms (cache revalidated)
-229 silly packumentCache corgi:https://registry.npmjs.org/@babel%2fhelper-module-transforms set size:187739 disposed:false
+226 http fetch GET 200 https://registry.npmjs.org/@babel%2fhelper-module-transforms 146ms (cache revalidated)
+227 silly packumentCache corgi:https://registry.npmjs.org/@babel%2fhelper-module-transforms set size:187739 disposed:false
+228 http fetch GET 200 https://registry.npmjs.org/eslint-plugin-react-hooks 337ms (cache revalidated)
+229 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-react-hooks set size:4343159 disposed:false
 230 silly packumentCache corgi:https://registry.npmjs.org/@eslint%2fconfig-array cache-miss
 231 silly packumentCache corgi:https://registry.npmjs.org/@eslint%2feslintrc cache-miss
 232 silly packumentCache corgi:https://registry.npmjs.org/eslint cache-miss
 233 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-import cache-miss
 234 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-jsx-a11y cache-miss
 235 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-react cache-miss
-236 http fetch GET 200 https://registry.npmjs.org/eslint-plugin-jsx-a11y 156ms (cache revalidated)
-237 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-jsx-a11y set size:108835 disposed:false
-238 http fetch GET 200 https://registry.npmjs.org/eslint-plugin-react 157ms (cache revalidated)
-239 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-react set size:309843 disposed:false
-240 http fetch GET 200 https://registry.npmjs.org/@eslint%2fconfig-array 160ms (cache revalidated)
-241 silly packumentCache corgi:https://registry.npmjs.org/@eslint%2fconfig-array set size:19036 disposed:false
-242 http fetch GET 200 https://registry.npmjs.org/eslint 181ms (cache revalidated)
-243 silly packumentCache corgi:https://registry.npmjs.org/eslint set size:1178776 disposed:false
-244 http fetch GET 200 https://registry.npmjs.org/eslint-plugin-import 198ms (cache revalidated)
+236 http fetch GET 200 https://registry.npmjs.org/eslint-plugin-react 138ms (cache revalidated)
+237 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-react set size:309843 disposed:false
+238 http fetch GET 200 https://registry.npmjs.org/eslint 141ms (cache revalidated)
+239 silly packumentCache corgi:https://registry.npmjs.org/eslint set size:1178776 disposed:false
+240 http fetch GET 200 https://registry.npmjs.org/eslint-plugin-jsx-a11y 228ms (cache revalidated)
+241 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-jsx-a11y set size:108835 disposed:false
+242 http fetch GET 200 https://registry.npmjs.org/@eslint%2feslintrc 354ms (cache revalidated)
+243 silly packumentCache corgi:https://registry.npmjs.org/@eslint%2feslintrc set size:84432 disposed:false
+244 http fetch GET 200 https://registry.npmjs.org/eslint-plugin-import 402ms (cache revalidated)
 245 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-import set size:238396 disposed:false
-246 http fetch GET 200 https://registry.npmjs.org/@eslint%2feslintrc 203ms (cache revalidated)
-247 silly packumentCache corgi:https://registry.npmjs.org/@eslint%2feslintrc set size:84432 disposed:false
+246 http fetch GET 200 https://registry.npmjs.org/@eslint%2fconfig-array 939ms (cache revalidated)
+247 silly packumentCache corgi:https://registry.npmjs.org/@eslint%2fconfig-array set size:19036 disposed:false
 248 silly packumentCache corgi:https://registry.npmjs.org/@typescript-eslint%2ftypescript-estree cache-miss
-249 http fetch GET 200 https://registry.npmjs.org/@typescript-eslint%2ftypescript-estree 166ms (cache revalidated)
+249 http fetch GET 200 https://registry.npmjs.org/@typescript-eslint%2ftypescript-estree 389ms (cache revalidated)
 250 silly packumentCache corgi:https://registry.npmjs.org/@typescript-eslint%2ftypescript-estree set size:8878808 disposed:false
 251 silly packumentCache corgi:https://registry.npmjs.org/flat-cache cache-miss
-252 http fetch GET 200 https://registry.npmjs.org/flat-cache 158ms (cache revalidated)
+252 http fetch GET 200 https://registry.npmjs.org/flat-cache 391ms (cache revalidated)
 253 silly packumentCache corgi:https://registry.npmjs.org/flat-cache set size:51091 disposed:false
 254 silly packumentCache corgi:https://registry.npmjs.org/micromatch cache-miss
-255 http fetch GET 200 https://registry.npmjs.org/micromatch 158ms (cache revalidated)
+255 http fetch GET 200 https://registry.npmjs.org/micromatch 131ms (cache revalidated)
 256 silly packumentCache corgi:https://registry.npmjs.org/micromatch set size:71776 disposed:false
 257 silly packumentCache corgi:https://registry.npmjs.org/tinyglobby cache-miss
 258 silly packumentCache corgi:https://registry.npmjs.org/fdir cache-miss
-259 http fetch GET 200 https://registry.npmjs.org/fdir 160ms (cache revalidated)
-260 silly packumentCache corgi:https://registry.npmjs.org/fdir set size:76905 disposed:false
-261 http fetch GET 200 https://registry.npmjs.org/tinyglobby 179ms (cache revalidated)
-262 silly packumentCache corgi:https://registry.npmjs.org/tinyglobby set size:19921 disposed:false
+259 http fetch GET 200 https://registry.npmjs.org/tinyglobby 85ms (cache revalidated)
+260 silly packumentCache corgi:https://registry.npmjs.org/tinyglobby set size:19921 disposed:false
+261 http fetch GET 200 https://registry.npmjs.org/fdir 135ms (cache revalidated)
+262 silly packumentCache corgi:https://registry.npmjs.org/fdir set size:76905 disposed:false
 263 silly ADD node_modules/get-east-asian-width
 264 silly ADD node_modules/mitt
 265 silly ADD node_modules/modern-tar

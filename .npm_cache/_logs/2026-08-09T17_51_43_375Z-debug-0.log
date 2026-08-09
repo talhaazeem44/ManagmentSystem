@@ -7,11 +7,11 @@
 6 silly config load:file:/usr/local/etc/npmrc
 7 verbose title npm uninstall puppeteer-core
 8 verbose argv "uninstall" "puppeteer-core"
-9 verbose logfile logs-max:10 dir:/Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-08-09T10_47_43_221Z-
-10 verbose logfile /Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-08-09T10_47_43_221Z-debug-0.log
+9 verbose logfile logs-max:10 dir:/Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-08-09T17_51_43_375Z-
+10 verbose logfile /Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-08-09T17_51_43_375Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
-12 silly logfile done cleaning log files
-13 silly packumentCache heap:2197815296 maxSize:549453824 maxEntrySize:274726912
+12 silly packumentCache heap:2197815296 maxSize:549453824 maxEntrySize:274726912
+13 silly logfile done cleaning log files
 14 silly idealTree buildDeps
 15 silly reify mark retired [
 15 silly reify   '/Users/talhaazeem/Documents/managementSystem/node_modules/@puppeteer/browsers',
@@ -158,8 +158,11 @@
 26 silly audit   '@types/json-schema': [ '7.0.15' ],
 26 silly audit   '@types/json5': [ '0.0.29' ],
 26 silly audit   '@types/node': [ '20.19.30' ],
+26 silly audit   '@types/pako': [ '2.0.4' ],
+26 silly audit   '@types/raf': [ '3.4.3' ],
 26 silly audit   '@types/react': [ '19.2.8' ],
 26 silly audit   '@types/react-dom': [ '19.2.3' ],
+26 silly audit   '@types/trusted-types': [ '2.0.7' ],
 26 silly audit   '@types/use-sync-external-store': [ '0.0.6' ],
 26 silly audit   '@types/webidl-conversions': [ '7.0.3' ],
 26 silly audit   '@types/whatwg-url': [ '13.0.0' ],
@@ -218,6 +221,7 @@
 26 silly audit   'axe-core': [ '4.11.1' ],
 26 silly audit   'axobject-query': [ '4.1.0' ],
 26 silly audit   'balanced-match': [ '1.0.2' ],
+26 silly audit   'base64-arraybuffer': [ '1.0.2' ],
 26 silly audit   'baseline-browser-mapping': [ '2.9.15' ],
 26 silly audit   bcryptjs: [ '3.0.3' ],
 26 silly audit   braces: [ '3.0.3' ],
@@ -229,6 +233,7 @@
 26 silly audit   callsites: [ '3.1.0' ],
 26 silly audit   camelcase: [ '5.3.1' ],
 26 silly audit   'caniuse-lite': [ '1.0.30001764' ],
+26 silly audit   canvg: [ '3.0.11' ],
 26 silly audit   cfb: [ '1.2.2' ],
 26 silly audit   chalk: [ '4.1.2' ],
 26 silly audit   'client-only': [ '0.0.1' ],
@@ -240,8 +245,10 @@
 26 silly audit   'concat-map': [ '0.0.1' ],
 26 silly audit   'convert-source-map': [ '2.0.0' ],
 26 silly audit   cookie: [ '0.7.2' ],
+26 silly audit   'core-js': [ '3.50.0' ],
 26 silly audit   'crc-32': [ '1.2.2' ],
 26 silly audit   'cross-spawn': [ '7.0.6' ],
+26 silly audit   'css-line-break': [ '2.1.0' ],
 26 silly audit   csstype: [ '3.2.3' ],
 26 silly audit   'd3-array': [ '3.2.4' ],
 26 silly audit   'd3-color': [ '3.1.0' ],
@@ -267,6 +274,7 @@
 26 silly audit   'detect-libc': [ '2.1.2' ],
 26 silly audit   dijkstrajs: [ '1.0.3' ],
 26 silly audit   doctrine: [ '2.1.0' ],
+26 silly audit   dompurify: [ '3.4.13' ],
 26 silly audit   'dunder-proto': [ '1.0.1' ],
 26 silly audit   'electron-to-chromium': [ '1.5.267' ],
 26 silly audit   'emoji-regex': [ '9.2.2', '8.0.0' ],
@@ -304,7 +312,9 @@
 26 silly audit   'glob-parent': [ '5.1.2', '6.0.2' ],
 26 silly audit   'fast-json-stable-stringify': [ '2.1.0' ],
 26 silly audit   'fast-levenshtein': [ '2.0.6' ],
+26 silly audit   'fast-png': [ '6.4.0' ],
 26 silly audit   fastq: [ '1.20.1' ],
+26 silly audit   fflate: [ '0.8.3' ],
 26 silly audit   'file-entry-cache': [ '8.0.0' ],
 26 silly audit   'fill-range': [ '7.1.1' ],
 26 silly audit   'find-up': [ '5.0.0', '4.1.0' ],
@@ -334,11 +344,13 @@
 26 silly audit   heic2any: [ '0.0.4' ],
 26 silly audit   'hermes-estree': [ '0.25.1' ],
 26 silly audit   'hermes-parser': [ '0.25.1' ],
+26 silly audit   html2canvas: [ '1.4.1' ],
 26 silly audit   'html5-qrcode': [ '2.3.8' ],
 26 silly audit   'import-fresh': [ '3.3.1' ],
 26 silly audit   imurmurhash: [ '0.1.4' ],
 26 silly audit   'internal-slot': [ '1.1.0' ],
 26 silly audit   internmap: [ '2.0.3' ],
+26 silly audit   iobuffer: [ '5.4.0' ],
 26 silly audit   'is-array-buffer': [ '3.0.5' ],
 26 silly audit   'is-async-function': [ '2.1.1' ],
 26 silly audit   'is-bigint': [ '1.1.0' ],
@@ -379,6 +391,7 @@
 26 silly audit   'json-schema-traverse': [ '0.4.1' ],
 26 silly audit   'json-stable-stringify-without-jsonify': [ '1.0.1' ],
 26 silly audit   json5: [ '2.2.3', '1.0.2' ],
+26 silly audit   jspdf: [ '4.2.1' ],
 26 silly audit   'jsx-ast-utils': [ '3.3.5' ],
 26 silly audit   kareem: [ '3.0.0' ],
 26 silly audit   keyv: [ '4.5.4' ],
@@ -426,10 +439,12 @@
 26 silly audit   'p-limit': [ '3.1.0', '2.3.0' ],
 26 silly audit   'p-locate': [ '5.0.0', '4.1.0' ],
 26 silly audit   'p-try': [ '2.2.0' ],
+26 silly audit   pako: [ '2.2.0' ],
 26 silly audit   'parent-module': [ '1.0.1' ],
 26 silly audit   'path-exists': [ '4.0.0' ],
 26 silly audit   'path-key': [ '3.1.1' ],
 26 silly audit   'path-parse': [ '1.0.7' ],
+26 silly audit   'performance-now': [ '2.1.0' ],
 26 silly audit   picocolors: [ '1.1.1' ],
 26 silly audit   picomatch: [ '2.3.1', '4.0.3' ],
 26 silly audit   pngjs: [ '5.0.0' ],
@@ -443,6 +458,7 @@
 26 silly audit   punycode: [ '2.3.1' ],
 26 silly audit   qrcode: [ '1.5.4' ],
 26 silly audit   'queue-microtask': [ '1.2.3' ],
+26 silly audit   raf: [ '3.4.1' ],
 26 silly audit   react: [ '19.2.3' ],
 26 silly audit   'react-dom': [ '19.2.3' ],
 26 silly audit   'react-is': [ '16.13.1' ],
@@ -451,6 +467,7 @@
 26 silly audit   redux: [ '5.0.1' ],
 26 silly audit   'redux-thunk': [ '3.1.0' ],
 26 silly audit   'reflect.getprototypeof': [ '1.0.10' ],
+26 silly audit   'regenerator-runtime': [ '0.13.11' ],
 26 silly audit   'regexp.prototype.flags': [ '1.5.4' ],
 26 silly audit   'require-directory': [ '2.1.1' ],
 26 silly audit   'require-main-filename': [ '2.0.0' ],
@@ -458,6 +475,7 @@
 26 silly audit   'resolve-from': [ '4.0.0' ],
 26 silly audit   'resolve-pkg-maps': [ '1.0.0' ],
 26 silly audit   reusify: [ '1.1.0' ],
+26 silly audit   rgbcolor: [ '1.0.1' ],
 26 silly audit   'run-parallel': [ '1.2.0' ],
 26 silly audit   'safe-array-concat': [ '1.1.3' ],
 26 silly audit   'safe-push-apply': [ '1.0.0' ],
@@ -479,6 +497,7 @@
 26 silly audit   'sparse-bitfield': [ '3.0.3' ],
 26 silly audit   ssf: [ '0.11.2' ],
 26 silly audit   'stable-hash': [ '0.0.5' ],
+26 silly audit   'stackblur-canvas': [ '2.7.0' ],
 26 silly audit   'stop-iteration-iterator': [ '1.1.0' ],
 26 silly audit   'string-width': [ '4.2.3' ],
 26 silly audit   'string.prototype.includes': [ '2.0.1' ],
@@ -493,6 +512,8 @@
 26 silly audit   'styled-jsx': [ '5.1.6' ],
 26 silly audit   'supports-color': [ '7.2.0' ],
 26 silly audit   'supports-preserve-symlinks-flag': [ '1.0.0' ],
+26 silly audit   'svg-pathdata': [ '6.0.3' ],
+26 silly audit   'text-segmentation': [ '1.0.3' ],
 26 silly audit   'tiny-invariant': [ '1.3.3' ],
 26 silly audit   tinyglobby: [ '0.2.15' ],
 26 silly audit   fdir: [ '6.5.0' ],
@@ -515,6 +536,7 @@
 26 silly audit   'update-browserslist-db': [ '1.2.3' ],
 26 silly audit   'uri-js': [ '4.4.1' ],
 26 silly audit   'use-sync-external-store': [ '1.6.0' ],
+26 silly audit   utrie: [ '1.0.2' ],
 26 silly audit   uuid: [ '8.3.2' ],
 26 silly audit   'victory-vendor': [ '37.3.6' ],
 26 silly audit   'webidl-conversions': [ '7.0.0' ],
@@ -537,7 +559,7 @@
 26 silly audit   zod: [ '4.3.5' ],
 26 silly audit   'zod-validation-error': [ '4.0.2' ]
 26 silly audit }
-27 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 806ms
+27 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 492ms
 28 silly audit report {
 28 silly audit report   '@anthropic-ai/sdk': [
 28 silly audit report     {
@@ -1236,41 +1258,41 @@
 42 silly packumentCache corgi:https://registry.npmjs.org/sharp cache-miss
 43 silly packumentCache corgi:https://registry.npmjs.org/uuid cache-miss
 44 silly packumentCache corgi:https://registry.npmjs.org/xlsx cache-miss
-45 http cache https://registry.npmjs.org/flatted 32ms (cache hit)
+45 http cache https://registry.npmjs.org/flatted 38ms (cache hit)
 46 silly packumentCache corgi:https://registry.npmjs.org/flatted set size:59752 disposed:false
-47 http cache https://registry.npmjs.org/@anthropic-ai%2fsdk 34ms (cache hit)
-48 silly packumentCache corgi:https://registry.npmjs.org/@anthropic-ai%2fsdk set size:158423 disposed:false
-49 http cache https://registry.npmjs.org/minimatch 35ms (cache hit)
-50 silly packumentCache corgi:https://registry.npmjs.org/minimatch set size:169442 disposed:false
-51 http cache https://registry.npmjs.org/js-yaml 36ms (cache hit)
-52 silly packumentCache corgi:https://registry.npmjs.org/js-yaml set size:70542 disposed:false
-53 http cache https://registry.npmjs.org/@babel%2fcore 39ms (cache hit)
-54 silly packumentCache corgi:https://registry.npmjs.org/@babel%2fcore set size:422446 disposed:false
-55 http cache https://registry.npmjs.org/brace-expansion 41ms (cache hit)
-56 silly packumentCache corgi:https://registry.npmjs.org/brace-expansion set size:34964 disposed:false
-57 http cache https://registry.npmjs.org/ajv 42ms (cache hit)
-58 silly packumentCache corgi:https://registry.npmjs.org/ajv set size:467559 disposed:false
-59 http cache https://registry.npmjs.org/nanoid 49ms (cache hit)
-60 silly packumentCache corgi:https://registry.npmjs.org/nanoid set size:158420 disposed:false
-61 http cache https://registry.npmjs.org/next-auth 52ms (cache hit)
-62 silly packumentCache corgi:https://registry.npmjs.org/next-auth set size:1817421 disposed:false
-63 http cache https://registry.npmjs.org/mongoose 66ms (cache hit)
-64 silly packumentCache corgi:https://registry.npmjs.org/mongoose set size:1642170 disposed:false
-65 http cache https://registry.npmjs.org/picomatch 78ms (cache hit)
-66 silly packumentCache corgi:https://registry.npmjs.org/picomatch set size:45123 disposed:false
-67 http cache https://registry.npmjs.org/sharp 78ms (cache hit)
-68 silly packumentCache corgi:https://registry.npmjs.org/sharp set size:291503 disposed:false
-69 http cache https://registry.npmjs.org/next 95ms (cache hit)
-70 silly packumentCache corgi:https://registry.npmjs.org/next set size:25438637 disposed:false
-71 http cache https://registry.npmjs.org/postcss 843ms (cache hit)
-72 silly packumentCache corgi:https://registry.npmjs.org/postcss set size:355680 disposed:false
-73 http cache https://registry.npmjs.org/uuid 846ms (cache hit)
+47 http cache https://registry.npmjs.org/mongoose 40ms (cache hit)
+48 silly packumentCache corgi:https://registry.npmjs.org/mongoose set size:1642170 disposed:false
+49 http cache https://registry.npmjs.org/@anthropic-ai%2fsdk 51ms (cache hit)
+50 silly packumentCache corgi:https://registry.npmjs.org/@anthropic-ai%2fsdk set size:158423 disposed:false
+51 http cache https://registry.npmjs.org/@babel%2fcore 53ms (cache hit)
+52 silly packumentCache corgi:https://registry.npmjs.org/@babel%2fcore set size:422446 disposed:false
+53 http cache https://registry.npmjs.org/ajv 64ms (cache hit)
+54 silly packumentCache corgi:https://registry.npmjs.org/ajv set size:467559 disposed:false
+55 http cache https://registry.npmjs.org/nanoid 81ms (cache hit)
+56 silly packumentCache corgi:https://registry.npmjs.org/nanoid set size:158420 disposed:false
+57 http cache https://registry.npmjs.org/picomatch 81ms (cache hit)
+58 silly packumentCache corgi:https://registry.npmjs.org/picomatch set size:45123 disposed:false
+59 http cache https://registry.npmjs.org/brace-expansion 85ms (cache hit)
+60 silly packumentCache corgi:https://registry.npmjs.org/brace-expansion set size:34964 disposed:false
+61 http cache https://registry.npmjs.org/minimatch 85ms (cache hit)
+62 silly packumentCache corgi:https://registry.npmjs.org/minimatch set size:169442 disposed:false
+63 http cache https://registry.npmjs.org/sharp 85ms (cache hit)
+64 silly packumentCache corgi:https://registry.npmjs.org/sharp set size:291503 disposed:false
+65 http cache https://registry.npmjs.org/postcss 87ms (cache hit)
+66 silly packumentCache corgi:https://registry.npmjs.org/postcss set size:355680 disposed:false
+67 http cache https://registry.npmjs.org/xlsx 91ms (cache hit)
+68 silly packumentCache corgi:https://registry.npmjs.org/xlsx set size:134408 disposed:false
+69 http cache https://registry.npmjs.org/next-auth 93ms (cache hit)
+70 silly packumentCache corgi:https://registry.npmjs.org/next-auth set size:1817421 disposed:false
+71 http cache https://registry.npmjs.org/next 121ms (cache hit)
+72 silly packumentCache corgi:https://registry.npmjs.org/next set size:25438637 disposed:false
+73 http cache https://registry.npmjs.org/uuid 857ms (cache hit)
 74 silly packumentCache corgi:https://registry.npmjs.org/uuid set size:82973 disposed:false
-75 http cache https://registry.npmjs.org/xlsx 846ms (cache hit)
-76 silly packumentCache corgi:https://registry.npmjs.org/xlsx set size:134408 disposed:false
+75 http cache https://registry.npmjs.org/js-yaml 860ms (cache hit)
+76 silly packumentCache corgi:https://registry.npmjs.org/js-yaml set size:70542 disposed:false
 77 silly packumentCache corgi:https://registry.npmjs.org/@babel%2fhelper-module-transforms cache-miss
 78 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-react-hooks cache-miss
-79 http cache https://registry.npmjs.org/@babel%2fhelper-module-transforms 3ms (cache hit)
+79 http cache https://registry.npmjs.org/@babel%2fhelper-module-transforms 2ms (cache hit)
 80 silly packumentCache corgi:https://registry.npmjs.org/@babel%2fhelper-module-transforms set size:187739 disposed:false
 81 http cache https://registry.npmjs.org/eslint-plugin-react-hooks 7ms (cache hit)
 82 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-react-hooks set size:4343159 disposed:false
@@ -1280,32 +1302,32 @@
 86 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-import cache-miss
 87 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-jsx-a11y cache-miss
 88 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-react cache-miss
-89 http cache https://registry.npmjs.org/@eslint%2fconfig-array 4ms (cache hit)
-90 silly packumentCache corgi:https://registry.npmjs.org/@eslint%2fconfig-array set size:19036 disposed:false
-91 http cache https://registry.npmjs.org/@eslint%2feslintrc 4ms (cache hit)
-92 silly packumentCache corgi:https://registry.npmjs.org/@eslint%2feslintrc set size:84432 disposed:false
-93 http cache https://registry.npmjs.org/eslint 5ms (cache hit)
+89 http cache https://registry.npmjs.org/eslint-plugin-import 4ms (cache hit)
+90 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-import set size:238396 disposed:false
+91 http cache https://registry.npmjs.org/@eslint%2fconfig-array 5ms (cache hit)
+92 silly packumentCache corgi:https://registry.npmjs.org/@eslint%2fconfig-array set size:19036 disposed:false
+93 http cache https://registry.npmjs.org/eslint 6ms (cache hit)
 94 silly packumentCache corgi:https://registry.npmjs.org/eslint set size:1178776 disposed:false
-95 http cache https://registry.npmjs.org/eslint-plugin-import 10ms (cache hit)
-96 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-import set size:238396 disposed:false
-97 http cache https://registry.npmjs.org/eslint-plugin-react 11ms (cache hit)
-98 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-react set size:309843 disposed:false
-99 http cache https://registry.npmjs.org/eslint-plugin-jsx-a11y 12ms (cache hit)
-100 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-jsx-a11y set size:108835 disposed:false
+95 http cache https://registry.npmjs.org/@eslint%2feslintrc 10ms (cache hit)
+96 silly packumentCache corgi:https://registry.npmjs.org/@eslint%2feslintrc set size:84432 disposed:false
+97 http cache https://registry.npmjs.org/eslint-plugin-jsx-a11y 11ms (cache hit)
+98 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-jsx-a11y set size:108835 disposed:false
+99 http cache https://registry.npmjs.org/eslint-plugin-react 11ms (cache hit)
+100 silly packumentCache corgi:https://registry.npmjs.org/eslint-plugin-react set size:309843 disposed:false
 101 silly packumentCache corgi:https://registry.npmjs.org/@typescript-eslint%2ftypescript-estree cache-miss
 102 http cache https://registry.npmjs.org/@typescript-eslint%2ftypescript-estree 12ms (cache hit)
 103 silly packumentCache corgi:https://registry.npmjs.org/@typescript-eslint%2ftypescript-estree set size:8878808 disposed:false
 104 silly packumentCache corgi:https://registry.npmjs.org/flat-cache cache-miss
-105 http cache https://registry.npmjs.org/flat-cache 2ms (cache hit)
+105 http cache https://registry.npmjs.org/flat-cache 1ms (cache hit)
 106 silly packumentCache corgi:https://registry.npmjs.org/flat-cache set size:51091 disposed:false
 107 silly packumentCache corgi:https://registry.npmjs.org/micromatch cache-miss
-108 http cache https://registry.npmjs.org/micromatch 2ms (cache hit)
+108 http cache https://registry.npmjs.org/micromatch 1ms (cache hit)
 109 silly packumentCache corgi:https://registry.npmjs.org/micromatch set size:71776 disposed:false
 110 silly packumentCache corgi:https://registry.npmjs.org/tinyglobby cache-miss
 111 silly packumentCache corgi:https://registry.npmjs.org/fdir cache-miss
-112 http cache https://registry.npmjs.org/tinyglobby 1ms (cache hit)
+112 http cache https://registry.npmjs.org/tinyglobby 2ms (cache hit)
 113 silly packumentCache corgi:https://registry.npmjs.org/tinyglobby set size:19921 disposed:false
-114 http cache https://registry.npmjs.org/fdir 2ms (cache hit)
+114 http cache https://registry.npmjs.org/fdir 1ms (cache hit)
 115 silly packumentCache corgi:https://registry.npmjs.org/fdir set size:76905 disposed:false
 116 silly REMOVE node_modules/ws
 117 silly REMOVE node_modules/webdriver-bidi-protocol
