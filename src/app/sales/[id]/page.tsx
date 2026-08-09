@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -93,6 +93,8 @@ export default function ReceiptPage() {
     const [paying, setPaying] = useState(false);
     const [payError, setPayError] = useState('');
     const [deletingPayment, setDeletingPayment] = useState<number | null>(null);
+    const [exporting, setExporting] = useState(false);
+    const receiptRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (params.id) fetchSale(params.id as string);
@@ -166,6 +168,38 @@ export default function ReceiptPage() {
     const isCreditWithBalance = sale.paymentMode === 'CREDIT' && (sale.balance ?? 0) > 0;
     const payments = sale.payments ?? [];
 
+    const handleExportPDF = async () => {
+        if (!receiptRef.current) return;
+        setExporting(true);
+        try {
+            const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+                import('html2canvas'),
+                import('jspdf'),
+            ]);
+            // Force the desktop-width layout for the capture, regardless of the phone/screen
+            // width the user is viewing on, so the PDF always matches the printed receipt.
+            const canvas = await html2canvas(receiptRef.current, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                windowWidth: 900,
+            });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const imgWidth = pageWidth;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            const finalHeight = Math.min(imgHeight, pageHeight);
+            const finalWidth = imgHeight > pageHeight ? (canvas.width * finalHeight) / canvas.height : imgWidth;
+            const x = (pageWidth - finalWidth) / 2;
+            pdf.addImage(imgData, 'PNG', x, 0, finalWidth, finalHeight);
+            const fileName = `Sale-Receipt-${(sale.customer.name || 'Customer').replace(/\s+/g, '_')}.pdf`;
+            pdf.save(fileName);
+        } finally {
+            setExporting(false);
+        }
+    };
+
     return (
         <DashboardLayout>
             <div className="animate-fade-in">
@@ -173,7 +207,12 @@ export default function ReceiptPage() {
                 {/* ── Top bar ── */}
                 <div className="no-print" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                     <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Sale Receipt</h1>
-                    <button onClick={() => window.print()} className="btn btn-primary">🖨️ Print Receipt</button>
+                    <div style={{ display: 'flex', gap: '0.6rem' }}>
+                        <button onClick={handleExportPDF} disabled={exporting} className="btn btn-secondary">
+                            {exporting ? '⏳ Generating...' : '📄 Export PDF'}
+                        </button>
+                        <button onClick={() => window.print()} className="btn btn-primary">🖨️ Print Receipt</button>
+                    </div>
                 </div>
 
                 {/* ── Record Payment (credit only, screen only) ── */}
@@ -251,7 +290,7 @@ export default function ReceiptPage() {
                 )}
 
                 {/* ── Printable receipt ── */}
-                <div className={styles.receipt}>
+                <div className={styles.receipt} ref={receiptRef}>
                     <div className={styles.topBar}>
                         <Image src="/honda-logo.png" alt="Honda" width={160} height={110} className={styles.hondaLogo} priority />
 
