@@ -223,7 +223,7 @@ export default function AdvanceBookingsPage() {
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                             {filtered.map(b => {
-                                const remaining = b.totalPrice ? b.totalPrice - b.advancePaid : null;
+                                const remaining = b.totalPrice ? Math.max(0, b.totalPrice - b.advancePaid) : null;
                                 const isConfirming = confirmDeleteId === b._id;
                                 const isOverdue = b.status === 'PENDING' && b.expectedDeliveryDate && new Date(b.expectedDeliveryDate) < new Date();
                                 return (
