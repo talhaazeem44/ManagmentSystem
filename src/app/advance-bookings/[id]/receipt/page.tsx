@@ -63,10 +63,13 @@ export default function AdvanceBookingReceiptPage() {
     }
 
     // Printed "Total Price" always shows the fixed standard price for the model, not whatever
-    // amount was typed into the booking form — Balance must be calculated from that same
-    // number, otherwise Total Price minus Advance Amount wouldn't match the printed Balance.
+    // amount was typed into the booking form. Advance Amount and Balance must both stay
+    // consistent with that same number — Advance Amount never prints more than the total
+    // price (any extra collected above standard price is never shown on the receipt), and
+    // Balance never goes negative.
     const displayTotalPrice = BIKE_STANDARD_PRICES[booking.bikeModel || ''] || booking.totalPrice || 0;
-    const remaining = displayTotalPrice ? displayTotalPrice - booking.advancePaid : null;
+    const displayAdvancePaid = Math.min(booking.advancePaid, displayTotalPrice);
+    const remaining = displayTotalPrice ? Math.max(0, displayTotalPrice - booking.advancePaid) : null;
 
     const handleExportPDF = async () => {
         if (!receiptRef.current) return;
@@ -192,7 +195,7 @@ export default function AdvanceBookingReceiptPage() {
                                 </div>
                                 <div className={styles.field}>
                                     <span className={styles.label}>Advance Amount:</span>
-                                    <span className={styles.value}>{booking.advancePaid.toLocaleString()}</span>
+                                    <span className={styles.value}>{displayAdvancePaid.toLocaleString()}</span>
                                 </div>
                                 <div className={styles.field}>
                                     <span className={styles.label}>Balance:</span>
