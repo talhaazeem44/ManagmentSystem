@@ -62,7 +62,11 @@ export default function AdvanceBookingReceiptPage() {
         );
     }
 
-    const remaining = booking.totalPrice ? booking.totalPrice - booking.advancePaid : null;
+    // Printed "Total Price" always shows the fixed standard price for the model, not whatever
+    // amount was typed into the booking form — Balance must be calculated from that same
+    // number, otherwise Total Price minus Advance Amount wouldn't match the printed Balance.
+    const displayTotalPrice = BIKE_STANDARD_PRICES[booking.bikeModel || ''] || booking.totalPrice || 0;
+    const remaining = displayTotalPrice ? displayTotalPrice - booking.advancePaid : null;
 
     const handleExportPDF = async () => {
         if (!receiptRef.current) return;
@@ -183,7 +187,7 @@ export default function AdvanceBookingReceiptPage() {
                                 <div className={styles.field}>
                                     <span className={styles.label}>Total Price:</span>
                                     <span className={styles.value}>
-                                        {(BIKE_STANDARD_PRICES[booking.bikeModel || ''] || booking.totalPrice || 0).toLocaleString()}
+                                        {displayTotalPrice.toLocaleString()}
                                     </span>
                                 </div>
                                 <div className={styles.field}>
