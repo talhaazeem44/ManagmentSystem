@@ -9,12 +9,15 @@ import {
     REGISTRATION_ACTUAL_COST_BY_MODEL
 } from '@/lib/constants';
 
-// Advance booking margin: same formula as sale — base margin + extra above standard price
+// Advance booking margin: same formula as sale — base margin + extra above standard price.
+// Total Price and Advance Paid are entered as independent fields, so an advance payment can
+// exceed the recorded total price (e.g. dealer collects extra on top) — use whichever is
+// higher so that extra is always captured as margin, not silently dropped.
 const calcAdvanceMargin = (booking: any) => {
     const model = booking.bikeModel || '';
     const standardPrice = BIKE_STANDARD_PRICES[model] || 0;
     const baseMargin = BIKE_UNIT_MARGINS[model] || 0;
-    const totalPrice = Number(booking.totalPrice || 0);
+    const totalPrice = Math.max(Number(booking.totalPrice || 0), Number(booking.advancePaid || 0));
     const extraCash = Math.max(0, totalPrice - standardPrice);
     return { bikeProfit: baseMargin + extraCash, standardPrice, baseMargin };
 };
