@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import styles from './receipt.module.css';
+import { BIKE_STANDARD_PRICES } from '@/lib/constants';
 
 interface Booking {
     _id: string;
@@ -182,7 +183,7 @@ export default function AdvanceBookingReceiptPage() {
                                 <div className={styles.field}>
                                     <span className={styles.label}>Total Price:</span>
                                     <span className={styles.value}>
-                                        {booking.totalPrice ? booking.totalPrice.toLocaleString() : '-'}
+                                        {(BIKE_STANDARD_PRICES[booking.bikeModel || ''] || booking.totalPrice || 0).toLocaleString()}
                                     </span>
                                 </div>
                                 <div className={styles.field}>
