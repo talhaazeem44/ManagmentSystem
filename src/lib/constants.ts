@@ -59,13 +59,13 @@ export const BIKE_UNIT_MARGINS: Record<string, number> = {
 // Actual registration cost paid to government
 export const REGISTRATION_ACTUAL_COST = 6000; // default (CD70, DREAM, PRIDOR)
 export const REGISTRATION_ACTUAL_COST_BY_MODEL: Record<string, number> = {
-    'CG 125':       6500,
-    'CG125S.SE':    6500,
-    'CG125GOLD':    6500,
-    'CB125F.SE':    6500,
-    'CB150F':       6500,
-    'CB150FSE':     6500,
-    'CG150 2-Tone': 6500,
+    'CG 125': 6500,
+    'CG125S.SE': 6500,
+    'CG125GOLD': 6500,
+    'CB125F.SE': 6500,
+    'CB150F': 7000,
+    'CB150FSE': 7000,
+    'CG150 2-Tone': 7000,
 };
 
 // Models where Khata stock is sometimes given to non-dealers at plain
