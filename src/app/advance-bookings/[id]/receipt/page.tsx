@@ -20,6 +20,7 @@ interface Booking {
     notes?: string;
     status: 'PENDING' | 'DELIVERED';
     date: string;
+    expectedDeliveryDate?: string;
 }
 
 const MODELS = ['CD70', 'DREAM', 'PRIDOR', 'CG 125', 'CG125S.SE', 'CB125F.SE', 'CB150F'];
@@ -151,6 +152,15 @@ export default function AdvanceBookingReceiptPage() {
                             <span className={styles.label}>Mobile #:</span>
                             <span className={styles.value}>{booking.customerMobile || '-'}</span>
                         </div>
+
+                        {booking.expectedDeliveryDate && (
+                            <div className={styles.field}>
+                                <span className={styles.label}>Delivery Time:</span>
+                                <span className={styles.value}>
+                                    {new Date(booking.expectedDeliveryDate).toLocaleDateString('en-PK', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                </span>
+                            </div>
+                        )}
 
                         {booking.notes && (
                             <div className={styles.field}>
