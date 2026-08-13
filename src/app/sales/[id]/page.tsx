@@ -5,20 +5,10 @@ import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import DashboardLayout from '@/components/DashboardLayout';
 import styles from './receipt.module.css';
-import { BIKE_STANDARD_PRICES } from '@/lib/constants';
+import { BIKE_STANDARD_PRICES, RECEIPT_COLOURS, guessReceiptColour } from '@/lib/constants';
 import Loader from '@/components/Loader';
 
-const COLOUR_OPTIONS = ['Red', 'Blk', 'Blu', 'Slv', 'Wht'];
-
-function matchColour(colour: string) {
-    const c = (colour || '').toLowerCase();
-    if (c.startsWith('red')) return 'Red';
-    if (c.startsWith('bl') && c.includes('ack')) return 'Blk';
-    if (c.startsWith('blu')) return 'Blu';
-    if (c.startsWith('sil') || c.startsWith('slv')) return 'Slv';
-    if (c.startsWith('wh')) return 'Wht';
-    return null;
-}
+const COLOUR_OPTIONS = RECEIPT_COLOURS.map(c => c.label);
 
 function digitGroups(raw: string, groups: number[]) {
     const digits = (raw || '').replace(/[^0-9]/g, '');
@@ -387,9 +377,13 @@ export default function ReceiptPage() {
                             Colour: {COLOUR_OPTIONS.map((c, i) => (
                                 <Fragment key={c}>
                                     {i > 0 && ' / '}
-                                    {(sale.receiptColour || matchColour(sale.bike.color)) === c ? <strong>{c}</strong> : c}
+                                    {(sale.receiptColour || guessReceiptColour(sale.bike.color)) === c ? <strong>{c}</strong> : c}
                                 </Fragment>
                             ))}
+                            {/* Fallback: colour doesn't match any checklist item (e.g. Grey, Maroon) — print it anyway so it's never blank */}
+                            {!(sale.receiptColour || guessReceiptColour(sale.bike.color)) && sale.bike.color && (
+                                <strong> ({sale.bike.color})</strong>
+                            )}
                         </div>
                         <div className={styles.paymentModes}>
                             {['CASH', 'CREDIT', 'LEASE'].map(m => (

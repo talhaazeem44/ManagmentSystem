@@ -97,3 +97,21 @@ export const BIKE_COLORS = [
 ] as const;
 
 export type BikeColor = typeof BIKE_COLORS[number];
+
+// Shared with the printable Sale Receipt's colour checklist — keep this list and the receipt's
+// display in sync, otherwise a colour picked here (e.g. grn/2tone) silently prints unbolded/blank.
+export const RECEIPT_COLOURS = [
+    { label: 'Red', match: 'red' },
+    { label: 'Blk', match: 'black' },
+    { label: 'Blu', match: 'blue' },
+    { label: 'Slv', match: 'silver' },
+    { label: 'Wht', match: 'white' },
+    { label: 'grn', match: 'green' },
+    { label: '2tone', match: '2tone' },
+];
+
+export function guessReceiptColour(colour: string): string {
+    const c = (colour || '').toLowerCase();
+    const found = RECEIPT_COLOURS.find(rc => c.startsWith(rc.match) || c.includes(rc.match));
+    return found ? found.label : '';
+}

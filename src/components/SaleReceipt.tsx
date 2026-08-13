@@ -287,7 +287,7 @@ const SaleReceipt: React.FC<SaleReceiptProps> = ({ sale }) => {
 
             <div className="footer">
                 <div className="dealer-info">
-                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>NAEEM AUTOS</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>NAEEM AUTOS</div>
                     <div>1.5 Km Daska Road, Sambrial</div>
                     <div>Ph: 052-6525001-2 Cell: 0331-8800216, 0334-8179775</div>
                 </div>

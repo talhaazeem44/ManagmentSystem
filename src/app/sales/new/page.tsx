@@ -3,25 +3,9 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useRouter } from 'next/navigation';
-import { BIKE_STANDARD_PRICES } from '@/lib/constants';
+import { BIKE_STANDARD_PRICES, RECEIPT_COLOURS, guessReceiptColour } from '@/lib/constants';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
-
-const RECEIPT_COLOURS = [
-    { label: 'Red', match: 'red' },
-    { label: 'Blk', match: 'black' },
-    { label: 'Blu', match: 'blue' },
-    { label: 'Slv', match: 'silver' },
-    { label: 'Wht', match: 'white' },
-    { label: 'grn', match: 'green' },
-    { label: '2tone', match: '2tone' },
-];
-
-function guessReceiptColour(colour: string): string {
-    const c = (colour || '').toLowerCase();
-    const found = RECEIPT_COLOURS.find(rc => c.startsWith(rc.match) || c.includes(rc.match));
-    return found ? found.label : '';
-}
 
 interface Bike {
     id: string;

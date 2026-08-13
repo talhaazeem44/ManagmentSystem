@@ -40,7 +40,7 @@ const emptyForm = {
 };
 
 function printBooking(b: AdvanceBooking) {
-    window.open(`/advance-bookings/${b._id}/receipt`, '_blank');
+    window.location.href = `/advance-bookings/${b._id}/receipt`;
 }
 
 export default function AdvanceBookingsPage() {
