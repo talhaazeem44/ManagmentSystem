@@ -26,6 +26,15 @@ interface AdvanceBooking {
     date: string;
 }
 
+interface AvailableBike {
+    id: string;
+    model: string;
+    color: string;
+    engineNumber: string;
+    chassisNumber: string;
+    status: string;
+}
+
 const emptyForm = {
     customerName: '',
     customerMobile: '',
@@ -54,6 +63,11 @@ export default function AdvanceBookingsPage() {
     const [submitting, setSubmitting] = useState(false);
     const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'DELIVERED'>('PENDING');
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+    const [deliveringId, setDeliveringId] = useState<string | null>(null);
+    const [availableBikes, setAvailableBikes] = useState<AvailableBike[]>([]);
+    const [loadingBikes, setLoadingBikes] = useState(false);
+    const [bikeSearch, setBikeSearch] = useState('');
+    const [linkingBikeId, setLinkingBikeId] = useState<string | null>(null);
 
     const fetchBookings = async () => {
         setLoading(true);
@@ -96,14 +110,45 @@ export default function AdvanceBookingsPage() {
         }
     };
 
-    const markDelivered = async (id: string) => {
-        const res = await fetch(`/api/advance-bookings/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'DELIVERED' }),
-        });
-        if (res.ok) { showToast('Marked as delivered', 'success'); fetchBookings(); }
-        else showToast('Failed to update', 'error');
+    const openDeliverPicker = async (booking: AdvanceBooking) => {
+        setDeliveringId(booking._id);
+        setBikeSearch('');
+        setLoadingBikes(true);
+        try {
+            const res = await fetch('/api/bikes');
+            if (res.ok) {
+                const all: AvailableBike[] = await res.json();
+                setAvailableBikes(all.filter(b => b.status === 'AVAILABLE'));
+            }
+        } finally {
+            setLoadingBikes(false);
+        }
+    };
+
+    const confirmDeliver = async (booking: AdvanceBooking, bike: AvailableBike) => {
+        setLinkingBikeId(bike.id);
+        try {
+            const res = await fetch(`/api/advance-bookings/${booking._id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: 'DELIVERED',
+                    bikeId: bike.id,
+                    engineNumber: bike.engineNumber,
+                    chassisNumber: bike.chassisNumber,
+                }),
+            });
+            if (res.ok) {
+                showToast('Marked as delivered and linked to inventory', 'success');
+                setDeliveringId(null);
+                fetchBookings();
+            } else {
+                const err = await res.json().catch(() => ({ message: 'Failed to update' }));
+                showToast(err.message || 'Failed to update', 'error');
+            }
+        } finally {
+            setLinkingBikeId(null);
+        }
     };
 
     const handleDelete = async (id: string) => {
@@ -231,9 +276,17 @@ export default function AdvanceBookingsPage() {
                             {filtered.map(b => {
                                 const remaining = b.totalPrice ? Math.max(0, b.totalPrice - b.advancePaid) : null;
                                 const isConfirming = confirmDeleteId === b._id;
+                                const isDelivering = deliveringId === b._id;
                                 const isOverdue = b.status === 'PENDING' && b.expectedDeliveryDate && new Date(b.expectedDeliveryDate) < new Date();
+                                const matchingBikes = availableBikes.filter(bike => {
+                                    if (b.bikeModel && bike.model !== b.bikeModel) return false;
+                                    const q = bikeSearch.trim().toLowerCase();
+                                    if (!q) return true;
+                                    return bike.engineNumber?.toLowerCase().includes(q) || bike.chassisNumber?.toLowerCase().includes(q) || bike.model?.toLowerCase().includes(q);
+                                });
                                 return (
-                                    <div key={b._id} style={{ padding: '0.9rem 1rem', border: `1px solid ${isConfirming ? 'rgba(239,68,68,0.4)' : isOverdue ? 'rgba(239,68,68,0.35)' : 'var(--color-border)'}`, borderRadius: 'var(--radius-lg)', background: isConfirming ? 'rgba(239,68,68,0.04)' : isOverdue ? 'rgba(239,68,68,0.04)' : 'var(--color-bg-elevated)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div key={b._id} style={{ padding: '0.9rem 1rem', border: `1px solid ${isConfirming ? 'rgba(239,68,68,0.4)' : isDelivering ? 'rgba(16,185,129,0.4)' : isOverdue ? 'rgba(239,68,68,0.35)' : 'var(--color-border)'}`, borderRadius: 'var(--radius-lg)', background: isConfirming ? 'rgba(239,68,68,0.04)' : isDelivering ? 'rgba(16,185,129,0.04)' : isOverdue ? 'rgba(239,68,68,0.04)' : 'var(--color-bg-elevated)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
                                         <div style={{ flex: '1 1 200px' }}>
                                             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
                                                 <strong style={{ fontSize: '0.9rem' }}>{b.customerName}</strong>
@@ -273,13 +326,52 @@ export default function AdvanceBookingsPage() {
                                             ) : (
                                                 <>
                                                     {b.status === 'PENDING' && (
-                                                        <button className="btn btn-success" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => markDelivered(b._id)}>✅ Delivered</button>
+                                                        isDelivering ? (
+                                                            <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => setDeliveringId(null)}>Cancel</button>
+                                                        ) : (
+                                                            <button className="btn btn-success" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => openDeliverPicker(b)}>✅ Delivered</button>
+                                                        )
                                                     )}
                                                     <button className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }} onClick={() => printBooking(b)}>🖨️</button>
                                                     <button className="btn" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }} onClick={() => setConfirmDeleteId(b._id)}>🗑️</button>
                                                 </>
                                             )}
                                         </div>
+                                    </div>
+                                    {isDelivering && (
+                                        <div style={{ borderTop: '1px solid rgba(16,185,129,0.25)', paddingTop: '0.6rem' }}>
+                                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', marginBottom: '0.4rem' }}>
+                                                Select the bike being delivered {b.bikeModel ? `(${b.bikeModel})` : ''} — this links it to inventory instead of creating a separate sale
+                                            </div>
+                                            <input
+                                                className="input"
+                                                style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem', marginBottom: '0.5rem' }}
+                                                placeholder="Search engine # / chassis # / model"
+                                                value={bikeSearch}
+                                                onChange={e => setBikeSearch(e.target.value)}
+                                                autoFocus
+                                            />
+                                            {loadingBikes ? (
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Loading available bikes...</div>
+                                            ) : matchingBikes.length === 0 ? (
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>No matching available bikes in inventory.</div>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', maxHeight: '220px', overflowY: 'auto' }}>
+                                                    {matchingBikes.map(bike => (
+                                                        <button
+                                                            key={bike.id}
+                                                            onClick={() => confirmDeliver(b, bike)}
+                                                            disabled={linkingBikeId === bike.id}
+                                                            style={{ textAlign: 'left', padding: '0.5rem 0.7rem', fontSize: '0.8rem', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'var(--color-bg-elevated)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}
+                                                        >
+                                                            <span><strong>{bike.model}</strong> · {bike.color} — {bike.engineNumber} / {bike.chassisNumber}</span>
+                                                            <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700, flexShrink: 0 }}>{linkingBikeId === bike.id ? 'Linking...' : 'Select →'}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                     </div>
                                 );
                             })}

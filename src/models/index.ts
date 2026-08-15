@@ -243,6 +243,11 @@ export interface IAdvanceBooking {
     expectedDeliveryDate?: Date;
     status: 'PENDING' | 'DELIVERED';
     date: Date;
+    // Inventory bike linked at delivery time — lets a booking be fulfilled
+    // without creating a separate Sale record (which would double-count margin).
+    bikeId?: string;
+    engineNumber?: string;
+    chassisNumber?: string;
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -263,6 +268,9 @@ const AdvanceBookingSchema = new Schema<IAdvanceBooking>({
     expectedDeliveryDate: { type: Date },
     status: { type: String, enum: ['PENDING', 'DELIVERED'], default: 'PENDING' },
     date: { type: Date, default: Date.now },
+    bikeId: { type: Schema.Types.ObjectId, ref: 'Bike' },
+    engineNumber: { type: String },
+    chassisNumber: { type: String },
 }, { timestamps: true });
 
 export const AdvanceBooking: Model<IAdvanceBooking> = models.AdvanceBooking || mongoose.model<IAdvanceBooking>('AdvanceBooking', AdvanceBookingSchema);
