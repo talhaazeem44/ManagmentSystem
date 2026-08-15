@@ -233,6 +233,7 @@ export interface IAdvanceBooking {
     cnic?: string;
     bikeModel?: string;
     bikeColor?: string;
+    careOf?: string;
     advancePaid: number;
     advancePaymentMode?: 'CASH' | 'BANK_TRANSFER';
     totalPrice?: number;
@@ -252,6 +253,7 @@ const AdvanceBookingSchema = new Schema<IAdvanceBooking>({
     cnic: { type: String },
     bikeModel: { type: String },
     bikeColor: { type: String },
+    careOf: { type: String },
     advancePaid: { type: Number, required: true, default: 0 },
     advancePaymentMode: { type: String, enum: ['CASH', 'BANK_TRANSFER'], default: 'CASH' },
     totalPrice: { type: Number },

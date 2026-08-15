@@ -317,10 +317,12 @@ export default function ReceiptPage() {
                             <span className={styles.label}>Customer&apos;s Name:</span>
                             <span className={styles.value}>{sale.customer.name}</span>
                         </div>
-                        <div className={styles.field}>
-                            <span className={styles.label}>Father/Husband Name:</span>
-                            <span className={styles.value}>{sale.customer.fatherName || ''}</span>
-                        </div>
+                        {sale.customer.fatherName && (
+                            <div className={styles.field}>
+                                <span className={styles.label}>Father/Husband Name:</span>
+                                <span className={styles.value}>{sale.customer.fatherName}</span>
+                            </div>
+                        )}
                         <div className={styles.field}>
                             <span className={styles.label}>Address:</span>
                             <span className={styles.value}>{sale.customer.address || ''}</span>
