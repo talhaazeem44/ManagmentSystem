@@ -14,6 +14,7 @@ interface AdvanceBooking {
     cnic?: string;
     bikeModel?: string;
     bikeColor?: string;
+    careOf?: string;
     advancePaid: number;
     advancePaymentMode?: 'CASH' | 'BANK_TRANSFER';
     totalPrice?: number;
@@ -31,6 +32,7 @@ const emptyForm = {
     cnic: '',
     bikeModel: '',
     bikeColor: '',
+    careOf: '',
     advancePaid: '',
     advancePaymentMode: 'CASH' as 'CASH' | 'BANK_TRANSFER',
     totalPrice: '',
@@ -154,6 +156,10 @@ export default function AdvanceBookingsPage() {
                                 <div className="form-group">
                                     <label className="label">CNIC</label>
                                     <input className="input" value={form.cnic} onChange={e => setForm({ ...form, cnic: e.target.value })} placeholder="34601-XXXXXXX-X" />
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Care of</label>
+                                    <input className="input" value={form.careOf} onChange={e => setForm({ ...form, careOf: e.target.value })} placeholder="Father/Husband name" />
                                 </div>
                                 <div className="form-group">
                                     <label className="label">Bike Model</label>

@@ -13,6 +13,7 @@ interface Booking {
     cnic?: string;
     bikeModel?: string;
     bikeColor?: string;
+    careOf?: string;
     advancePaid: number;
     totalPrice?: number;
     registrationFee?: number;
@@ -147,6 +148,13 @@ export default function AdvanceBookingReceiptPage() {
                             <span className={styles.label}>Customer's Name:</span>
                             <span className={styles.value}>{booking.customerName}</span>
                         </div>
+
+                        {booking.careOf && (
+                            <div className={styles.field}>
+                                <span className={styles.label}>Care of:</span>
+                                <span className={styles.value}>{booking.careOf}</span>
+                            </div>
+                        )}
 
                         <div className={styles.field}>
                             <span className={styles.label}>Mobile #:</span>
