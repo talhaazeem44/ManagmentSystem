@@ -7,8 +7,8 @@
 6 silly config load:file:/usr/local/etc/npmrc
 7 verbose title npm exec tsc --noEmit -p tsconfig.json
 8 verbose argv "exec" "--" "tsc" "--noEmit" "-p" "tsconfig.json"
-9 verbose logfile logs-max:10 dir:/Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-08-12T07_47_08_838Z-
-10 verbose logfile /Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-08-12T07_47_08_838Z-debug-0.log
+9 verbose logfile logs-max:10 dir:/Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-08-18T06_47_19_200Z-
+10 verbose logfile /Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-08-18T06_47_19_200Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
 13 verbose cwd /Users/talhaazeem/Documents/managementSystem
