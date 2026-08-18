@@ -96,9 +96,37 @@ export async function PATCH(
             return NextResponse.json(sale);
         }
 
+        // Generic edit (e.g. the inline edit on the Sales list page). Reports/Dashboard
+        // scope "cash in hand" by the sale's original saleDate — so directly overwriting
+        // receivedCash/bankTransferAmount on an older sale silently attributes the extra
+        // cash to that old date instead of today, and it never shows up in the current
+        // cash-in-hand window. If either amount increased, record the delta as a dated
+        // payment (today) — the same mechanism credit-payment recording already uses —
+        // so Reports' cross-boundary payment logic picks it up correctly regardless of
+        // how old the sale is. Decreases (corrections) don't get a payment entry since
+        // there's no new cash to attribute.
+        const existingForDelta = (body.receivedCash !== undefined || body.bankTransferAmount !== undefined)
+            ? await Sale.findById(id)
+            : null;
+        const updateOps: any = { $set: body };
+        if (existingForDelta) {
+            const paymentEntries: any[] = [];
+            if (body.receivedCash !== undefined) {
+                const delta = Number(body.receivedCash) - Number(existingForDelta.receivedCash || 0);
+                if (delta > 0) paymentEntries.push({ amount: delta, date: new Date(), note: 'Edited on Sales page', paymentMode: 'CASH' });
+            }
+            if (body.bankTransferAmount !== undefined) {
+                const delta = Number(body.bankTransferAmount) - Number(existingForDelta.bankTransferAmount || 0);
+                if (delta > 0) paymentEntries.push({ amount: delta, date: new Date(), note: 'Edited on Sales page', paymentMode: 'BANK_TRANSFER' });
+            }
+            if (paymentEntries.length > 0) {
+                updateOps.$push = { payments: { $each: paymentEntries } };
+            }
+        }
+
         const sale = await Sale.findByIdAndUpdate(
             id,
-            { $set: body },
+            updateOps,
             { new: true, runValidators: true }
         );
 
