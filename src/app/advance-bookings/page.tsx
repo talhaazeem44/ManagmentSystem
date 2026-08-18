@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { HONDA_BIKE_MODELS } from '@/lib/constants';
+import { HONDA_BIKE_MODELS, BIKE_STANDARD_PRICES } from '@/lib/constants';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 import Loader from '@/components/Loader';
@@ -68,6 +68,9 @@ export default function AdvanceBookingsPage() {
     const [loadingBikes, setLoadingBikes] = useState(false);
     const [bikeSearch, setBikeSearch] = useState('');
     const [linkingBikeId, setLinkingBikeId] = useState<string | null>(null);
+    const [selectedBike, setSelectedBike] = useState<AvailableBike | null>(null);
+    const [remainingAmount, setRemainingAmount] = useState('');
+    const [remainingMode, setRemainingMode] = useState<'CASH' | 'BANK_TRANSFER'>('CASH');
 
     const fetchBookings = async () => {
         setLoading(true);
@@ -113,6 +116,9 @@ export default function AdvanceBookingsPage() {
     const openDeliverPicker = async (booking: AdvanceBooking) => {
         setDeliveringId(booking._id);
         setBikeSearch('');
+        setSelectedBike(null);
+        setRemainingAmount('');
+        setRemainingMode('CASH');
         setLoadingBikes(true);
         try {
             const res = await fetch('/api/bikes');
@@ -125,22 +131,37 @@ export default function AdvanceBookingsPage() {
         }
     };
 
-    const confirmDeliver = async (booking: AdvanceBooking, bike: AvailableBike) => {
-        setLinkingBikeId(bike.id);
+    const remainingForBooking = (b: AdvanceBooking) => {
+        const displayTotal = (b.bikeModel && BIKE_STANDARD_PRICES[b.bikeModel]) || b.totalPrice || 0;
+        return Math.max(0, displayTotal - b.advancePaid);
+    };
+
+    const selectBikeForDelivery = (booking: AdvanceBooking, bike: AvailableBike) => {
+        setSelectedBike(bike);
+        const remaining = remainingForBooking(booking);
+        setRemainingAmount(remaining > 0 ? String(remaining) : '');
+    };
+
+    const confirmDeliver = async (booking: AdvanceBooking) => {
+        if (!selectedBike) return;
+        setLinkingBikeId(selectedBike.id);
         try {
+            const amount = parseFloat(remainingAmount) || 0;
             const res = await fetch(`/api/advance-bookings/${booking._id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     status: 'DELIVERED',
-                    bikeId: bike.id,
-                    engineNumber: bike.engineNumber,
-                    chassisNumber: bike.chassisNumber,
+                    bikeId: selectedBike.id,
+                    engineNumber: selectedBike.engineNumber,
+                    chassisNumber: selectedBike.chassisNumber,
+                    ...(amount > 0 ? { deliveryPayment: { amount, paymentMode: remainingMode } } : {}),
                 }),
             });
             if (res.ok) {
                 showToast('Marked as delivered and linked to inventory', 'success');
                 setDeliveringId(null);
+                setSelectedBike(null);
                 fetchBookings();
             } else {
                 const err = await res.json().catch(() => ({ message: 'Failed to update' }));
@@ -274,7 +295,7 @@ export default function AdvanceBookingsPage() {
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                             {filtered.map(b => {
-                                const remaining = b.totalPrice ? Math.max(0, b.totalPrice - b.advancePaid) : null;
+                                const remaining = b.totalPrice || b.bikeModel ? remainingForBooking(b) : null;
                                 const isConfirming = confirmDeleteId === b._id;
                                 const isDelivering = deliveringId === b._id;
                                 const isOverdue = b.status === 'PENDING' && b.expectedDeliveryDate && new Date(b.expectedDeliveryDate) < new Date();
@@ -327,7 +348,7 @@ export default function AdvanceBookingsPage() {
                                                 <>
                                                     {b.status === 'PENDING' && (
                                                         isDelivering ? (
-                                                            <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => setDeliveringId(null)}>Cancel</button>
+                                                            <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => { setDeliveringId(null); setSelectedBike(null); }}>Cancel</button>
                                                         ) : (
                                                             <button className="btn btn-success" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => openDeliverPicker(b)}>✅ Delivered</button>
                                                         )
@@ -338,7 +359,7 @@ export default function AdvanceBookingsPage() {
                                             )}
                                         </div>
                                     </div>
-                                    {isDelivering && (
+                                    {isDelivering && !selectedBike && (
                                         <div style={{ borderTop: '1px solid rgba(16,185,129,0.25)', paddingTop: '0.6rem' }}>
                                             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', marginBottom: '0.4rem' }}>
                                                 Select the bike being delivered {b.bikeModel ? `(${b.bikeModel})` : ''} — this links it to inventory instead of creating a separate sale
@@ -360,16 +381,57 @@ export default function AdvanceBookingsPage() {
                                                     {matchingBikes.map(bike => (
                                                         <button
                                                             key={bike.id}
-                                                            onClick={() => confirmDeliver(b, bike)}
-                                                            disabled={linkingBikeId === bike.id}
+                                                            onClick={() => selectBikeForDelivery(b, bike)}
                                                             style={{ textAlign: 'left', padding: '0.5rem 0.7rem', fontSize: '0.8rem', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'var(--color-bg-elevated)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}
                                                         >
                                                             <span><strong>{bike.model}</strong> · {bike.color} — {bike.engineNumber} / {bike.chassisNumber}</span>
-                                                            <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700, flexShrink: 0 }}>{linkingBikeId === bike.id ? 'Linking...' : 'Select →'}</span>
+                                                            <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700, flexShrink: 0 }}>Select →</span>
                                                         </button>
                                                     ))}
                                                 </div>
                                             )}
+                                        </div>
+                                    )}
+                                    {isDelivering && selectedBike && (
+                                        <div style={{ borderTop: '1px solid rgba(16,185,129,0.25)', paddingTop: '0.6rem' }}>
+                                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', marginBottom: '0.5rem' }}>
+                                                Delivering: <strong>{selectedBike.model}</strong> · {selectedBike.color} — {selectedBike.engineNumber} / {selectedBike.chassisNumber}
+                                                {' '}<button onClick={() => setSelectedBike(null)} style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', padding: 0 }}>change bike</button>
+                                            </div>
+                                            {remainingForBooking(b) > 0 && (
+                                                <div style={{ marginBottom: '0.6rem' }}>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.3rem' }}>
+                                                        Remaining balance: Rs. {remainingForBooking(b).toLocaleString()} — how much is being collected now?
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                        <input
+                                                            className="input"
+                                                            type="number"
+                                                            style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem', maxWidth: '160px' }}
+                                                            value={remainingAmount}
+                                                            onChange={e => setRemainingAmount(e.target.value)}
+                                                            placeholder="Amount received"
+                                                        />
+                                                        <select
+                                                            className="select"
+                                                            style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem', maxWidth: '160px' }}
+                                                            value={remainingMode}
+                                                            onChange={e => setRemainingMode(e.target.value as 'CASH' | 'BANK_TRANSFER')}
+                                                        >
+                                                            <option value="CASH">Cash</option>
+                                                            <option value="BANK_TRANSFER">Bank Transfer</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <button
+                                                className="btn btn-success"
+                                                style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }}
+                                                disabled={linkingBikeId === selectedBike.id}
+                                                onClick={() => confirmDeliver(b)}
+                                            >
+                                                {linkingBikeId === selectedBike.id ? 'Confirming...' : '✅ Confirm Delivery'}
+                                            </button>
                                         </div>
                                     )}
                                     </div>

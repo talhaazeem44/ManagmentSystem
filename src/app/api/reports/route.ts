@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
 
         const [filteredSales, filteredServices, allSales, allServices,
             totalBikesCount, availableBikesCount, soldBikesCount,
-            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings, filteredAdvanceBookings, filteredExpenses, weekSales, creditPaymentSales, allKhataParties, allSoldUsedBikes] = await Promise.all([
+            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings, filteredAdvanceBookings, filteredExpenses, weekSales, creditPaymentSales, allKhataParties, allSoldUsedBikes, advancePaymentBookings] = await Promise.all([
             Sale.find({ saleDate: { $gte: filterStartDate, $lt: filterEndDate } }).populate('bikeId').populate('customerId').lean(),
             ServiceSale.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
             Sale.find().populate('bikeId').lean(),
@@ -90,6 +90,9 @@ export async function GET(request: NextRequest) {
             Sale.find({ 'payments.date': { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
             KhataParty.find({}).lean(),
             UsedBike.find({ status: 'SOLD' }).lean(),
+            // Delivery-time (remaining balance) payments recorded in this date range
+            // (for bookings whose own `date` is outside the range)
+            AdvanceBooking.find({ 'payments.date': { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
         ]);
 
         // 7-day chart data
@@ -127,8 +130,26 @@ export async function GET(request: NextRequest) {
 
         // Today's advance bookings cash and margin — only CASH-mode advances count as physical cash;
         // bank-transferred ones go toward the bank transfer figure instead.
-        const rangeAdvanceCash = filteredAdvanceBookings.reduce((s: number, b: any) => b.advancePaymentMode === 'BANK_TRANSFER' ? s : s + Number(b.advancePaid || 0), 0);
-        const rangeAdvanceBankTransfer = filteredAdvanceBookings.reduce((s: number, b: any) => b.advancePaymentMode === 'BANK_TRANSFER' ? s + Number(b.advancePaid || 0) : s, 0);
+        // Delivery-time (remaining balance) payments recorded in this date range — for bookings whose
+        // own `date` is outside the range (already-counted bookings are skipped since their current
+        // advancePaid total already reflects the payment, avoiding double counting).
+        const crossBoundaryAdvancePayments = (advancePaymentBookings as any[]).flatMap((b: any) => {
+            const alreadyCounted = (filteredAdvanceBookings as any[]).some((fb: any) => fb._id.toString() === b._id.toString());
+            if (alreadyCounted) return [];
+            return (b.payments || []).filter((p: any) => {
+                const pd = new Date(p.date);
+                return pd >= filterStartDate && pd < filterEndDate;
+            });
+        });
+        const advancePaymentsCashInRange = crossBoundaryAdvancePayments
+            .filter((p: any) => p.paymentMode !== 'BANK_TRANSFER')
+            .reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+        const advancePaymentsBankInRange = crossBoundaryAdvancePayments
+            .filter((p: any) => p.paymentMode === 'BANK_TRANSFER')
+            .reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+
+        const rangeAdvanceCash = filteredAdvanceBookings.reduce((s: number, b: any) => b.advancePaymentMode === 'BANK_TRANSFER' ? s : s + Number(b.advancePaid || 0), 0) + advancePaymentsCashInRange;
+        const rangeAdvanceBankTransfer = filteredAdvanceBookings.reduce((s: number, b: any) => b.advancePaymentMode === 'BANK_TRANSFER' ? s + Number(b.advancePaid || 0) : s, 0) + advancePaymentsBankInRange;
         const rangeAdvanceMargin = filteredAdvanceBookings.reduce((s: number, b: any) => s + calcAdvanceMargin(b).bikeProfit, 0);
 
         // Attach customer info to credit sales

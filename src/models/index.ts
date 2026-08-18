@@ -248,6 +248,11 @@ export interface IAdvanceBooking {
     bikeId?: string;
     engineNumber?: string;
     chassisNumber?: string;
+    // Additional payments collected after the initial advance (e.g. the remaining
+    // balance collected at delivery), each dated independently — same mechanism as
+    // Sale.payments — so Reports attributes the cash to the day it actually came in,
+    // not the booking's original date.
+    payments?: IPayment[];
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -270,6 +275,7 @@ const AdvanceBookingSchema = new Schema<IAdvanceBooking>({
     date: { type: Date, default: Date.now },
     bikeId: { type: Schema.Types.ObjectId, ref: 'Bike' },
     engineNumber: { type: String },
+    payments: { type: [PaymentSchema], default: [] },
     chassisNumber: { type: String },
 }, { timestamps: true });
 

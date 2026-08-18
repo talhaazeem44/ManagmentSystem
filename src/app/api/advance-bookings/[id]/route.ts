@@ -18,7 +18,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     try {
         await dbConnect();
         const { id } = await context.params;
-        const body = await request.json();
+        const { deliveryPayment, ...body } = await request.json();
 
         // Linking an inventory bike at delivery time — mark it SOLD so it's no
         // longer available elsewhere, without needing a separate Sale record.
@@ -26,7 +26,19 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
             await Bike.findByIdAndUpdate(body.bikeId, { status: 'SOLD' });
         }
 
-        const booking = await AdvanceBooking.findByIdAndUpdate(id, body, { new: true });
+        const updateOps: any = { $set: body };
+
+        // Remaining balance collected at delivery — add to advancePaid and record as
+        // a dated payment (today), same mechanism as Sale.payments, so Reports counts
+        // this cash on the day it was actually collected, not the booking's original date.
+        if (deliveryPayment && Number(deliveryPayment.amount) > 0) {
+            const amount = Number(deliveryPayment.amount);
+            const mode: 'CASH' | 'BANK_TRANSFER' = deliveryPayment.paymentMode === 'BANK_TRANSFER' ? 'BANK_TRANSFER' : 'CASH';
+            updateOps.$inc = { advancePaid: amount };
+            updateOps.$push = { payments: { amount, date: new Date(), paymentMode: mode, note: 'Collected at delivery' } };
+        }
+
+        const booking = await AdvanceBooking.findByIdAndUpdate(id, updateOps, { new: true });
         if (!booking) return NextResponse.json({ message: 'Not found' }, { status: 404 });
         return NextResponse.json(booking);
     } catch (error: any) {

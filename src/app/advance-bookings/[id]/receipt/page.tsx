@@ -22,6 +22,8 @@ interface Booking {
     status: 'PENDING' | 'DELIVERED';
     date: string;
     expectedDeliveryDate?: string;
+    engineNumber?: string;
+    chassisNumber?: string;
 }
 
 const MODELS = ['CD70', 'DREAM', 'PRIDOR', 'CG 125', 'CG125S.SE', 'CB125F.SE', 'CB150F'];
@@ -200,6 +202,19 @@ export default function AdvanceBookingReceiptPage() {
                                 <span className={styles.value}>{booking.bikeColor || '-'}</span>
                             </div>
                         </div>
+
+                        {booking.engineNumber && (
+                            <div className={styles.row}>
+                                <div className={styles.field}>
+                                    <span className={styles.label}>Engine #:</span>
+                                    <span className={styles.value}>{booking.engineNumber}</span>
+                                </div>
+                                <div className={styles.field}>
+                                    <span className={styles.label}>Chassis #:</span>
+                                    <span className={styles.value}>{booking.chassisNumber}</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className={styles.section}>
