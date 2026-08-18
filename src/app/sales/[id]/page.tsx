@@ -418,7 +418,11 @@ export default function ReceiptPage() {
                         {sale.bankTransferAmount ? (
                             <div className={styles.field}>
                                 <span className={styles.label}>Bank Transfer:</span>
-                                <span className={styles.value}>{Number(sale.bankTransferAmount).toLocaleString()}</span>
+                                <span className={styles.value}>
+                                    {sale.paymentMode === 'BANK_TRANSFER'
+                                        ? (BIKE_STANDARD_PRICES[sale.bike.model] || Number(sale.price)).toLocaleString()
+                                        : Number(sale.bankTransferAmount).toLocaleString()}
+                                </span>
                             </div>
                         ) : null}
                         <div className={styles.field}>
