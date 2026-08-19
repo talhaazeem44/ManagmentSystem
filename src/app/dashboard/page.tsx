@@ -156,9 +156,15 @@ export default function DashboardPage() {
             const colData = cashColRes.ok ? await cashColRes.json() : { last: null };
             setLastDeposit(colData.last);
 
+            // If no deposit has ever been recorded, "Cash in Hand" must still cover every
+            // uncollected day (e.g. a credit payment recorded yesterday) — not just today,
+            // otherwise cash sitting since before today silently disappears from the total.
+            const monthStartDate = new Date();
+            monthStartDate.setDate(1);
+            monthStartDate.setHours(0, 0, 0, 0);
             const sinceDate = colData.last
                 ? new Date(colData.last.collectedAt).toISOString()
-                : new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+                : monthStartDate.toISOString();
 
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
