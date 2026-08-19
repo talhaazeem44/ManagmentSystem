@@ -37,6 +37,9 @@ class EscPosBuilder {
     }
     bold(on: boolean) { return this.raw(ESC, 0x45, on ? 1 : 0); }
     doubleSize(on: boolean) { return this.raw(GS, 0x21, on ? 0x11 : 0x00); }
+    // Line spacing in dots (ESC 3 n) — thermal printers don't have CSS point sizes, so this is
+    // what actually makes the receipt "taller"/more spaced out. Default is usually ~30 dots.
+    lineSpacing(dots: number) { return this.raw(ESC, 0x33, dots); }
     feed(lines = 1) { return this.text('\n'.repeat(lines)); }
     cutPartial() { return this.raw(GS, 0x56, 0x01); }
 
@@ -97,12 +100,14 @@ export function buildServiceReceiptBytes(service: ThermalReceiptData): Uint8Arra
 
     const b = new EscPosBuilder();
     b.init();
+    b.lineSpacing(42); // a bit taller than the printer's default (~30 dots)
 
     b.align('center');
     b.doubleSize(true).bold(true);
     b.text('NAEEM AUTOS\n');
     b.doubleSize(false).bold(false);
     b.text('Honda Authorized Dealer\n');
+    b.text('Contact: 0331-8800216\n');
     b.text('JOB CARD\n');
     b.text(dateStr + '\n');
 

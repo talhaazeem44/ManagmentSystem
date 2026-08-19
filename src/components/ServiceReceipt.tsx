@@ -85,10 +85,10 @@ const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service, onDone }) => {
 html,body {
     width:78mm;
     font-family:'Courier New',Courier,monospace;
-    font-size:8pt;
+    font-size:9.5pt;
     color:#000;
     background:#fff;
-    line-height:1.4;
+    line-height:1.65;
 }
 </style>
 </head>
@@ -113,16 +113,16 @@ html,body {
         // container it's placed in — the print window's body is set to 78mm, and a
         // hardcoded px width here previously worked out to ~80mm, overflowing the
         // printable area by ~2mm and clipping the right edge on real 80mm paper.
-        wrap:    { fontFamily: "'Courier New', Courier, monospace", fontSize: '8pt', color: '#000', background: '#fff', width: '100%', boxSizing: 'border-box', lineHeight: 1.4, padding: '6px 4px' },
+        wrap:    { fontFamily: "'Courier New', Courier, monospace", fontSize: '9.5pt', color: '#000', background: '#fff', width: '100%', boxSizing: 'border-box', lineHeight: 1.65, padding: '9px 5px' },
         center:  { textAlign: 'center' },
-        shopName:{ fontSize: '13pt', fontWeight: 900 },
-        sub:     { fontSize: '7.5pt', fontWeight: 700 },
-        small:   { fontSize: '7pt' },
-        divider: { borderTop: '1px dashed #000', margin: '3px 0' },
-        row:     { display: 'flex', justifyContent: 'space-between', marginBottom: '1.5px', fontSize: '8pt' },
+        shopName:{ fontSize: '15pt', fontWeight: 900 },
+        sub:     { fontSize: '8.5pt', fontWeight: 700 },
+        small:   { fontSize: '8pt' },
+        divider: { borderTop: '1px dashed #000', margin: '5px 0' },
+        row:     { display: 'flex', justifyContent: 'space-between', marginBottom: '3px', fontSize: '9.5pt' },
         bold:    { fontWeight: 900 },
-        totalRow:{ display: 'flex', justifyContent: 'space-between', fontSize: '11pt', fontWeight: 900, margin: '3px 0' },
-        secTitle:{ fontSize: '7.5pt', fontWeight: 900, marginBottom: '2px', textTransform: 'uppercase' as const },
+        totalRow:{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5pt', fontWeight: 900, margin: '5px 0' },
+        secTitle:{ fontSize: '8.5pt', fontWeight: 900, marginBottom: '3px', textTransform: 'uppercase' as const },
     };
 
     return (
@@ -141,6 +141,7 @@ html,body {
                         <div style={s.center}>
                             <div style={s.shopName}>NAEEM AUTOS</div>
                             <div style={s.sub}>Honda Authorized Dealer</div>
+                            <div style={s.small}>Contact: 0331-8800216</div>
                             <div style={s.small}>JOB CARD</div>
                             <div style={s.small}>{dateStr}</div>
                         </div>
