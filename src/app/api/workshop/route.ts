@@ -25,7 +25,15 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
 
         const serviceCharges = Number(body.serviceCharges) || 0;
-        const items = body.items || [];
+        // Manually-typed items (not picked from stock) have no real stockId — strip empty
+        // strings so Mongoose doesn't try to cast "" to an ObjectId and fail validation.
+        const items = (body.items || []).map((item: any) => {
+            if (!item.stockId) {
+                const { stockId, ...rest } = item;
+                return rest;
+            }
+            return item;
+        });
 
         // Calculate totals
         const itemsTotal = items.reduce((sum: number, item: any) => sum + item.customerPrice * item.quantity, 0);
