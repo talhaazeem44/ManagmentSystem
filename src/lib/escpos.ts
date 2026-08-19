@@ -59,11 +59,6 @@ function twoCol(left: string, right: string, width = LINE_WIDTH): string {
     return left + ' '.repeat(gap) + right + '\n';
 }
 
-function centerLine(text: string, width = LINE_WIDTH): string {
-    const pad = Math.max(0, Math.floor((width - text.length) / 2));
-    return ' '.repeat(pad) + text + '\n';
-}
-
 function divider(ch = '-', width = LINE_WIDTH): string {
     return ch.repeat(width) + '\n';
 }
@@ -108,7 +103,7 @@ export function buildServiceReceiptBytes(service: ThermalReceiptData): Uint8Arra
     b.text('1.5 Km Daska Road, Sambrial\n');
     b.text('Contact: 0331-8800216\n');
     b.text(divider());
-    b.bold(true).text('SERVICE INVOICE\n').bold(false);
+    b.bold(true).text('JOB CARD\n').bold(false);
     b.text(divider());
 
     b.align('left');

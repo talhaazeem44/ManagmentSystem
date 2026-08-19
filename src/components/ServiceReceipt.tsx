@@ -146,7 +146,7 @@ html,body {
                         </div>
 
                         <div style={{ border: '1.5px solid #000', textAlign: 'center', fontWeight: 900, padding: '2px 0', margin: '5px 0', fontSize: '9pt', letterSpacing: '0.05em' }}>
-                            SERVICE INVOICE
+                            JOB CARD
                         </div>
 
                         <div style={s.row}><span>Bill #:</span><span style={s.bold}>{billNo}</span></div>
