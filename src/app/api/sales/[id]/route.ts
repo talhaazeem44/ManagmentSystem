@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Sale, Bike, Customer, DeliveryOrder } from '@/models';
+import { resolveTransactionDate } from '@/lib/dates';
 
 export async function GET(
     request: NextRequest,
@@ -87,7 +88,7 @@ export async function PATCH(
             const sale = await Sale.findByIdAndUpdate(
                 id,
                 {
-                    $push: { payments: { amount: paymentAmount, date: new Date(date), note: note || '', paymentMode: mode } },
+                    $push: { payments: { amount: paymentAmount, date: resolveTransactionDate(date), note: note || '', paymentMode: mode } },
                     $inc: { [incField]: paymentAmount },
                     $set: { balance: newBalance },
                 },

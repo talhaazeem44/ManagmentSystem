@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { WorkshopDeposit } from '@/models';
+import { resolveTransactionDate } from '@/lib/dates';
 
 export async function GET(request: NextRequest) {
     try {
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
         const deposit = await WorkshopDeposit.create({
             amount: Number(amount),
             note: note || '',
-            date: date ? new Date(date) : new Date(),
+            date: resolveTransactionDate(date),
         });
 
         return NextResponse.json(deposit, { status: 201 });

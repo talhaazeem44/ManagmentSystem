@@ -2,18 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { KhataParty, Bike } from '@/models';
 import { getKhataMargin } from '@/lib/constants';
-
-// See create route for why this matters: a date-only picker resolves to UTC midnight, which can
-// make a same-day entry appear to predate a same-day cash deposit and drop out of its window.
-function resolveTransactionDate(dateStr?: string): Date {
-    const now = new Date();
-    if (!dateStr) return now;
-    const picked = new Date(dateStr);
-    const isToday = picked.getUTCFullYear() === now.getUTCFullYear()
-        && picked.getUTCMonth() === now.getUTCMonth()
-        && picked.getUTCDate() === now.getUTCDate();
-    return isToday ? now : picked;
-}
+import { resolveTransactionDate } from '@/lib/dates';
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string; txId: string }> }) {
     await dbConnect();

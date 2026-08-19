@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Expense } from '@/models';
+import { resolveTransactionDate } from '@/lib/dates';
 
 export async function GET(request: NextRequest) {
     try {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
             description,
             category: category || 'Other',
             deductFrom,
-            date: date ? new Date(date) : new Date(),
+            date: resolveTransactionDate(date),
         });
 
         return NextResponse.json(expense, { status: 201 });
