@@ -122,6 +122,9 @@ export default function WorkshopPage() {
                 setFormData({ customerName: '', customerMobile: '', bikeNumber: '', serviceType: 'Tuning', description: '', serviceCharges: '' });
                 setBillItems([]);
                 setPrintingService(newRecord);
+            } else {
+                const err = await res.json().catch(() => ({ message: 'Failed to save service record' }));
+                showToast(err.message || 'Failed to save service record', 'error');
             }
         } catch {
             showToast('Failed to save service record', 'error');

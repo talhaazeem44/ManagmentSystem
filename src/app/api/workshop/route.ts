@@ -33,8 +33,11 @@ export async function POST(request: NextRequest) {
         const totalAmount = serviceCharges + itemsTotal;
         const margin = totalAmount - totalCost; // service charges are pure profit
 
-        // Deduct stock quantities
+        // Deduct stock quantities — manually-typed items (not picked from stock) have no
+        // stockId, so there's nothing to deduct; passing an empty string to findByIdAndUpdate
+        // throws a CastError and fails the whole save.
         for (const item of items) {
+            if (!item.stockId) continue;
             await WorkshopStock.findByIdAndUpdate(item.stockId, {
                 $inc: { quantity: -item.quantity }
             });
