@@ -35,6 +35,8 @@ interface AvailableBike {
     status: string;
 }
 
+const today = () => new Date().toISOString().split('T')[0];
+
 const emptyForm = {
     customerName: '',
     customerMobile: '',
@@ -48,6 +50,7 @@ const emptyForm = {
     registrationFee: '',
     notes: '',
     expectedDeliveryDate: '',
+    date: today(),
 };
 
 function printBooking(b: AdvanceBooking) {
@@ -226,6 +229,11 @@ export default function AdvanceBookingsPage() {
                                 <div className="form-group">
                                     <label className="label">Care of</label>
                                     <input className="input" value={form.careOf} onChange={e => setForm({ ...form, careOf: e.target.value })} placeholder="Father/Husband name" />
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Booking Date</label>
+                                    <input type="date" className="input" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Only change this when re-entering a booking that was accidentally deleted — set it back to the original date so its margin isn&apos;t counted as new.</span>
                                 </div>
                                 <div className="form-group">
                                     <label className="label">Bike Model</label>

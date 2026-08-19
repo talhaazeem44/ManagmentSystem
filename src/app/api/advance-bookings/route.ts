@@ -7,6 +7,7 @@ import {
     REGISTRATION_ACTUAL_COST,
     REGISTRATION_ACTUAL_COST_BY_MODEL,
 } from '@/lib/constants';
+import { resolveTransactionDate } from '@/lib/dates';
 
 function calcAdvanceMargin(bikeModel: string, totalPrice: number, registrationFee: number) {
     const standard = BIKE_STANDARD_PRICES[bikeModel] || totalPrice;
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
     try {
         await dbConnect();
         const body = await request.json();
-        const { customerName, customerMobile, cnic, bikeModel, bikeColor, careOf, advancePaid, advancePaymentMode, totalPrice, registrationFee, notes, expectedDeliveryDate } = body;
+        const { customerName, customerMobile, cnic, bikeModel, bikeColor, careOf, advancePaid, advancePaymentMode, totalPrice, registrationFee, notes, expectedDeliveryDate, date } = body;
 
         if (!customerName || advancePaid === undefined) {
             return NextResponse.json({ message: 'Customer name and advance amount are required' }, { status: 400 });
@@ -56,6 +57,7 @@ export async function POST(request: NextRequest) {
             margin,
             notes,
             expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate) : undefined,
+            date: date ? resolveTransactionDate(date) : undefined,
             status: 'PENDING',
         });
 
