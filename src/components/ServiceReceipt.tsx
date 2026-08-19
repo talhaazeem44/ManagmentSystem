@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
+import { buildServiceReceiptBytes, getRememberedPrinter, isWebUsbSupported, pickPrinter, sendToThermalPrinter } from '@/lib/escpos';
 
 interface BillItem {
     name: string;
@@ -31,13 +32,42 @@ const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service, onDone }) => {
     const items      = service.items ?? [];
     const partsTotal = items.reduce((s, i) => s + i.customerPrice * i.quantity, 0);
     const receiptRef = useRef<HTMLDivElement>(null);
+    const [printing, setPrinting] = useState(false);
 
     const dateStr = new Date(service.date).toLocaleString('en-PK', {
         day: '2-digit', month: 'short', year: 'numeric',
         hour: '2-digit', minute: '2-digit', hour12: true,
     });
 
-    const handlePrint = () => {
+    // Print straight to the thermal printer over USB (no OS driver, no print dialog).
+    // Falls back to the browser print-dialog popup if WebUSB isn't available or fails.
+    const handleDirectPrint = async () => {
+        if (!isWebUsbSupported()) {
+            alert('Direct printing needs Chrome or Edge on this computer — opening the print dialog instead.');
+            handleDialogPrint();
+            return;
+        }
+        setPrinting(true);
+        try {
+            let device = await getRememberedPrinter();
+            if (!device) {
+                device = await pickPrinter();
+            }
+            const bytes = buildServiceReceiptBytes(service);
+            await sendToThermalPrinter(device, bytes);
+        } catch (err: any) {
+            if (err?.name === 'NotFoundError') {
+                // User closed the device picker without choosing anything — not a real error.
+                return;
+            }
+            alert(`Direct printing failed: ${err?.message || err}\n\nOpening the print dialog instead.`);
+            handleDialogPrint();
+        } finally {
+            setPrinting(false);
+        }
+    };
+
+    const handleDialogPrint = () => {
         const content = receiptRef.current;
         if (!content) return;
 
@@ -177,18 +207,24 @@ html,body {
                 {/* Tip + buttons */}
                 <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 14px', maxWidth: '300px', textAlign: 'center' }}>
                     <div style={{ color: '#facc15', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>
-                        ⚠ Printer Setup
+                        ⚠ First time?
                     </div>
                     <div style={{ color: '#ddd', fontSize: '0.72rem', lineHeight: 1.5 }}>
-                        In the print dialog: select <strong style={{ color: '#fff' }}>BlackCopper</strong> printer → More settings → Paper size → <strong style={{ color: '#fff' }}>80mm</strong> (or Thermal Roll)
+                        Chrome will ask you to pick the printer once — choose the POS/thermal printer. It&apos;ll be remembered after that.
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
                     <button
-                        onClick={handlePrint}
-                        style={{ padding: '10px 28px', background: '#22c55e', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer' }}>
-                        🖨️ Print
+                        onClick={handleDirectPrint}
+                        disabled={printing}
+                        style={{ padding: '10px 28px', background: printing ? '#16a34a99' : '#22c55e', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '0.95rem', fontWeight: 700, cursor: printing ? 'default' : 'pointer' }}>
+                        {printing ? '⏳ Printing...' : '🖨️ Print'}
+                    </button>
+                    <button
+                        onClick={handleDialogPrint}
+                        style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.1)', color: '#ccc', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '8px', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        Print via dialog instead
                     </button>
                     <button
                         onClick={() => onDone?.()}
