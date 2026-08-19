@@ -12,6 +12,7 @@ interface BillItem {
 
 interface ServiceReceiptProps {
     service: {
+        _id?: string;
         customerName: string;
         customerMobile?: string;
         bikeNumber?: string;
@@ -30,13 +31,12 @@ const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service, onDone }) => {
     const total      = service.totalAmount ?? service.amount ?? 0;
     const labour     = service.serviceCharges ?? service.amount ?? 0;
     const items      = service.items ?? [];
-    const partsTotal = items.reduce((s, i) => s + i.customerPrice * i.quantity, 0);
+    const billNo     = service._id ? service._id.slice(-6).toUpperCase() : '';
     const receiptRef = useRef<HTMLDivElement>(null);
     const [printing, setPrinting] = useState(false);
 
-    const dateStr = new Date(service.date).toLocaleString('en-PK', {
-        day: '2-digit', month: 'short', year: 'numeric',
-        hour: '2-digit', minute: '2-digit', hour12: true,
+    const dateStr = new Date(service.date).toLocaleDateString('en-PK', {
+        day: '2-digit', month: 'short', year: '2-digit',
     });
 
     // Print straight to the thermal printer over USB (no OS driver, no print dialog).
@@ -141,64 +141,73 @@ html,body {
                         <div style={s.center}>
                             <div style={s.shopName}>NAEEM AUTOS</div>
                             <div style={s.sub}>Honda Authorized Dealer</div>
+                            <div style={s.small}>1.5 Km Daska Road, Sambrial</div>
                             <div style={s.small}>Contact: 0331-8800216</div>
-                            <div style={s.small}>JOB CARD</div>
-                            <div style={s.small}>{dateStr}</div>
                         </div>
+
+                        <div style={{ border: '1.5px solid #000', textAlign: 'center', fontWeight: 900, padding: '2px 0', margin: '5px 0', fontSize: '9pt', letterSpacing: '0.05em' }}>
+                            SERVICE INVOICE
+                        </div>
+
+                        <div style={s.row}><span>Bill #:</span><span style={s.bold}>{billNo}</span></div>
+                        <div style={s.row}><span>Date:</span><span>{dateStr}</span></div>
 
                         <div style={s.divider} />
 
                         <div style={s.row}><span>Customer:</span><span style={s.bold}>{service.customerName}</span></div>
-                        {service.customerMobile && <div style={s.row}><span>Mobile:</span><span>{service.customerMobile}</span></div>}
+                        {service.customerMobile && <div style={s.row}><span>Contact:</span><span>{service.customerMobile}</span></div>}
                         {service.bikeNumber && <div style={s.row}><span>Bike No:</span><span style={s.bold}>{service.bikeNumber}</span></div>}
 
                         <div style={s.divider} />
 
-                        <div style={s.row}>
-                            <span style={s.bold}>{service.serviceType}</span>
-                            <span>Rs.{labour.toLocaleString()}</span>
-                        </div>
-                        {service.description && (
-                            <div style={{ fontSize: '7pt', fontStyle: 'italic', marginTop: '1px' }}>Note: {service.description}</div>
-                        )}
-
-                        {items.length > 0 && (
-                            <>
-                                <div style={s.divider} />
-                                <div style={s.secTitle}>Parts &amp; Items</div>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '7.5pt' }}>
-                                    <thead>
-                                        <tr>
-                                            <th style={{ textAlign: 'left', width: '55%', borderBottom: '1px solid #000', padding: '1px 0', fontWeight: 700 }}>Item</th>
-                                            <th style={{ textAlign: 'center', width: '10%', borderBottom: '1px solid #000', padding: '1px 0', fontWeight: 700 }}>Qty</th>
-                                            <th style={{ textAlign: 'right', width: '35%', borderBottom: '1px solid #000', padding: '1px 0', fontWeight: 700 }}>Amt</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {items.map((it, idx) => (
-                                            <tr key={idx}>
-                                                <td style={{ textAlign: 'left', verticalAlign: 'top', padding: '1px 0' }}>
-                                                    <div>{it.name}</div>
-                                                    {it.productCode && <div style={{ fontSize: '6pt', color: '#555' }}>{it.productCode}</div>}
-                                                </td>
-                                                <td style={{ textAlign: 'center', verticalAlign: 'top', padding: '1px 0' }}>{it.quantity}</td>
-                                                <td style={{ textAlign: 'right', verticalAlign: 'top', padding: '1px 0' }}>Rs.{(it.customerPrice * it.quantity).toLocaleString()}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                                <div style={{ ...s.divider, borderStyle: 'dotted' }} />
-                                <div style={s.row}><span>Labour</span><span>Rs.{labour.toLocaleString()}</span></div>
-                                <div style={s.row}><span>Parts</span><span>Rs.{partsTotal.toLocaleString()}</span></div>
-                            </>
-                        )}
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8pt' }}>
+                            <thead>
+                                <tr>
+                                    <th style={{ textAlign: 'left', width: '10%', borderBottom: '1px solid #000', padding: '2px 0', fontWeight: 700 }}>Sr</th>
+                                    <th style={{ textAlign: 'left', width: '40%', borderBottom: '1px solid #000', padding: '2px 0', fontWeight: 700 }}>Description</th>
+                                    <th style={{ textAlign: 'center', width: '12%', borderBottom: '1px solid #000', padding: '2px 0', fontWeight: 700 }}>Qty</th>
+                                    <th style={{ textAlign: 'right', width: '18%', borderBottom: '1px solid #000', padding: '2px 0', fontWeight: 700 }}>Rate</th>
+                                    <th style={{ textAlign: 'right', width: '20%', borderBottom: '1px solid #000', padding: '2px 0', fontWeight: 700 }}>Amt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style={{ textAlign: 'left', verticalAlign: 'top', padding: '3px 0' }}>1</td>
+                                    <td style={{ textAlign: 'left', verticalAlign: 'top', padding: '3px 0' }}>
+                                        <div>{service.serviceType}</div>
+                                        {service.description && <div style={{ fontSize: '7pt', fontStyle: 'italic', color: '#333' }}>{service.description}</div>}
+                                    </td>
+                                    <td style={{ textAlign: 'center', verticalAlign: 'top', padding: '3px 0' }}>1</td>
+                                    <td style={{ textAlign: 'right', verticalAlign: 'top', padding: '3px 0' }}>-</td>
+                                    <td style={{ textAlign: 'right', verticalAlign: 'top', padding: '3px 0' }}>{labour.toLocaleString()}</td>
+                                </tr>
+                                {items.map((it, idx) => (
+                                    <tr key={idx}>
+                                        <td style={{ textAlign: 'left', verticalAlign: 'top', padding: '3px 0' }}>{idx + 2}</td>
+                                        <td style={{ textAlign: 'left', verticalAlign: 'top', padding: '3px 0' }}>
+                                            <div>{it.name}</div>
+                                            {it.productCode && <div style={{ fontSize: '6.5pt', color: '#555' }}>{it.productCode}</div>}
+                                        </td>
+                                        <td style={{ textAlign: 'center', verticalAlign: 'top', padding: '3px 0' }}>{it.quantity}</td>
+                                        <td style={{ textAlign: 'right', verticalAlign: 'top', padding: '3px 0' }}>{it.customerPrice.toLocaleString()}</td>
+                                        <td style={{ textAlign: 'right', verticalAlign: 'top', padding: '3px 0' }}>{(it.customerPrice * it.quantity).toLocaleString()}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
 
                         <div style={s.divider} />
                         <div style={s.totalRow}><span>TOTAL:</span><span>Rs.{total.toLocaleString()}</span></div>
                         <div style={s.divider} />
 
                         <div style={{ ...s.center, fontSize: '7pt' }}>
-                            <div>Thank you for visiting Naeem Autos!</div>
+                            <div>Parts/service once done are</div>
+                            <div>non-refundable &amp; non-exchangeable.</div>
+                            <div>For complaints: 0331-8800216</div>
+                        </div>
+                        <div style={s.divider} />
+                        <div style={{ ...s.center, fontSize: '7.5pt' }}>
+                            <div style={{ fontWeight: 900 }}>Thank you for visiting Naeem Autos!</div>
                             <div>Honda Authorized Dealer</div>
                         </div>
 

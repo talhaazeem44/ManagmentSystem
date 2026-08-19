@@ -76,6 +76,7 @@ export interface ThermalBillItem {
 }
 
 export interface ThermalReceiptData {
+    _id?: string;
     customerName: string;
     customerMobile?: string;
     bikeNumber?: string;
@@ -92,11 +93,8 @@ export function buildServiceReceiptBytes(service: ThermalReceiptData): Uint8Arra
     const total = service.totalAmount ?? service.amount ?? 0;
     const labour = service.serviceCharges ?? service.amount ?? 0;
     const items = service.items ?? [];
-    const partsTotal = items.reduce((s, i) => s + i.customerPrice * i.quantity, 0);
-    const dateStr = new Date(service.date).toLocaleString('en-PK', {
-        day: '2-digit', month: 'short', year: 'numeric',
-        hour: '2-digit', minute: '2-digit', hour12: true,
-    });
+    const billNo = service._id ? service._id.slice(-6).toUpperCase() : '';
+    const dateStr = new Date(service.date).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: '2-digit' });
 
     const b = new EscPosBuilder();
     b.init();
@@ -107,33 +105,34 @@ export function buildServiceReceiptBytes(service: ThermalReceiptData): Uint8Arra
     b.text('NAEEM AUTOS\n');
     b.doubleSize(false).bold(false);
     b.text('Honda Authorized Dealer\n');
+    b.text('1.5 Km Daska Road, Sambrial\n');
     b.text('Contact: 0331-8800216\n');
-    b.text('JOB CARD\n');
-    b.text(dateStr + '\n');
+    b.text(divider());
+    b.bold(true).text('SERVICE INVOICE\n').bold(false);
+    b.text(divider());
 
     b.align('left');
-    b.text(divider());
+    b.text(twoCol(`Bill #: ${billNo}`, dateStr));
     b.bold(true); b.text(twoCol('Customer:', service.customerName)); b.bold(false);
-    if (service.customerMobile) b.text(twoCol('Mobile:', service.customerMobile));
+    if (service.customerMobile) b.text(twoCol('Contact:', service.customerMobile));
     if (service.bikeNumber) { b.bold(true); b.text(twoCol('Bike No:', service.bikeNumber)); b.bold(false); }
 
     b.text(divider());
-    b.bold(true);
-    b.text(twoCol(service.serviceType, `Rs.${labour.toLocaleString()}`));
-    b.bold(false);
-    if (service.description) b.text(`Note: ${service.description}\n`);
+    b.bold(true).text('SR  DESCRIPTION\n').bold(false);
+    b.text(divider('.'));
 
-    if (items.length > 0) {
-        b.text(divider());
-        b.bold(true).text('PARTS & ITEMS\n').bold(false);
-        for (const it of items) {
-            const amt = `Rs.${(it.customerPrice * it.quantity).toLocaleString()}`;
-            b.text(twoCol(`${it.name} x${it.quantity}`.slice(0, LINE_WIDTH - amt.length - 1), amt));
-            if (it.productCode) b.text(`  ${it.productCode}\n`);
-        }
-        b.text(divider('.'));
-        b.text(twoCol('Labour', `Rs.${labour.toLocaleString()}`));
-        b.text(twoCol('Parts', `Rs.${partsTotal.toLocaleString()}`));
+    let sr = 1;
+    b.bold(true); b.text(`${sr}.  ${service.serviceType}\n`); b.bold(false);
+    b.text(twoCol('    1 x Service', `Rs.${labour.toLocaleString()}`));
+    if (service.description) b.text(`    Note: ${service.description}\n`);
+    sr++;
+
+    for (const it of items) {
+        const amt = it.customerPrice * it.quantity;
+        b.bold(true); b.text(`${sr}.  ${it.name}\n`); b.bold(false);
+        if (it.productCode) b.text(`    ${it.productCode}\n`);
+        b.text(twoCol(`    ${it.quantity} x Rs.${it.customerPrice.toLocaleString()}`, `Rs.${amt.toLocaleString()}`));
+        sr++;
     }
 
     b.text(divider());
@@ -143,7 +142,11 @@ export function buildServiceReceiptBytes(service: ThermalReceiptData): Uint8Arra
     b.text(divider());
 
     b.align('center');
-    b.text('Thank you for visiting Naeem Autos!\n');
+    b.text('Parts/service once done are\n');
+    b.text('non-refundable & non-exchangeable.\n');
+    b.text('For complaints: 0331-8800216\n');
+    b.text(divider());
+    b.bold(true).text('Thank you for visiting Naeem Autos!\n').bold(false);
     b.text('Honda Authorized Dealer\n');
 
     b.feed(4);
