@@ -79,7 +79,11 @@ html,body {
 
     /* ── inline styles for the receipt body (used both on screen and in print) ── */
     const s: Record<string, React.CSSProperties> = {
-        wrap:    { fontFamily: "'Courier New', Courier, monospace", fontSize: '8pt', color: '#000', background: '#fff', width: '302px', lineHeight: 1.4, padding: '6px 4px' },
+        // width:100% (not a fixed px value) so this always exactly fills whatever
+        // container it's placed in — the print window's body is set to 78mm, and a
+        // hardcoded px width here previously worked out to ~80mm, overflowing the
+        // printable area by ~2mm and clipping the right edge on real 80mm paper.
+        wrap:    { fontFamily: "'Courier New', Courier, monospace", fontSize: '8pt', color: '#000', background: '#fff', width: '100%', boxSizing: 'border-box', lineHeight: 1.4, padding: '6px 4px' },
         center:  { textAlign: 'center' },
         shopName:{ fontSize: '13pt', fontWeight: 900 },
         sub:     { fontSize: '7.5pt', fontWeight: 700 },
@@ -99,8 +103,9 @@ html,body {
                 zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexDirection: 'column', gap: '12px',
             }}>
-                {/* Receipt preview */}
-                <div style={{ background: '#fff', borderRadius: '6px', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+                {/* Receipt preview — fixed width here is purely for on-screen display;
+                    the print window sizes the same content to the real 78mm printable area. */}
+                <div style={{ background: '#fff', borderRadius: '6px', width: '320px', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
                     {/* The receipt content — this exact HTML is copied into the print window */}
                     <div ref={receiptRef} style={s.wrap}>
                         <div style={s.center}>
