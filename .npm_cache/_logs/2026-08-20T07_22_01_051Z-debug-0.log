@@ -5,15 +5,15 @@
 4 silly config load:file:/Users/talhaazeem/Documents/managementSystem/.npmrc
 5 silly config load:file:/Users/talhaazeem/.npmrc
 6 silly config load:file:/usr/local/etc/npmrc
-7 verbose title npm exec tsc --noEmit -p tsconfig.json
-8 verbose argv "exec" "--" "tsc" "--noEmit" "-p" "tsconfig.json"
-9 verbose logfile logs-max:10 dir:/Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-08-19T10_29_07_991Z-
-10 verbose logfile /Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-08-19T10_29_07_991Z-debug-0.log
+7 verbose title npm exec tsc --noEmit -p .
+8 verbose argv "exec" "--" "tsc" "--noEmit" "-p" "."
+9 verbose logfile logs-max:10 dir:/Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-08-20T07_22_01_051Z-
+10 verbose logfile /Users/talhaazeem/Documents/managementSystem/.npm_cache/_logs/2026-08-20T07_22_01_051Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
 13 verbose cwd /Users/talhaazeem/Documents/managementSystem
 14 verbose os Darwin 24.5.0
 15 verbose node v22.15.1
 16 verbose npm  v11.4.2
-17 verbose exit 2
-18 verbose code 2
+17 verbose exit 0
+18 info ok

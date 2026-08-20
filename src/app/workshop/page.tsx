@@ -45,7 +45,7 @@ export default function WorkshopPage() {
     const [loading, setLoading] = useState(false);
     const [printingService, setPrintingService] = useState<ServiceRecord | null>(null);
     const [billItems, setBillItems] = useState<BillItem[]>([]);
-    const [manualItem, setManualItem] = useState({ name: '', productCode: '', price: '', qty: '1' });
+    const [manualItem, setManualItem] = useState({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1' });
     const [stockList, setStockList] = useState<StockItem[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [formData, setFormData] = useState({
@@ -85,9 +85,11 @@ export default function WorkshopPage() {
 
     const selectSuggestion = (item: StockItem) => {
         setManualItem({
+            stockId: item._id,
             name: item.name,
             productCode: item.productCode ?? '',
             price: String(item.customerPrice),
+            retailPrice: String(item.retailPrice),
             qty: '1',
         });
         setShowSuggestions(false);
@@ -199,7 +201,7 @@ export default function WorkshopPage() {
                                             value={manualItem.name}
                                             autoComplete="off"
                                             onChange={e => {
-                                                setManualItem({ ...manualItem, name: e.target.value, productCode: '', price: '' });
+                                                setManualItem({ ...manualItem, name: e.target.value, stockId: '', productCode: '', price: '', retailPrice: '' });
                                                 setShowSuggestions(true);
                                             }}
                                             onFocus={() => setShowSuggestions(true)}
@@ -259,14 +261,16 @@ export default function WorkshopPage() {
                                             onClick={() => {
                                                 if (!manualItem.name || !manualItem.price) return;
                                                 setBillItems([...billItems, {
-                                                    stockId: '',
+                                                    stockId: manualItem.stockId,
                                                     name: manualItem.name,
                                                     productCode: manualItem.productCode,
                                                     quantity: Number(manualItem.qty) || 1,
-                                                    retailPrice: Number(manualItem.price),
+                                                    // Items picked from stock keep their real cost price so margin
+                                                    // is tracked correctly; fully manual items have no known cost.
+                                                    retailPrice: manualItem.stockId ? (Number(manualItem.retailPrice) || 0) : Number(manualItem.price),
                                                     customerPrice: Number(manualItem.price),
                                                 }]);
-                                                setManualItem({ name: '', productCode: '', price: '', qty: '1' });
+                                                setManualItem({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1' });
                                             }}
                                             disabled={!manualItem.name || !manualItem.price}>Add</button>
                                     </div>
