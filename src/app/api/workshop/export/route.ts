@@ -41,17 +41,22 @@ export async function GET(request: NextRequest) {
                 r.serviceType || '',
             ];
 
-            if (r.serviceCharges) {
-                rows.push([String(sno++), ...jobInfo, 'Labour', '1', String(r.serviceCharges), String(r.serviceCharges)]);
-            }
-            for (const item of r.items || []) {
-                const total = Number(item.customerPrice || 0) * Number(item.quantity || 0);
-                rows.push([String(sno++), ...jobInfo, item.name || '', String(item.quantity || 0), String(item.customerPrice || 0), String(total)]);
-            }
-            // Job with no labour and no items still gets one row so it isn't lost from the sheet
-            if (!r.serviceCharges && (!r.items || r.items.length === 0)) {
-                rows.push([String(sno++), ...jobInfo, '', '', '', String(r.totalAmount || 0)]);
-            }
+            // One row per visit — labour + every part combined, so a customer with
+            // multiple items (e.g. Tuning + oil + air filter) reads as a single line.
+            const items = r.items || [];
+            const names = [
+                ...(r.serviceCharges ? ['Labour'] : []),
+                ...items.map((it: any) => it.name || ''),
+            ];
+            const qty = (r.serviceCharges ? 1 : 0) + items.reduce((s: number, it: any) => s + Number(it.quantity || 0), 0);
+
+            rows.push([
+                String(sno++), ...jobInfo,
+                names.join(', '),
+                String(qty),
+                String(r.serviceCharges || 0),
+                String(r.totalAmount || 0),
+            ]);
         }
 
         const csv = [HEADERS, ...rows].map(row => row.map(csvCell).join(',')).join('\r\n');
