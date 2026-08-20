@@ -339,7 +339,12 @@ export default function WorkshopPage() {
 
                     {/* History */}
                     <div className="card">
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>Recent Workshop History</h2>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Recent Workshop History</h2>
+                            <a href="/api/workshop/export" className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>
+                                ⬇️ Export CSV
+                            </a>
+                        </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '700px', overflowY: 'auto' }}>
                             {history.length === 0 && (
                                 <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>No records yet.</div>

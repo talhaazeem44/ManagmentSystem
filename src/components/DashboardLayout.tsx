@@ -15,24 +15,24 @@ export default function DashboardLayout({
     const role = (session?.user as any)?.role as string | undefined;
 
     const mainNavItems = [
-        { href: '/dashboard',         label: 'Dashboard', icon: '📊' },
-        { href: '/sales/new',         label: 'New Sale',  icon: '➕' },
-        { href: '/advance-bookings',  label: 'Advance',   icon: '📋' },
-        { href: '/inventory',         label: 'Inventory', icon: '🏍️' },
-        { href: '/inventory/receive', label: 'Receive',   icon: '📦' },
-        { href: '/sales',             label: 'Sales',     icon: '💰' },
-        { href: '/reports',           label: 'Reports',   icon: '📈' },
-        { href: '/profit',            label: 'Profit',    icon: '💰' },
-        { href: '/expenses',          label: 'Expenses',  icon: '💸' },
-        { href: '/khata',             label: 'Khata',     icon: '📒' },
-        { href: '/used-bikes',        label: 'Used Bikes', icon: '🔁' },
+        { href: '/dashboard', label: 'Dashboard', icon: '📊' },
+        { href: '/sales/new', label: 'New Sale', icon: '➕' },
+        { href: '/advance-bookings', label: 'Advance', icon: '📋' },
+        { href: '/inventory', label: 'Inventory', icon: '🏍️' },
+        { href: '/inventory/receive', label: 'Receive', icon: '📦' },
+        { href: '/sales', label: 'Sales', icon: '💰' },
+        { href: '/reports', label: 'Reports', icon: '📈' },
+        { href: '/profit', label: 'Profit', icon: '💰' },
+        { href: '/expenses', label: 'Expenses', icon: '💸' },
+        { href: '/khata', label: 'Khata', icon: '📒' },
+        { href: '/used-bikes', label: 'Used Bikes', icon: '🔁' },
     ];
 
     const workshopNavItems = [
-        { href: '/workshop',           label: 'Workshop',   icon: '🛠️' },
         { href: '/workshop/dashboard', label: 'W. Dashboard', icon: '📊' },
-        { href: '/workshop/stock',     label: 'W. Stock',   icon: '🔩' },
-        { href: '/workshop/tracker',   label: 'W. Cash',    icon: '💵' },
+        { href: '/workshop', label: 'Workshop', icon: '🛠️' },
+        { href: '/workshop/stock', label: 'W. Stock', icon: '🔩' },
+        { href: '/workshop/tracker', label: 'W. Cash', icon: '💵' },
     ];
 
     let navItems;
