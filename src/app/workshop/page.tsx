@@ -164,10 +164,14 @@ export default function WorkshopPage() {
                                     onChange={e => {
                                         const type = e.target.value;
                                         const defaultCharges: Record<string, string> = {
+                                            'First Service': '0', 'Second Service': '0', 'Third Service': '0',
                                             'Tuning': '150', 'Oil Change': '200', 'Repair': '', 'Washing': '100', 'Other': '',
                                         };
                                         setFormData({ ...formData, serviceType: type, serviceCharges: defaultCharges[type] ?? '' });
                                     }}>
+                                    <option value="First Service">First Service (Free)</option>
+                                    <option value="Second Service">Second Service (Free)</option>
+                                    <option value="Third Service">Third Service (Free)</option>
                                     <option value="Tuning">Tuning</option>
                                     <option value="Oil Change">Oil Change</option>
                                     <option value="Repair">General Repair</option>
