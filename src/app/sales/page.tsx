@@ -173,7 +173,8 @@ export default function SalesPage() {
     const modeSelect = () => (
         <select value={editState?.paymentMode ?? ''} onChange={e => setEditState(prev => prev ? { ...prev, paymentMode: e.target.value } : prev)}
             style={{ padding: '0.2rem 0.4rem', fontSize: '0.8rem', border: '1px solid var(--color-primary)', borderRadius: '4px', background: 'var(--color-bg)', color: 'var(--color-text)' }}>
-            {['CASH','CREDIT','BANK','LEASE','ONLINE'].map(m => <option key={m} value={m}>{m}</option>)}
+            {[{ v: 'CASH', l: 'CASH' }, { v: 'CREDIT', l: 'CREDIT' }, { v: 'BANK_TRANSFER', l: 'BANK' }, { v: 'LEASE', l: 'LEASE' }, { v: 'ONLINE', l: 'ONLINE' }]
+                .map(({ v, l }) => <option key={v} value={v}>{l}</option>)}
         </select>
     );
 

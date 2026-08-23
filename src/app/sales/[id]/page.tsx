@@ -395,11 +395,20 @@ export default function ReceiptPage() {
                             )}
                         </div>
                         <div className={styles.paymentModes}>
-                            {['CASH', 'CREDIT', 'LEASE'].map(m => (
-                                <label key={m} className={sale.paymentMode === m ? styles.checked : ''}>
-                                    <input type="checkbox" readOnly checked={sale.paymentMode === m} /> {m}
-                                </label>
-                            ))}
+                            {[
+                                { modes: ['CASH'], label: 'CASH' },
+                                { modes: ['BANK_TRANSFER', 'BANK'], label: 'BANK' },
+                                { modes: ['CREDIT'], label: 'CREDIT' },
+                                { modes: ['LEASE'], label: 'LEASE' },
+                                { modes: ['ONLINE'], label: 'ONLINE' },
+                            ].map(({ modes, label }) => {
+                                const isChecked = modes.includes(sale.paymentMode);
+                                return (
+                                    <label key={label} className={isChecked ? styles.checked : ''}>
+                                        <input type="checkbox" readOnly checked={isChecked} /> {label}
+                                    </label>
+                                );
+                            })}
                         </div>
                     </div>
 
