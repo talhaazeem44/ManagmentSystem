@@ -185,7 +185,7 @@ export default function AdvanceBookingReceiptPage() {
                             <Image src="/honda-logo.png" alt="Honda" width={160} height={110} className={saleStyles.hondaLogo} priority />
 
                             <div className={saleStyles.titleRow}>
-                                <div className={saleStyles.serialNumber}>{booking._id}</div>
+                                {/* <div className={saleStyles.serialNumber}>{booking._id}</div> */}
                                 <div className={saleStyles.receiptTitleBox}>SALE RECEIPT</div>
                             </div>
 
