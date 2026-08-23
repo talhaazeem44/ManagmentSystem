@@ -21,6 +21,14 @@ interface RecentJob {
     date: string;
 }
 
+interface LowStockItem {
+    _id: string;
+    name: string;
+    productCode?: string;
+    category?: string;
+    quantity: number;
+}
+
 interface WorkshopStats {
     totalRevenue: number;
     totalMargin: number;
@@ -31,6 +39,8 @@ interface WorkshopStats {
     byServiceType: Record<string, ServiceTypeBreakdown>;
     chartData: { day: string; jobs: number; revenue: number; margin: number }[];
     recentJobs: RecentJob[];
+    lowStockThreshold: number;
+    lowStockItems: LowStockItem[];
 }
 
 type RangeKey = 'today' | 'week' | 'month' | 'all';
@@ -101,6 +111,27 @@ export default function WorkshopDashboardPage() {
                     <Loader size={160} text="Loading workshop stats..." />
                 ) : (
                     <>
+                        {stats.lowStockItems.length > 0 && (
+                            <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem 1.25rem', background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.35)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                                    <span style={{ fontSize: '1.1rem' }}>⚠️</span>
+                                    <strong style={{ fontSize: '0.9rem', color: '#ef4444' }}>
+                                        Low Stock — {stats.lowStockItems.length} item{stats.lowStockItems.length > 1 ? 's' : ''} at or below {stats.lowStockThreshold} units
+                                    </strong>
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                    {stats.lowStockItems.map(item => (
+                                        <div key={item._id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.65rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: '999px', fontSize: '0.8rem' }}>
+                                            <span style={{ fontWeight: 600 }}>{item.name}</span>
+                                            <span style={{ color: item.quantity <= 0 ? '#ef4444' : '#f59e0b', fontWeight: 700 }}>
+                                                {item.quantity <= 0 ? 'Out of stock' : `${item.quantity} left`}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
                             <Card label="Total Earned (Margin)" value={`Rs. ${stats.totalMargin.toLocaleString()}`} color="#10b981" sub={`${stats.jobCount} jobs`} />
                             <Card label="Total Revenue" value={`Rs. ${stats.totalRevenue.toLocaleString()}`} color="var(--color-primary)" />

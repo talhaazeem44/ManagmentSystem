@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { ServiceSale } from '@/models';
+import { ServiceSale, WorkshopStock } from '@/models';
+
+const DEFAULT_LOW_STOCK_THRESHOLD = 1;
 
 export async function GET(request: NextRequest) {
     try {
@@ -8,6 +10,7 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const startDateStr = searchParams.get('startDate');
         const endDateStr = searchParams.get('endDate');
+        const lowStockThreshold = Number(searchParams.get('lowStockThreshold')) || DEFAULT_LOW_STOCK_THRESHOLD;
 
         const filter: any = {};
         if (startDateStr && endDateStr) {
@@ -56,6 +59,10 @@ export async function GET(request: NextRequest) {
             };
         });
 
+        const lowStockItems = await WorkshopStock.find({ quantity: { $lte: lowStockThreshold } })
+            .sort({ quantity: 1 })
+            .lean();
+
         return NextResponse.json({
             totalRevenue,
             totalMargin,
@@ -65,6 +72,14 @@ export async function GET(request: NextRequest) {
             avgTicket,
             byServiceType,
             chartData,
+            lowStockThreshold,
+            lowStockItems: lowStockItems.map((it: any) => ({
+                _id: it._id.toString(),
+                name: it.name,
+                productCode: it.productCode,
+                category: it.category,
+                quantity: it.quantity,
+            })),
             recentJobs: sales.slice(0, 15).map((r: any) => ({
                 _id: r._id.toString(),
                 customerName: r.customerName,
