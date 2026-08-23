@@ -74,6 +74,7 @@ export interface ICustomer {
     cnic: string;
     name: string;
     fatherName?: string;
+    careOf?: string;
     address?: string;
     mobile?: string;
     createdAt?: Date;
@@ -84,6 +85,7 @@ const CustomerSchema = new Schema<ICustomer>({
     cnic: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     fatherName: { type: String },
+    careOf: { type: String },
     address: { type: String },
     mobile: { type: String },
 }, {

@@ -44,6 +44,7 @@ export default function NewSalePage() {
     const [cnicLookupStatus, setCnicLookupStatus] = useState<'idle' | 'found' | 'new'>('idle');
     const [name, setName] = useState('');
     const [fatherName, setFatherName] = useState('');
+    const [careOf, setCareOf] = useState('');
     const [address, setAddress] = useState('');
     const [mobile, setMobile] = useState('');
 
@@ -160,6 +161,7 @@ export default function NewSalePage() {
                 if (customer) {
                     setName(customer.name || '');
                     setFatherName(customer.fatherName || '');
+                    setCareOf(customer.careOf || '');
                     setAddress(customer.address || '');
                     setMobile(customer.mobile || '');
                     setCnicLookupStatus('found');
@@ -186,6 +188,7 @@ export default function NewSalePage() {
                         cnic,
                         name,
                         fatherName,
+                        careOf,
                         address,
                         mobile
                     },
@@ -410,6 +413,17 @@ export default function NewSalePage() {
                                     placeholder="Abdul Aziz"
                                 />
                             </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label className="label">Care of</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={careOf}
+                                onChange={(e) => setCareOf(e.target.value)}
+                                placeholder="Optional"
+                            />
                         </div>
 
                         <div className="form-group">

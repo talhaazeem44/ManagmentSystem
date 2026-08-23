@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
                 cnic: customer.cnic,
                 name: customer.name,
                 fatherName: customer.fatherName,
+                careOf: customer.careOf,
                 address: customer.address,
                 mobile: customer.mobile
             });

@@ -68,6 +68,7 @@ interface Sale {
         name: string;
         cnic: string;
         fatherName: string | null;
+        careOf: string | null;
         address: string | null;
         mobile: string | null;
     };
@@ -321,6 +322,12 @@ export default function ReceiptPage() {
                             <div className={styles.field}>
                                 <span className={styles.label}>Father/Husband Name:</span>
                                 <span className={styles.value}>{sale.customer.fatherName}</span>
+                            </div>
+                        )}
+                        {sale.customer.careOf && (
+                            <div className={styles.field}>
+                                <span className={styles.label}>Care of:</span>
+                                <span className={styles.value}>{sale.customer.careOf}</span>
                             </div>
                         )}
                         <div className={styles.field}>
