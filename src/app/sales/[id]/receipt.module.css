@@ -304,15 +304,15 @@
 }
 
 .dealerInfo {
-    font-size: 0.82rem;
-    line-height: 1.55;
+    font-size: 0.88rem;
+    line-height: 1.6;
 }
 
 .dealerInfo strong {
-    font-size: 1.15rem;
+    font-size: 1.6rem;
     display: block;
-    margin-bottom: 0.15rem;
-    letter-spacing: 0.02em;
+    margin-bottom: 0.25rem;
+    letter-spacing: 0.04em;
     color: #e2231a;
     font-weight: 900;
 }
