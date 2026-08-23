@@ -55,6 +55,7 @@ export default function WorkshopPage() {
         serviceType: 'Tuning',
         description: '',
         serviceCharges: '',
+        paymentMode: 'CASH',
     });
 
     useEffect(() => {
@@ -121,7 +122,7 @@ export default function WorkshopPage() {
             if (res.ok) {
                 const newRecord = await res.json();
                 setHistory([newRecord, ...history]);
-                setFormData({ customerName: '', customerMobile: '', bikeNumber: '', serviceType: 'Tuning', description: '', serviceCharges: '' });
+                setFormData({ customerName: '', customerMobile: '', bikeNumber: '', serviceType: 'Tuning', description: '', serviceCharges: '', paymentMode: 'CASH' });
                 setBillItems([]);
                 setPrintingService(newRecord);
             } else {
@@ -167,7 +168,7 @@ export default function WorkshopPage() {
                                         const type = e.target.value;
                                         const defaultCharges: Record<string, string> = {
                                             'First Service': '0', 'Second Service': '0', 'Third Service': '0',
-                                            'Tuning': '150', 'Oil Change': '200', 'Repair': '', 'Washing': '100', 'Other': '',
+                                            'Tuning': '150', 'Oil Change': '0', 'Repair': '', 'Washing': '100', 'Other': '',
                                         };
                                         setFormData({ ...formData, serviceType: type, serviceCharges: defaultCharges[type] ?? '' });
                                     }}>
@@ -185,6 +186,14 @@ export default function WorkshopPage() {
                                 <label className="label">Service Charges (Rs.) — Labour</label>
                                 <input type="text" inputMode="decimal" className="input" value={formData.serviceCharges}
                                     onChange={e => setFormData({ ...formData, serviceCharges: e.target.value })} />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                <label className="label">Payment Method</label>
+                                <select className="select" value={formData.paymentMode}
+                                    onChange={e => setFormData({ ...formData, paymentMode: e.target.value })}>
+                                    <option value="CASH">Cash</option>
+                                    <option value="BANK_TRANSFER">Bank Transfer</option>
+                                </select>
                             </div>
 
                             {/* Parts / Items with autocomplete */}

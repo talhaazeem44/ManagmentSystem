@@ -190,6 +190,7 @@ export interface IServiceSale {
     serviceType: string;
     description?: string;
     serviceCharges: number;
+    paymentMode: 'CASH' | 'BANK_TRANSFER';
     items: IServiceSaleItem[];
     totalAmount: number;
     totalCost: number;
@@ -214,6 +215,7 @@ const ServiceSaleSchema = new Schema<IServiceSale>({
     serviceType: { type: String, required: true },
     description: { type: String },
     serviceCharges: { type: Number, default: 0 },
+    paymentMode: { type: String, enum: ['CASH', 'BANK_TRANSFER'], default: 'CASH' },
     items: { type: [ServiceSaleItemSchema], default: [] },
     totalAmount: { type: Number, default: 0 },
     totalCost: { type: Number, default: 0 },
