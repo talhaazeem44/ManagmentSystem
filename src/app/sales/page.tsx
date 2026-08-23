@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
 import Loader from '@/components/Loader';
@@ -23,7 +23,7 @@ interface Sale {
         chassisNumber: string;
         deliveryOrder: { doNumber: string };
     };
-    customer: { name: string; cnic: string; mobile: string | null };
+    customer: { name: string; cnic: string; mobile: string | null; fatherName?: string | null; careOf?: string | null; address?: string | null };
 }
 
 interface EditState {
@@ -33,6 +33,12 @@ interface EditState {
     registrationCost: string;
     balance: string;
     paymentMode: string;
+    customerName: string;
+    customerFatherName: string;
+    customerCareOf: string;
+    customerMobile: string;
+    customerAddress: string;
+    customerCnic: string;
 }
 
 const thS: React.CSSProperties = {
@@ -78,6 +84,12 @@ export default function SalesPage() {
             registrationCost: String(sale.registrationCost ?? 0),
             balance: String(sale.balance ?? 0),
             paymentMode: sale.paymentMode,
+            customerName: sale.customer?.name ?? '',
+            customerFatherName: sale.customer?.fatherName ?? '',
+            customerCareOf: sale.customer?.careOf ?? '',
+            customerMobile: sale.customer?.mobile ?? '',
+            customerAddress: sale.customer?.address ?? '',
+            customerCnic: sale.customer?.cnic ?? '',
         });
     };
 
@@ -97,9 +109,22 @@ export default function SalesPage() {
                     registrationCost: parseFloat(editState.registrationCost) || 0,
                     balance: parseFloat(editState.balance) || 0,
                     paymentMode: editState.paymentMode,
+                    customer: {
+                        name: editState.customerName,
+                        fatherName: editState.customerFatherName,
+                        careOf: editState.customerCareOf,
+                        mobile: editState.customerMobile,
+                        address: editState.customerAddress,
+                        cnic: editState.customerCnic,
+                    },
                 }),
             });
-            if (res.ok) { await fetchSales(); cancelEdit(); }
+            if (res.ok) {
+                await fetchSales(); cancelEdit();
+            } else {
+                const err = await res.json().catch(() => ({ message: 'Failed to save changes' }));
+                alert(err.message || 'Failed to save changes');
+            }
         } finally { setSaving(null); }
     };
 
@@ -129,6 +154,16 @@ export default function SalesPage() {
     const editInput = (field: keyof EditState, width = '80px') => (
         <input
             type={field === 'paymentMode' ? 'text' : 'number'}
+            value={editState?.[field] ?? ''}
+            onChange={e => setEditState(prev => prev ? { ...prev, [field]: e.target.value } : prev)}
+            style={{ width, padding: '0.2rem 0.4rem', fontSize: '0.8rem', border: '1px solid var(--color-primary)', borderRadius: '4px', background: 'var(--color-bg)', color: 'var(--color-text)' }}
+        />
+    );
+
+    const textInput = (field: keyof EditState, width = '100px', placeholder = '') => (
+        <input
+            type="text"
+            placeholder={placeholder}
             value={editState?.[field] ?? ''}
             onChange={e => setEditState(prev => prev ? { ...prev, [field]: e.target.value } : prev)}
             style={{ width, padding: '0.2rem 0.4rem', fontSize: '0.8rem', border: '1px solid var(--color-primary)', borderRadius: '4px', background: 'var(--color-bg)', color: 'var(--color-text)' }}
@@ -197,13 +232,14 @@ export default function SalesPage() {
                                         const isEditing = editId === sale._id;
                                         const rowBg = idx % 2 === 0 ? 'transparent' : 'var(--color-bg-elevated)';
                                         return (
-                                            <tr key={sale._id} style={{ borderBottom: '1px solid var(--color-border)', background: isEditing ? 'rgba(59,130,246,0.05)' : rowBg }}>
+                                            <Fragment key={sale._id}>
+                                            <tr style={{ borderBottom: isEditing ? 'none' : '1px solid var(--color-border)', background: isEditing ? 'rgba(59,130,246,0.05)' : rowBg }}>
                                                 <td style={{ ...tdS, color: 'var(--color-text-muted)', fontWeight: 600 }}>{rowNum}</td>
                                                 <td style={tdS}>{new Date(sale.saleDate).toLocaleDateString('en-PK', { day:'numeric', month:'short', year:'2-digit' })}</td>
                                                 <td style={{ ...tdS, color: 'var(--color-text-muted)' }}>{sale.receiptNumber ?? '—'}</td>
-                                                <td style={{ ...tdS, fontWeight: 600, minWidth: '120px' }}>{sale.customer?.name ?? '—'}</td>
-                                                <td style={{ ...tdS, color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>{sale.customer?.cnic ?? '—'}</td>
-                                                <td style={{ ...tdS, color: 'var(--color-text-muted)' }}>{sale.customer?.mobile ?? '—'}</td>
+                                                <td style={{ ...tdS, fontWeight: 600, minWidth: '120px' }}>{isEditing ? textInput('customerName', '120px') : (sale.customer?.name ?? '—')}</td>
+                                                <td style={{ ...tdS, color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>{isEditing ? textInput('customerCnic', '110px') : (sale.customer?.cnic ?? '—')}</td>
+                                                <td style={{ ...tdS, color: 'var(--color-text-muted)' }}>{isEditing ? textInput('customerMobile', '100px') : (sale.customer?.mobile ?? '—')}</td>
                                                 <td style={{ ...tdS, fontWeight: 600 }}>{sale.bike?.model ?? '—'}</td>
                                                 <td style={tdS}>{sale.bike?.color ?? '—'}</td>
                                                 <td style={{ ...tdS, fontSize: '0.75rem', fontFamily: 'monospace' }}>{sale.bike?.engineNumber ?? '—'}</td>
@@ -245,6 +281,27 @@ export default function SalesPage() {
                                                     </div>
                                                 </td>
                                             </tr>
+                                            {isEditing && (
+                                                <tr style={{ borderBottom: '1px solid var(--color-border)', background: 'rgba(59,130,246,0.05)' }}>
+                                                    <td colSpan={18} style={{ padding: '0.5rem 0.6rem 0.75rem' }}>
+                                                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                                            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.68rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                                                                Father/Husband Name
+                                                                {textInput('customerFatherName', '150px')}
+                                                            </label>
+                                                            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.68rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                                                                Care of
+                                                                {textInput('customerCareOf', '150px')}
+                                                            </label>
+                                                            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.68rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                                                                Address
+                                                                {textInput('customerAddress', '220px')}
+                                                            </label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                            </Fragment>
                                         );
                                     })}
                                 </tbody>

@@ -3,6 +3,8 @@ import dbConnect from '@/lib/mongodb';
 import { Sale, Bike, Customer, DeliveryOrder } from '@/models';
 import { resolveTransactionDate } from '@/lib/dates';
 
+const CUSTOMER_EDITABLE_FIELDS = ['name', 'fatherName', 'careOf', 'mobile', 'address', 'cnic'] as const;
+
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -46,7 +48,29 @@ export async function PATCH(
     try {
         await dbConnect();
         const { id } = await params;
-        const body = await request.json();
+        const { customer: customerUpdate, ...body } = await request.json();
+
+        // Customer details (name, father's name, care of, mobile, address, cnic) live on
+        // the shared Customer document, not the Sale — correct them there so the fix is
+        // reflected everywhere that customer appears, not just this one sale.
+        if (customerUpdate && typeof customerUpdate === 'object') {
+            const customerFields: any = {};
+            for (const f of CUSTOMER_EDITABLE_FIELDS) {
+                if (customerUpdate[f] !== undefined) customerFields[f] = customerUpdate[f];
+            }
+            if (Object.keys(customerFields).length > 0) {
+                const saleForCustomer = await Sale.findById(id).select('customerId').lean();
+                if (!saleForCustomer) return NextResponse.json({ message: 'Sale not found' }, { status: 404 });
+                try {
+                    await Customer.findByIdAndUpdate(saleForCustomer.customerId, { $set: customerFields }, { runValidators: true });
+                } catch (err: any) {
+                    if (err.code === 11000) {
+                        return NextResponse.json({ message: 'Another customer already uses that CNIC' }, { status: 400 });
+                    }
+                    throw err;
+                }
+            }
+        }
 
         // Special handler: delete a payment by index and reverse its effect
         if (body.removePaymentIndex !== undefined) {
