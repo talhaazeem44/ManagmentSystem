@@ -43,12 +43,18 @@ export default function WorkshopTrackerPage() {
                 fetch(`/api/workshop/deposits?startDate=${start}&endDate=${end}`),
                 fetch(`/api/expenses?startDate=${start}&endDate=${end}`),
             ]);
-            if (depRes.ok) setDeposits(await depRes.json());
+            if (depRes.ok) {
+                setDeposits(await depRes.json());
+            } else {
+                showToast('Could not refresh deposits list — reload the page to check', 'error');
+            }
             if (expRes.ok) {
                 const all = await expRes.json();
                 setExpenses(all.filter((e: any) => e.deductFrom === 'WORKSHOP'));
             }
-        } catch { }
+        } catch {
+            showToast('Could not refresh tracker data — check your connection', 'error');
+        }
     };
 
     const handleAddDeposit = async (e: React.FormEvent) => {
@@ -64,9 +70,14 @@ export default function WorkshopTrackerPage() {
             if (res.ok) {
                 showToast('Deposit saved', 'success');
                 setDepositForm({ amount: '', note: '', date: new Date().toISOString().split('T')[0] });
-                fetchTrackerData();
-            } else { showToast('Failed to save deposit', 'error'); }
-        } catch { showToast('Error saving deposit', 'error'); }
+                await fetchTrackerData();
+            } else {
+                const err = await res.json().catch(() => ({ message: `Failed to save deposit (HTTP ${res.status})` }));
+                showToast(err.message || 'Failed to save deposit', 'error');
+            }
+        } catch (err: any) {
+            showToast(err?.message || 'Error saving deposit — check your connection', 'error');
+        }
         finally { setSavingDeposit(false); }
     };
 
