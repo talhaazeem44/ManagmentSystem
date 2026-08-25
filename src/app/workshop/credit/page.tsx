@@ -56,6 +56,9 @@ export default function WorkshopCreditPage() {
     const [payingBill, setPayingBill] = useState<string | null>(null);
     const [payForm, setPayForm] = useState({ amount: '', date: today(), note: '', paymentMode: 'CASH' });
     const [saving, setSaving] = useState(false);
+    const [editingBill, setEditingBill] = useState<string | null>(null);
+    const [editForm, setEditForm] = useState({ totalAmount: '', received: '' });
+    const [editSaving, setEditSaving] = useState(false);
 
     useEffect(() => { fetchBills(); }, []);
 
@@ -120,6 +123,40 @@ export default function WorkshopCreditPage() {
             showToast(err?.message || 'Error recording payment', 'error');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const startEdit = (bill: CreditBill) => {
+        setEditingBill(bill._id);
+        setEditForm({ totalAmount: String(bill.totalAmount), received: String(bill.totalAmount - (bill.balance ?? 0)) });
+    };
+
+    const editPending = Math.max(0, (Number(editForm.totalAmount) || 0) - (Number(editForm.received) || 0));
+
+    const saveEdit = async (bill: CreditBill) => {
+        const totalAmount = Number(editForm.totalAmount);
+        const received = Number(editForm.received);
+        if (!Number.isFinite(totalAmount) || totalAmount < 0) { showToast('Enter a valid credit amount', 'error'); return; }
+        if (!Number.isFinite(received) || received < 0) { showToast('Enter a valid received amount', 'error'); return; }
+        setEditSaving(true);
+        try {
+            const res = await fetch(`/api/workshop/${bill._id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ editCredit: { totalAmount, balance: Math.max(0, totalAmount - received) } }),
+            });
+            if (res.ok) {
+                showToast('Credit updated', 'success');
+                setEditingBill(null);
+                await fetchBills();
+            } else {
+                const err = await res.json().catch(() => ({ message: 'Failed to update credit' }));
+                showToast(err.message || 'Failed to update credit', 'error');
+            }
+        } catch (err: any) {
+            showToast(err?.message || 'Error updating credit', 'error');
+        } finally {
+            setEditSaving(false);
         }
     };
 
@@ -221,12 +258,47 @@ export default function WorkshopCreditPage() {
                                                                         onClick={() => setExpandedBill(expandedBill === bill._id ? null : bill._id)}>
                                                                         {expandedBill === bill._id ? 'Hide Items' : 'View Items'}
                                                                     </button>
+                                                                    <button className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.72rem' }}
+                                                                        onClick={() => (editingBill === bill._id ? setEditingBill(null) : startEdit(bill))}>
+                                                                        ✏️ Edit
+                                                                    </button>
                                                                     {(bill.balance ?? 0) > 0 && (
                                                                         <button className="btn btn-primary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.72rem' }}
                                                                             onClick={() => startPayment(bill)}>💰 Record Payment</button>
                                                                     )}
                                                                 </div>
                                                             </div>
+
+                                                            {editingBill === bill._id && (
+                                                                <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid var(--color-border)' }}>
+                                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '0.5rem', alignItems: 'end' }}>
+                                                                        <div>
+                                                                            <label style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.2rem' }}>Credit Amount (Rs.)</label>
+                                                                            <input type="text" inputMode="decimal" className="input" value={editForm.totalAmount}
+                                                                                onChange={e => setEditForm({ ...editForm, totalAmount: e.target.value })} />
+                                                                        </div>
+                                                                        <div>
+                                                                            <label style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.2rem' }}>Received (Rs.)</label>
+                                                                            <input type="text" inputMode="decimal" className="input" value={editForm.received}
+                                                                                onChange={e => setEditForm({ ...editForm, received: e.target.value })} />
+                                                                        </div>
+                                                                        <div>
+                                                                            <label style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.2rem' }}>Pending (Rs.)</label>
+                                                                            <input type="text" className="input" value={editPending.toLocaleString()} disabled
+                                                                                style={{ opacity: 0.7, fontWeight: 700, color: editPending > 0 ? '#ef4444' : '#10b981' }} />
+                                                                        </div>
+                                                                        <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                                                            <button className="btn btn-success" disabled={editSaving} style={{ padding: '0.4rem 0.6rem', fontSize: '0.78rem' }}
+                                                                                onClick={() => saveEdit(bill)}>{editSaving ? '...' : '✓ Save'}</button>
+                                                                            <button className="btn btn-secondary" style={{ padding: '0.4rem 0.6rem', fontSize: '0.78rem' }}
+                                                                                onClick={() => setEditingBill(null)}>✕</button>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.4rem' }}>
+                                                                        Pending updates automatically as Credit Amount / Received change.
+                                                                    </div>
+                                                                </div>
+                                                            )}
 
                                                             {expandedBill === bill._id && (
                                                                 <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid var(--color-border)' }}>

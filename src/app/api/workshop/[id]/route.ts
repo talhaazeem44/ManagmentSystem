@@ -7,7 +7,25 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     try {
         await connectDB();
         const { id } = await params;
-        const { addPayment, removePaymentIndex } = await request.json();
+        const { addPayment, removePaymentIndex, editCredit } = await request.json();
+
+        // Direct correction of a credit bill's amounts (e.g. a discount was agreed after
+        // billing, or the wrong total/balance was recorded) — sets totalAmount and balance
+        // straight, without touching items/margin or going through the payments trail.
+        if (editCredit) {
+            const totalAmount = Number(editCredit.totalAmount);
+            const balance = Number(editCredit.balance);
+            if (!Number.isFinite(totalAmount) || totalAmount < 0 || !Number.isFinite(balance) || balance < 0) {
+                return NextResponse.json({ message: 'Enter valid amounts' }, { status: 400 });
+            }
+            const service = await ServiceSale.findByIdAndUpdate(
+                id,
+                { $set: { totalAmount, balance: Math.min(balance, totalAmount) } },
+                { new: true }
+            );
+            if (!service) return NextResponse.json({ message: 'Not found' }, { status: 404 });
+            return NextResponse.json(service);
+        }
 
         if (addPayment) {
             const { amount, date, note, paymentMode } = addPayment;
