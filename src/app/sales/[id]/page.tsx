@@ -80,7 +80,7 @@ export default function ReceiptPage() {
     const params = useParams();
     const [sale, setSale] = useState<Sale | null>(null);
     const [loading, setLoading] = useState(true);
-    const [payForm, setPayForm] = useState({ amount: '', date: today(), note: '' });
+    const [payForm, setPayForm] = useState({ amount: '', date: today(), note: '', paymentMode: 'CASH' });
     const [paying, setPaying] = useState(false);
     const [payError, setPayError] = useState('');
     const [deletingPayment, setDeletingPayment] = useState<number | null>(null);
@@ -127,10 +127,10 @@ export default function ReceiptPage() {
             const res = await fetch(`/api/sales/${sale.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ addPayment: { amount: amt, date: payForm.date, note: payForm.note } }),
+                body: JSON.stringify({ addPayment: { amount: amt, date: payForm.date, note: payForm.note, paymentMode: payForm.paymentMode } }),
             });
             if (res.ok) {
-                setPayForm({ amount: '', date: today(), note: '' });
+                setPayForm({ amount: '', date: today(), note: '', paymentMode: 'CASH' });
                 await fetchSale(sale.id);
             } else {
                 const err = await res.json();
@@ -218,12 +218,20 @@ export default function ReceiptPage() {
                             </div>
                         </div>
                         <form onSubmit={handlePayment}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: '0.75rem', alignItems: 'end' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 2fr auto', gap: '0.75rem', alignItems: 'end' }}>
                                 <div>
                                     <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.3rem' }}>Amount (Rs.) *</label>
                                     <input type="text" inputMode="decimal" className="input" placeholder="50,000"
                                         value={payForm.amount}
                                         onChange={e => { setPayForm({ ...payForm, amount: e.target.value }); setPayError(''); }} required />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.3rem' }}>Payment Mode</label>
+                                    <select className="select" value={payForm.paymentMode}
+                                        onChange={e => setPayForm({ ...payForm, paymentMode: e.target.value })}>
+                                        <option value="CASH">Cash</option>
+                                        <option value="BANK_TRANSFER">Bank Transfer</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.3rem' }}>Payment Date *</label>
