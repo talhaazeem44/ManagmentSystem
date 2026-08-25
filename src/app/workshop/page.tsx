@@ -45,7 +45,7 @@ export default function WorkshopPage() {
     const [loading, setLoading] = useState(false);
     const [printingService, setPrintingService] = useState<ServiceRecord | null>(null);
     const [billItems, setBillItems] = useState<BillItem[]>([]);
-    const [manualItem, setManualItem] = useState({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1' });
+    const [manualItem, setManualItem] = useState({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1', noCost: false });
     const [stockList, setStockList] = useState<StockItem[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [formData, setFormData] = useState({
@@ -92,6 +92,7 @@ export default function WorkshopPage() {
             price: String(item.customerPrice),
             retailPrice: String(item.retailPrice),
             qty: '1',
+            noCost: false,
         });
         setShowSuggestions(false);
     };
@@ -210,7 +211,7 @@ export default function WorkshopPage() {
                                             value={manualItem.name}
                                             autoComplete="off"
                                             onChange={e => {
-                                                setManualItem({ ...manualItem, name: e.target.value, stockId: '', productCode: '', price: '', retailPrice: '' });
+                                                setManualItem({ ...manualItem, name: e.target.value, stockId: '', productCode: '', price: '', retailPrice: '', noCost: false });
                                                 setShowSuggestions(true);
                                             }}
                                             onFocus={() => setShowSuggestions(true)}
@@ -274,15 +275,26 @@ export default function WorkshopPage() {
                                                     name: manualItem.name,
                                                     productCode: manualItem.productCode,
                                                     quantity: Number(manualItem.qty) || 1,
-                                                    // Items picked from stock keep their real cost price so margin
-                                                    // is tracked correctly; fully manual items have no known cost.
-                                                    retailPrice: manualItem.stockId ? (Number(manualItem.retailPrice) || 0) : Number(manualItem.price),
+                                                    // Items picked from stock keep their real cost price so margin is tracked
+                                                    // correctly; a manual item marked "no cost" (e.g. labour typed here
+                                                    // instead of the Labour field) is treated as pure profit; any other
+                                                    // fully-manual item has no known cost, so price = cost (zero margin).
+                                                    retailPrice: manualItem.stockId
+                                                        ? (Number(manualItem.retailPrice) || 0)
+                                                        : (manualItem.noCost ? 0 : Number(manualItem.price)),
                                                     customerPrice: Number(manualItem.price),
                                                 }]);
-                                                setManualItem({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1' });
+                                                setManualItem({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1', noCost: false });
                                             }}
                                             disabled={!manualItem.name || !manualItem.price}>Add</button>
                                     </div>
+                                    {!manualItem.stockId && (
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                            <input type="checkbox" checked={manualItem.noCost}
+                                                onChange={e => setManualItem({ ...manualItem, noCost: e.target.checked })} />
+                                            No Cost / Labour (100% profit — not a real stock part)
+                                        </label>
+                                    )}
                                 </div>
 
                                 {billItems.length > 0 && (
@@ -369,9 +381,12 @@ export default function WorkshopPage() {
                                             <span>{new Date(record.date).toLocaleDateString()}</span>
                                             <span>· {record.serviceType}{record.items?.length > 0 ? ` + ${record.items.length} part(s)` : ''}</span>
                                         </div>
-                                        <div style={{ fontSize: '0.8rem', marginTop: '0.2rem', display: 'flex', gap: '0.75rem' }}>
+                                        <div style={{ fontSize: '0.8rem', marginTop: '0.2rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                                             <span style={{ fontWeight: 700 }}>Rs. {(record.totalAmount ?? record.serviceCharges ?? 0).toLocaleString()}</span>
                                             <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>Margin: Rs. {(record.margin ?? 0).toLocaleString()}</span>
+                                            <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                                                (Labour Rs. {(record.serviceCharges ?? 0).toLocaleString()} + Parts Rs. {((record.margin ?? 0) - (record.serviceCharges ?? 0)).toLocaleString()})
+                                            </span>
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
