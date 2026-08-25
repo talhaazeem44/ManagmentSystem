@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
 For each bike, extract:
 - orderNumber (booking/order number, e.g. AHL/MC/2546)
-- model (e.g. CD70, CG125, CG 125, CB150F, PRIDOR, DREAM, CG125S.SE, CB125F.SE — strip color suffix like BLK/RED from model)
+- model (e.g. CD70, CG125, CG 125, CB150F, PRIDOR, DREAM, CG125S.SE, CB125F.SE, ICON EV — strip color suffix like BLK/RED from model)
 - color (BLK=Black, RED=Red, BLUE=Blue, SLV/SILVER=Silver, WHT=White, GOLD=Gold — extract from model column if combined)
 - engineNumber (engine no column — alphanumeric, e.g. L026349)
 - chassisNumber (chassis no column — full alphanumeric string like ED708356; if only last digits are shown like 013 look for the full number elsewhere in the document)

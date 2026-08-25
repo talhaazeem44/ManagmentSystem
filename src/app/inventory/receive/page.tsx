@@ -40,6 +40,9 @@ const MODEL_MAP: Record<string, string> = {
     'CG150': 'CG150 2-Tone',
     'CG150 2TONE': 'CG150 2-Tone',
     'CG150 2-TONE': 'CG150 2-Tone',
+    'ICON EV': 'ICON EV',
+    'ICON': 'ICON EV',
+    'ICON E': 'ICON EV',
 };
 
 // Map AHL color names → our color names

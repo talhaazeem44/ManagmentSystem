@@ -8,7 +8,8 @@ export const HONDA_BIKE_MODELS = [
     'CB125F.SE',
     'CB150F',
     'CB150FSE',
-    'CG150 2-Tone'
+    'CG150 2-Tone',
+    'ICON EV'
 ] as const;
 
 export type HondaBikeModel = typeof HONDA_BIKE_MODELS[number];
@@ -25,6 +26,7 @@ export const BIKE_BOOK_PRICES: Record<string, number> = {
     'CG150 2-Tone': 438000,
     'CB125F.SE': 376000,
     'DREAM': 160000,
+    'ICON EV': 400000,
 };
 
 // Standard selling price to customer
@@ -39,6 +41,7 @@ export const BIKE_STANDARD_PRICES: Record<string, number> = {
     'CB150F': 500000,
     'CB150FSE': 504000,
     'CG150 2-Tone': 460000,
+    'ICON EV': 420000,
 };
 
 // Unit margin = standard price - book price
@@ -53,6 +56,7 @@ export const BIKE_UNIT_MARGINS: Record<string, number> = {
     'CB150F': 20000,
     'CB150FSE': 20000,
     'CG150 2-Tone': 20000,
+    'ICON EV': 20000,
 };
 
 

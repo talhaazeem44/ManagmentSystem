@@ -10,7 +10,7 @@ import { BIKE_STANDARD_PRICES, RECEIPT_COLOURS, guessReceiptColour } from '@/lib
 
 const COLOUR_OPTIONS = RECEIPT_COLOURS.map(c => c.label);
 
-const SALE_MODELS = ['CD70', 'DREAM', 'PRIDOR', 'CG 125', 'CG125S.SE', 'CG125GOLD', 'CB125F.SE', 'CB150F', 'CB150FSE', 'CG 150'];
+const SALE_MODELS = ['CD70', 'DREAM', 'PRIDOR', 'CG 125', 'CG125S.SE', 'CG125GOLD', 'CB125F.SE', 'CB150F', 'CB150FSE', 'CG 150', 'ICON EV'];
 
 function digitGroups(raw: string, groups: number[]) {
     const digits = (raw || '').replace(/[^0-9]/g, '');
@@ -69,7 +69,7 @@ interface Booking {
     updatedAt?: string;
 }
 
-const MODELS = ['CD70', 'DREAM', 'PRIDOR', 'CG 125', 'CG125S.SE', 'CB125F.SE', 'CB150F'];
+const MODELS = ['CD70', 'DREAM', 'PRIDOR', 'CG 125', 'CG125S.SE', 'CB125F.SE', 'CB150F', 'ICON EV'];
 
 export default function AdvanceBookingReceiptPage() {
     const params = useParams();
