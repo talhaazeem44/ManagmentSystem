@@ -59,6 +59,7 @@ export default function WorkshopPage() {
         serviceCharges: '',
         paymentMode: 'CASH',
         receivedNow: '',
+        receivedNowMode: 'CASH',
     });
 
     useEffect(() => {
@@ -126,7 +127,7 @@ export default function WorkshopPage() {
             if (res.ok) {
                 const newRecord = await res.json();
                 setHistory([newRecord, ...history]);
-                setFormData({ customerName: '', customerMobile: '', bikeNumber: '', serviceType: 'Tuning', description: '', serviceCharges: '', paymentMode: 'CASH', receivedNow: '' });
+                setFormData({ customerName: '', customerMobile: '', bikeNumber: '', serviceType: 'Tuning', description: '', serviceCharges: '', paymentMode: 'CASH', receivedNow: '', receivedNowMode: 'CASH' });
                 setBillItems([]);
                 setPrintingService(newRecord);
             } else {
@@ -203,11 +204,18 @@ export default function WorkshopPage() {
                             {formData.paymentMode === 'CREDIT' && (
                                 <div className="form-group" style={{ marginBottom: '1rem' }}>
                                     <label className="label">Amount Received Now (Rs.) — optional</label>
-                                    <input type="text" inputMode="decimal" className="input" placeholder="0"
-                                        value={formData.receivedNow}
-                                        onChange={e => setFormData({ ...formData, receivedNow: e.target.value })} />
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <input type="text" inputMode="decimal" className="input" placeholder="0"
+                                            value={formData.receivedNow}
+                                            onChange={e => setFormData({ ...formData, receivedNow: e.target.value })} />
+                                        <select className="select" style={{ maxWidth: '150px' }} value={formData.receivedNowMode}
+                                            onChange={e => setFormData({ ...formData, receivedNowMode: e.target.value })}>
+                                            <option value="CASH">Cash</option>
+                                            <option value="BANK_TRANSFER">Bank Transfer</option>
+                                        </select>
+                                    </div>
                                     <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
-                                        Whatever's left of the total goes on Workshop Credit as pending.
+                                        Counted in Cash/Bank Received on the dashboard. Whatever's left of the total goes on Workshop Credit as pending.
                                     </div>
                                 </div>
                             )}

@@ -47,9 +47,15 @@ export async function POST(request: NextRequest) {
 
         // Credit jobs may collect a partial amount up front — whatever's left becomes the
         // pending balance tracked on the Workshop Credit page. Non-credit jobs are always
-        // fully paid at billing time, so they carry no balance.
+        // fully paid at billing time, so they carry no balance. The upfront amount is
+        // recorded as a real payment entry (with its own Cash/Bank mode) so it's counted in
+        // the dashboard's Cash/Bank Received totals, same as any later credit payment.
         const receivedNow = Number(body.receivedNow) || 0;
+        const receivedNowMode: 'CASH' | 'BANK_TRANSFER' = body.receivedNowMode === 'BANK_TRANSFER' ? 'BANK_TRANSFER' : 'CASH';
         const balance = body.paymentMode === 'CREDIT' ? Math.max(0, totalAmount - receivedNow) : 0;
+        const payments = body.paymentMode === 'CREDIT' && receivedNow > 0
+            ? [{ amount: receivedNow, date: body.date || new Date(), note: 'Received at billing', paymentMode: receivedNowMode }]
+            : [];
 
         // Deduct stock quantities — manually-typed items (not picked from stock) have no
         // stockId, so there's nothing to deduct; passing an empty string to findByIdAndUpdate
@@ -61,7 +67,7 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        const { receivedNow: _omitReceivedNow, ...serviceBody } = body;
+        const { receivedNow: _omitReceivedNow, receivedNowMode: _omitReceivedNowMode, ...serviceBody } = body;
         const service = await ServiceSale.create({
             ...serviceBody,
             serviceCharges,
@@ -70,6 +76,7 @@ export async function POST(request: NextRequest) {
             totalCost,
             margin,
             balance,
+            payments,
         });
 
         return NextResponse.json(service, { status: 201 });
