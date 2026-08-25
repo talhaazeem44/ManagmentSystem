@@ -34,6 +34,8 @@ interface WorkshopStats {
     totalMargin: number;
     totalLabour: number;
     totalPartsRevenue: number;
+    totalCashReceived: number;
+    totalBankReceived: number;
     jobCount: number;
     avgTicket: number;
     byServiceType: Record<string, ServiceTypeBreakdown>;
@@ -139,7 +141,9 @@ export default function WorkshopDashboardPage() {
                             <Card label="Parts Sold" value={`Rs. ${stats.totalPartsRevenue.toLocaleString()}`} color="#3b82f6" />
                         </div>
 
-                        <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
+                        <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
+                            <Card label="Cash Received" value={`Rs. ${stats.totalCashReceived.toLocaleString()}`} color="#10b981" sub="cross-check with cash in hand" />
+                            <Card label="Bank Received" value={`Rs. ${stats.totalBankReceived.toLocaleString()}`} color="#3b82f6" />
                             <Card label="Jobs Completed" value={String(stats.jobCount)} sub={rangeLabel} />
                             <Card label="Avg. Bill Value" value={`Rs. ${Math.round(stats.avgTicket).toLocaleString()}`} sub="per job" />
                         </div>
@@ -209,7 +213,14 @@ export default function WorkshopDashboardPage() {
 
                         {/* ── Recent Jobs ── */}
                         <div className="card" style={{ padding: '1.25rem' }}>
-                            <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>Recent Jobs</div>
+                            <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>
+                                Recent Jobs
+                                {stats.jobCount > stats.recentJobs.length && (
+                                    <span style={{ fontWeight: 400, color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                                        {' '}— showing {stats.recentJobs.length} of {stats.jobCount}; totals below cover only these {stats.recentJobs.length} (see cards above for the full {rangeLabel.toLowerCase()} total)
+                                    </span>
+                                )}
+                            </div>
                             {stats.recentJobs.length === 0 ? (
                                 <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>No jobs in this period.</div>
                             ) : (
@@ -234,6 +245,17 @@ export default function WorkshopDashboardPage() {
                                                 </tr>
                                             ))}
                                         </tbody>
+                                        <tfoot>
+                                            <tr style={{ borderTop: '2px solid var(--color-border)' }}>
+                                                <td colSpan={4} style={{ padding: '8px', fontWeight: 700 }}>Total (shown above)</td>
+                                                <td style={{ padding: '8px', textAlign: 'right', fontWeight: 800 }}>
+                                                    Rs. {stats.recentJobs.reduce((s, j) => s + Number(j.totalAmount || 0), 0).toLocaleString()}
+                                                </td>
+                                                <td style={{ padding: '8px', textAlign: 'right', fontWeight: 800, color: '#10b981' }}>
+                                                    Rs. {stats.recentJobs.reduce((s, j) => s + Number(j.margin || 0), 0).toLocaleString()}
+                                                </td>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                             )}

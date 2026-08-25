@@ -27,6 +27,40 @@ export async function GET(request: NextRequest) {
         const jobCount = sales.length;
         const avgTicket = jobCount > 0 ? totalRevenue / jobCount : 0;
 
+        // Cash/bank actually received in this window — for cross-checking against physical
+        // cash in hand. A CASH/BANK_TRANSFER job counts its full amount on its own date; a
+        // CREDIT job counts nothing up front (its upfront amount's mode isn't tracked), but
+        // later payments against it count on the day the cash actually came in, not the
+        // job's original date — same cross-boundary logic used for bike Sales/Khata.
+        const directCashReceived = sales.reduce((s, r: any) => s + (r.paymentMode === 'CASH' ? Number(r.totalAmount || 0) : 0), 0);
+        const directBankReceived = sales.reduce((s, r: any) => s + (r.paymentMode === 'BANK_TRANSFER' ? Number(r.totalAmount || 0) : 0), 0);
+
+        let creditPaymentsCash = 0;
+        let creditPaymentsBank = 0;
+        if (startDateStr && endDateStr) {
+            const start = new Date(startDateStr);
+            const end = new Date(endDateStr);
+            const creditSales = await ServiceSale.find({ 'payments.0': { $exists: true } }).select('payments').lean();
+            for (const cs of creditSales as any[]) {
+                for (const p of cs.payments || []) {
+                    const pd = new Date(p.date);
+                    if (pd < start || pd >= end) continue;
+                    if (p.paymentMode === 'BANK_TRANSFER') creditPaymentsBank += Number(p.amount || 0);
+                    else creditPaymentsCash += Number(p.amount || 0);
+                }
+            }
+        } else {
+            const creditSales = await ServiceSale.find({ 'payments.0': { $exists: true } }).select('payments').lean();
+            for (const cs of creditSales as any[]) {
+                for (const p of cs.payments || []) {
+                    if (p.paymentMode === 'BANK_TRANSFER') creditPaymentsBank += Number(p.amount || 0);
+                    else creditPaymentsCash += Number(p.amount || 0);
+                }
+            }
+        }
+        const totalCashReceived = directCashReceived + creditPaymentsCash;
+        const totalBankReceived = directBankReceived + creditPaymentsBank;
+
         const byServiceType: Record<string, { count: number; revenue: number; margin: number }> = {};
         for (const r of sales as any[]) {
             const key = r.serviceType || 'Other';
@@ -68,6 +102,8 @@ export async function GET(request: NextRequest) {
             totalMargin,
             totalLabour,
             totalPartsRevenue,
+            totalCashReceived,
+            totalBankReceived,
             jobCount,
             avgTicket,
             byServiceType,
