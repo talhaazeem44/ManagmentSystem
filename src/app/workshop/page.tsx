@@ -85,7 +85,7 @@ export default function WorkshopPage() {
         ? stockList.filter(s =>
             s.name.toLowerCase().includes(manualItem.name.toLowerCase()) ||
             (s.productCode && s.productCode.toLowerCase().includes(manualItem.name.toLowerCase()))
-          ).slice(0, 8)
+        ).slice(0, 8)
         : [];
 
     const selectSuggestion = (item: StockItem) => {
@@ -173,7 +173,7 @@ export default function WorkshopPage() {
                                         const type = e.target.value;
                                         const defaultCharges: Record<string, string> = {
                                             'First Service': '0', 'Second Service': '0', 'Third Service': '0',
-                                            'Tuning': '150', 'Oil Change': '0', 'Repair': '', 'Washing': '100', 'Other': '',
+                                            'Tuning': '400', 'Oil': '0', 'Repair': '', 'Washing': '100', 'Other': '',
                                         };
                                         setFormData({ ...formData, serviceType: type, serviceCharges: defaultCharges[type] ?? '' });
                                     }}>
