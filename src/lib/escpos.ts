@@ -82,6 +82,8 @@ export interface ThermalReceiptData {
     items?: ThermalBillItem[];
     totalAmount?: number;
     amount?: number;
+    paymentMode?: string;
+    balance?: number;
 }
 
 export function buildServiceReceiptBytes(service: ThermalReceiptData): Uint8Array {
@@ -134,6 +136,11 @@ export function buildServiceReceiptBytes(service: ThermalReceiptData): Uint8Arra
     b.doubleSize(true).bold(true);
     b.text(twoCol('TOTAL:', `Rs.${total.toLocaleString()}`, 21)); // half width at double size
     b.doubleSize(false).bold(false);
+    if (service.paymentMode === 'CREDIT') {
+        b.bold(true);
+        b.text(twoCol('CREDIT - PENDING:', `Rs.${(service.balance ?? 0).toLocaleString()}`));
+        b.bold(false);
+    }
     b.text(divider());
 
     b.align('center');

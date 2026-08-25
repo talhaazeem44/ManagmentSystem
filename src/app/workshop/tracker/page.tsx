@@ -51,6 +51,8 @@ export default function WorkshopTrackerPage() {
             if (expRes.ok) {
                 const all = await expRes.json();
                 setExpenses(all.filter((e: any) => e.deductFrom === 'WORKSHOP'));
+            } else {
+                showToast('Could not refresh expenses list — reload the page to check', 'error');
             }
         } catch {
             showToast('Could not refresh tracker data — check your connection', 'error');
@@ -94,9 +96,14 @@ export default function WorkshopTrackerPage() {
             if (res.ok) {
                 showToast('Expense saved', 'success');
                 setExpenseForm({ amount: '', description: '', date: new Date().toISOString().split('T')[0] });
-                fetchTrackerData();
-            } else { showToast('Failed to save expense', 'error'); }
-        } catch { showToast('Error saving expense', 'error'); }
+                await fetchTrackerData();
+            } else {
+                const err = await res.json().catch(() => ({ message: `Failed to save expense (HTTP ${res.status})` }));
+                showToast(err.message || 'Failed to save expense', 'error');
+            }
+        } catch (err: any) {
+            showToast(err?.message || 'Error saving expense — check your connection', 'error');
+        }
         finally { setSavingExpense(false); }
     };
 

@@ -12,6 +12,13 @@ export async function middleware(request: NextRequest) {
     const isScratchPage = pathname.startsWith('/scratch');
     const isWorkshopPage = pathname.startsWith('/workshop');
     const isWorkshopApi = pathname.startsWith('/api/workshop');
+    // The Workshop Tracker page (cash deposits/expenses) reads and writes through the
+    // shared /api/expenses endpoint (scoped server-side to deductFrom: 'WORKSHOP' for
+    // this role), not a /api/workshop/* route — so a workshop-role user needs it allowed
+    // too, or their GET/POST/DELETE there gets redirected away and silently fails. This
+    // must stay separate from isWorkshopApi since regular 'user' accounts also need
+    // /api/expenses for their own (non-workshop) expense tracking.
+    const isApiExpenses = pathname.startsWith('/api/expenses');
     const isApiSeedStock = pathname.startsWith('/api/seed-stock');
     const isSetup = pathname === '/setup' || pathname.startsWith('/api/setup');
 
@@ -32,8 +39,9 @@ export async function middleware(request: NextRequest) {
     if (token) {
         const role = token.role as string;
 
-        // Workshop users can only access /workshop pages and /api/workshop
-        if (role === 'workshop' && !isWorkshopPage && !isWorkshopApi) {
+        // Workshop users can only access /workshop pages, /api/workshop, and /api/expenses
+        // (the latter scoped server-side to their own WORKSHOP-tagged records)
+        if (role === 'workshop' && !isWorkshopPage && !isWorkshopApi && !isApiExpenses) {
             return NextResponse.redirect(new URL('/workshop', request.url));
         }
 

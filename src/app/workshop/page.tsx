@@ -32,6 +32,8 @@ interface ServiceRecord {
     serviceType: string;
     description: string;
     serviceCharges: number;
+    paymentMode?: string;
+    balance?: number;
     items: BillItem[];
     totalAmount: number;
     totalCost: number;
@@ -56,6 +58,7 @@ export default function WorkshopPage() {
         description: '',
         serviceCharges: '',
         paymentMode: 'CASH',
+        receivedNow: '',
     });
 
     useEffect(() => {
@@ -123,7 +126,7 @@ export default function WorkshopPage() {
             if (res.ok) {
                 const newRecord = await res.json();
                 setHistory([newRecord, ...history]);
-                setFormData({ customerName: '', customerMobile: '', bikeNumber: '', serviceType: 'Tuning', description: '', serviceCharges: '', paymentMode: 'CASH' });
+                setFormData({ customerName: '', customerMobile: '', bikeNumber: '', serviceType: 'Tuning', description: '', serviceCharges: '', paymentMode: 'CASH', receivedNow: '' });
                 setBillItems([]);
                 setPrintingService(newRecord);
             } else {
@@ -194,8 +197,20 @@ export default function WorkshopPage() {
                                     onChange={e => setFormData({ ...formData, paymentMode: e.target.value })}>
                                     <option value="CASH">Cash</option>
                                     <option value="BANK_TRANSFER">Bank Transfer</option>
+                                    <option value="CREDIT">Credit</option>
                                 </select>
                             </div>
+                            {formData.paymentMode === 'CREDIT' && (
+                                <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                    <label className="label">Amount Received Now (Rs.) — optional</label>
+                                    <input type="text" inputMode="decimal" className="input" placeholder="0"
+                                        value={formData.receivedNow}
+                                        onChange={e => setFormData({ ...formData, receivedNow: e.target.value })} />
+                                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
+                                        Whatever's left of the total goes on Workshop Credit as pending.
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Parts / Items with autocomplete */}
                             <div style={{ marginBottom: '1rem', padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
@@ -345,6 +360,12 @@ export default function WorkshopPage() {
                                     <span>Total Bill</span>
                                     <span>Rs. {totalAmount.toLocaleString()}</span>
                                 </div>
+                                {formData.paymentMode === 'CREDIT' && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', color: '#ef4444', fontWeight: 700 }}>
+                                        <span>Pending on Credit</span>
+                                        <span>Rs. {Math.max(0, totalAmount - (Number(formData.receivedNow) || 0)).toLocaleString()}</span>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="form-group" style={{ marginBottom: '1.5rem' }}>
@@ -362,9 +383,14 @@ export default function WorkshopPage() {
                     <div className="card">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                             <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Recent Workshop History</h2>
-                            <a href="/api/workshop/export" className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>
-                                ⬇️ Export CSV
-                            </a>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <a href="/workshop/credit" className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>
+                                    💳 Workshop Credit
+                                </a>
+                                <a href="/api/workshop/export" className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>
+                                    ⬇️ Export CSV
+                                </a>
+                            </div>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '700px', overflowY: 'auto' }}>
                             {history.length === 0 && (
@@ -387,6 +413,11 @@ export default function WorkshopPage() {
                                             <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
                                                 (Labour Rs. {(record.serviceCharges ?? 0).toLocaleString()} + Parts Rs. {((record.margin ?? 0) - (record.serviceCharges ?? 0)).toLocaleString()})
                                             </span>
+                                            {record.paymentMode === 'CREDIT' && (
+                                                <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, background: (record.balance ?? 0) > 0 ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)', color: (record.balance ?? 0) > 0 ? '#ef4444' : '#10b981' }}>
+                                                    {(record.balance ?? 0) > 0 ? `Credit: Rs. ${(record.balance ?? 0).toLocaleString()} pending` : 'Credit: Paid off'}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>

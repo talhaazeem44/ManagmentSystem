@@ -33,6 +33,7 @@ export default function DashboardLayout({
         { href: '/workshop', label: 'Workshop', icon: '🛠️' },
         { href: '/workshop/stock', label: 'W. Stock', icon: '🔩' },
         { href: '/workshop/tracker', label: 'W. Cash', icon: '💵' },
+        { href: '/workshop/credit', label: 'W. Credit', icon: '💳' },
     ];
 
     let navItems;

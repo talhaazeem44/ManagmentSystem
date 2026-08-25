@@ -7,8 +7,12 @@ export async function GET(request: NextRequest) {
         await dbConnect();
         const { searchParams } = new URL(request.url);
         const limit = parseInt(searchParams.get('limit') || '50');
+        const paymentMode = searchParams.get('paymentMode');
 
-        const services = await ServiceSale.find()
+        const filter: any = {};
+        if (paymentMode) filter.paymentMode = paymentMode;
+
+        const services = await ServiceSale.find(filter)
             .sort({ date: -1 })
             .limit(limit)
             .lean();
@@ -41,6 +45,12 @@ export async function POST(request: NextRequest) {
         const totalAmount = serviceCharges + itemsTotal;
         const margin = totalAmount - totalCost; // service charges are pure profit
 
+        // Credit jobs may collect a partial amount up front — whatever's left becomes the
+        // pending balance tracked on the Workshop Credit page. Non-credit jobs are always
+        // fully paid at billing time, so they carry no balance.
+        const receivedNow = Number(body.receivedNow) || 0;
+        const balance = body.paymentMode === 'CREDIT' ? Math.max(0, totalAmount - receivedNow) : 0;
+
         // Deduct stock quantities — manually-typed items (not picked from stock) have no
         // stockId, so there's nothing to deduct; passing an empty string to findByIdAndUpdate
         // throws a CastError and fails the whole save.
@@ -51,13 +61,15 @@ export async function POST(request: NextRequest) {
             });
         }
 
+        const { receivedNow: _omitReceivedNow, ...serviceBody } = body;
         const service = await ServiceSale.create({
-            ...body,
+            ...serviceBody,
             serviceCharges,
             items,
             totalAmount,
             totalCost,
             margin,
+            balance,
         });
 
         return NextResponse.json(service, { status: 201 });

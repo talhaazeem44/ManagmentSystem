@@ -23,6 +23,8 @@ interface ServiceReceiptProps {
         items?: BillItem[];
         totalAmount?: number;
         amount?: number;
+        paymentMode?: string;
+        balance?: number;
     };
     onDone?: () => void;
 }
@@ -198,6 +200,12 @@ html,body {
 
                         <div style={s.divider} />
                         <div style={s.totalRow}><span>TOTAL:</span><span>Rs.{total.toLocaleString()}</span></div>
+                        {service.paymentMode === 'CREDIT' && (
+                            <div style={s.totalRow}>
+                                <span>CREDIT — PENDING:</span>
+                                <span>Rs.{(service.balance ?? 0).toLocaleString()}</span>
+                            </div>
+                        )}
                         <div style={s.divider} />
 
                         <div style={{ ...s.center, fontSize: '7pt' }}>

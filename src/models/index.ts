@@ -192,11 +192,13 @@ export interface IServiceSale {
     serviceType: string;
     description?: string;
     serviceCharges: number;
-    paymentMode: 'CASH' | 'BANK_TRANSFER';
+    paymentMode: 'CASH' | 'BANK_TRANSFER' | 'CREDIT';
     items: IServiceSaleItem[];
     totalAmount: number;
     totalCost: number;
     margin: number;
+    balance: number;
+    payments?: IPayment[];
     date: Date;
     createdAt?: Date;
     updatedAt?: Date;
@@ -217,11 +219,13 @@ const ServiceSaleSchema = new Schema<IServiceSale>({
     serviceType: { type: String, required: true },
     description: { type: String },
     serviceCharges: { type: Number, default: 0 },
-    paymentMode: { type: String, enum: ['CASH', 'BANK_TRANSFER'], default: 'CASH' },
+    paymentMode: { type: String, enum: ['CASH', 'BANK_TRANSFER', 'CREDIT'], default: 'CASH' },
     items: { type: [ServiceSaleItemSchema], default: [] },
     totalAmount: { type: Number, default: 0 },
     totalCost: { type: Number, default: 0 },
     margin: { type: Number, default: 0 },
+    balance: { type: Number, default: 0 },
+    payments: { type: [PaymentSchema], default: [] },
     date: { type: Date, default: Date.now },
 }, {
     timestamps: true
