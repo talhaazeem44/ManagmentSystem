@@ -22,6 +22,8 @@ interface AdvanceBooking {
     margin?: number;
     notes?: string;
     expectedDeliveryDate?: string;
+    engineNumber?: string;
+    chassisNumber?: string;
     status: 'PENDING' | 'DELIVERED';
     date: string;
 }
@@ -57,6 +59,14 @@ function printBooking(b: AdvanceBooking) {
     window.location.href = `/advance-bookings/${b._id}/receipt`;
 }
 
+interface EditForm {
+    customerName: string;
+    cnic: string;
+    engineNumber: string;
+    chassisNumber: string;
+    totalPrice: string;
+}
+
 export default function AdvanceBookingsPage() {
     const { toasts, showToast, removeToast } = useToast();
     const [bookings, setBookings] = useState<AdvanceBooking[]>([]);
@@ -74,6 +84,9 @@ export default function AdvanceBookingsPage() {
     const [selectedBike, setSelectedBike] = useState<AvailableBike | null>(null);
     const [remainingAmount, setRemainingAmount] = useState('');
     const [remainingMode, setRemainingMode] = useState<'CASH' | 'BANK_TRANSFER'>('CASH');
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editForm, setEditForm] = useState<EditForm>({ customerName: '', cnic: '', engineNumber: '', chassisNumber: '', totalPrice: '' });
+    const [savingEdit, setSavingEdit] = useState(false);
 
     const fetchBookings = async () => {
         setLoading(true);
@@ -172,6 +185,44 @@ export default function AdvanceBookingsPage() {
             }
         } finally {
             setLinkingBikeId(null);
+        }
+    };
+
+    const openEdit = (b: AdvanceBooking) => {
+        setEditingId(b._id);
+        setEditForm({
+            customerName: b.customerName || '',
+            cnic: b.cnic || '',
+            engineNumber: b.engineNumber || '',
+            chassisNumber: b.chassisNumber || '',
+            totalPrice: b.totalPrice ? String(b.totalPrice) : '',
+        });
+    };
+
+    const handleSaveEdit = async (id: string) => {
+        setSavingEdit(true);
+        try {
+            const res = await fetch(`/api/advance-bookings/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    customerName: editForm.customerName,
+                    cnic: editForm.cnic,
+                    engineNumber: editForm.engineNumber,
+                    chassisNumber: editForm.chassisNumber,
+                    totalPrice: editForm.totalPrice ? Number(editForm.totalPrice) : undefined,
+                }),
+            });
+            if (res.ok) {
+                showToast('Booking updated!', 'success');
+                setEditingId(null);
+                fetchBookings();
+            } else {
+                const err = await res.json().catch(() => ({ message: 'Update failed' }));
+                showToast(err.message || 'Update failed', 'error');
+            }
+        } finally {
+            setSavingEdit(false);
         }
     };
 
@@ -352,6 +403,11 @@ export default function AdvanceBookingsPage() {
                                                     <button className="btn" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: '#ef4444', color: '#fff', border: 'none' }} onClick={() => handleDelete(b._id)}>Yes, Delete</button>
                                                     <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => setConfirmDeleteId(null)}>Cancel</button>
                                                 </>
+                                            ) : editingId === b._id ? (
+                                                <>
+                                                    <button className="btn btn-primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => handleSaveEdit(b._id)} disabled={savingEdit}>{savingEdit ? 'Saving...' : '💾 Save'}</button>
+                                                    <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => setEditingId(null)}>Cancel</button>
+                                                </>
                                             ) : (
                                                 <>
                                                     {b.status === 'PENDING' && (
@@ -361,12 +417,55 @@ export default function AdvanceBookingsPage() {
                                                             <button className="btn btn-success" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => openDeliverPicker(b)}>✅ Delivered</button>
                                                         )
                                                     )}
+                                                    <button className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }} onClick={() => openEdit(b)}>✏️</button>
                                                     <button className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }} onClick={() => printBooking(b)}>🖨️</button>
                                                     <button className="btn" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }} onClick={() => setConfirmDeleteId(b._id)}>🗑️</button>
                                                 </>
                                             )}
                                         </div>
                                     </div>
+                                    {editingId === b._id && (
+                                        <div style={{ borderTop: '1px solid rgba(99,102,241,0.25)', paddingTop: '0.75rem', marginTop: '0.25rem' }}>
+                                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', marginBottom: '0.6rem' }}>✏️ Edit Booking</div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.6rem' }}>
+                                                <div className="form-group" style={{ margin: 0 }}>
+                                                    <label className="label" style={{ fontSize: '0.72rem' }}>Customer Name</label>
+                                                    <input className="input" style={{ fontSize: '0.82rem', padding: '0.4rem 0.6rem' }}
+                                                        value={editForm.customerName}
+                                                        onChange={e => setEditForm({ ...editForm, customerName: e.target.value })}
+                                                        placeholder="Customer name" />
+                                                </div>
+                                                <div className="form-group" style={{ margin: 0 }}>
+                                                    <label className="label" style={{ fontSize: '0.72rem' }}>CNIC</label>
+                                                    <input className="input" style={{ fontSize: '0.82rem', padding: '0.4rem 0.6rem' }}
+                                                        value={editForm.cnic}
+                                                        onChange={e => setEditForm({ ...editForm, cnic: e.target.value })}
+                                                        placeholder="34601-XXXXXXX-X" />
+                                                </div>
+                                                <div className="form-group" style={{ margin: 0 }}>
+                                                    <label className="label" style={{ fontSize: '0.72rem' }}>Engine #</label>
+                                                    <input className="input" style={{ fontSize: '0.82rem', padding: '0.4rem 0.6rem' }}
+                                                        value={editForm.engineNumber}
+                                                        onChange={e => setEditForm({ ...editForm, engineNumber: e.target.value })}
+                                                        placeholder="Engine number" />
+                                                </div>
+                                                <div className="form-group" style={{ margin: 0 }}>
+                                                    <label className="label" style={{ fontSize: '0.72rem' }}>Chassis #</label>
+                                                    <input className="input" style={{ fontSize: '0.82rem', padding: '0.4rem 0.6rem' }}
+                                                        value={editForm.chassisNumber}
+                                                        onChange={e => setEditForm({ ...editForm, chassisNumber: e.target.value })}
+                                                        placeholder="Chassis number" />
+                                                </div>
+                                                <div className="form-group" style={{ margin: 0 }}>
+                                                    <label className="label" style={{ fontSize: '0.72rem' }}>Total Price (PKR)</label>
+                                                    <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.82rem', padding: '0.4rem 0.6rem' }}
+                                                        value={editForm.totalPrice}
+                                                        onChange={e => setEditForm({ ...editForm, totalPrice: e.target.value })}
+                                                        placeholder="238500" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                     {isDelivering && !selectedBike && (
                                         <div style={{ borderTop: '1px solid rgba(16,185,129,0.25)', paddingTop: '0.6rem' }}>
                                             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', marginBottom: '0.4rem' }}>
