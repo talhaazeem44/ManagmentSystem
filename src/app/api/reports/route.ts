@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
 
         const [filteredSales, filteredServices, allSales, allServices,
             totalBikesCount, availableBikesCount, soldBikesCount,
-            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings, filteredAdvanceBookings, filteredExpenses, weekSales, creditPaymentSales, allKhataParties, allSoldUsedBikes, advancePaymentBookings] = await Promise.all([
+            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings, filteredAdvanceBookings, filteredExpenses, weekSales, creditPaymentSales, allKhataParties, allSoldUsedBikes, advancePaymentBookings, allDeliveredAdvanceBookings, rangeDeliveredByDate] = await Promise.all([
             Sale.find({ saleDate: { $gte: filterStartDate, $lt: filterEndDate } }).populate('bikeId').populate('customerId').lean(),
             ServiceSale.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
             Sale.find().populate('bikeId').lean(),
@@ -93,6 +93,11 @@ export async function GET(request: NextRequest) {
             // Delivery-time (remaining balance) payments recorded in this date range
             // (for bookings whose own `date` is outside the range)
             AdvanceBooking.find({ 'payments.date': { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
+            // All delivered advance bookings that consumed an inventory bike — needed for all-time model breakdown
+            AdvanceBooking.find({ status: 'DELIVERED', bikeId: { $exists: true, $ne: null } }).populate('bikeId').lean(),
+            // Advance bookings delivered within this date range (by updatedAt) — captures bookings whose
+            // original booking date is outside the range but were delivered/fulfilled in it.
+            AdvanceBooking.find({ status: 'DELIVERED', bikeId: { $exists: true, $ne: null }, updatedAt: { $gte: filterStartDate, $lt: filterEndDate } }).populate('bikeId').lean(),
         ]);
 
         // 7-day chart data
@@ -270,6 +275,21 @@ export async function GET(request: NextRequest) {
                 }
             }
         }
+        // Advance bookings delivered (with a linked inventory bike) in this date range.
+        // We union bookings whose original date falls in range AND bookings delivered (updatedAt) in range,
+        // then deduplicate — so a bike booked in a prior month but delivered today is correctly counted.
+        const rangeDeliveredAdvanceMap = new Map<string, any>();
+        for (const b of (filteredAdvanceBookings as any[]).filter((b: any) => b.status === 'DELIVERED' && b.bikeId)) {
+            rangeDeliveredAdvanceMap.set(b._id.toString(), b);
+        }
+        for (const b of rangeDeliveredByDate as any[]) {
+            rangeDeliveredAdvanceMap.set(b._id.toString(), b);
+        }
+        const rangeDeliveredAdvance = Array.from(rangeDeliveredAdvanceMap.values());
+        for (const b of rangeDeliveredAdvance) {
+            const model = (b.bikeId as any)?.model || b.bikeModel || 'Unknown';
+            modelBreakdown[model] = (modelBreakdown[model] || 0) + 1;
+        }
 
         // Khata dealer sale margins in this date range
         const khataMarginInRange = (allKhataParties as any[]).flatMap(p => p.transactions || [])
@@ -317,6 +337,11 @@ export async function GET(request: NextRequest) {
                     allTimeModelBreakdown[model] = (allTimeModelBreakdown[model] || 0) + Number(item.quantity || 1);
                 }
             }
+        }
+        // Delivered advance bookings with a linked inventory bike — count toward all-time model breakdown.
+        for (const b of allDeliveredAdvanceBookings as any[]) {
+            const model = (b.bikeId as any)?.model || b.bikeModel || 'Unknown';
+            allTimeModelBreakdown[model] = (allTimeModelBreakdown[model] || 0) + 1;
         }
         const availableModelBreakdown: Record<string, number> = {};
         for (const bike of bikes as any[]) {
@@ -458,7 +483,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             range: {
-                sales: filteredSales.length + khataStockCount,
+                sales: filteredSales.length + khataStockCount + rangeDeliveredAdvance.length,
                 revenue: rangeRevenue,
                 workshopRevenue: rangeWorkshopRevenue,
                 bikeProfit: rangeBikeProfit,
