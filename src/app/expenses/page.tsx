@@ -52,11 +52,11 @@ export default function ExpensesPage() {
     const [activeMonth, setActiveMonth] = useState({ year: now.getFullYear(), month: now.getMonth() });
 
     const getMonthRange = (year: number, month: number) => {
-        const start = new Date(year, month, 1);
-        const end = new Date(year, month + 1, 0); // last day of month
+        const lastDay = new Date(year, month + 1, 0).getDate(); // last day of month
+        const pad = (n: number) => String(n).padStart(2, '0');
         return {
-            startDate: start.toISOString().split('T')[0],
-            endDate: end.toISOString().split('T')[0],
+            startDate: `${year}-${pad(month + 1)}-01`,
+            endDate: `${year}-${pad(month + 1)}-${pad(lastDay)}`,
         };
     };
 
@@ -64,10 +64,13 @@ export default function ExpensesPage() {
         setLoading(true);
         try {
             const { startDate, endDate } = getMonthRange(year, month);
-            const params = new URLSearchParams({ startDate });
-            const endD = new Date(endDate);
-            endD.setDate(endD.getDate() + 1);
-            params.set('endDate', endD.toISOString().split('T')[0]);
+            // Add 1 day to endDate to make the API filter exclusive (<) inclusive of the last day.
+            // We do this arithmetically to avoid UTC-shift issues with new Date("YYYY-MM-DD").
+            const [ey, em, ed] = endDate.split('-').map(Number);
+            const nextDay = new Date(ey, em - 1, ed + 1);
+            const pad = (n: number) => String(n).padStart(2, '0');
+            const exclusiveEnd = `${nextDay.getFullYear()}-${pad(nextDay.getMonth() + 1)}-${pad(nextDay.getDate())}`;
+            const params = new URLSearchParams({ startDate, endDate: exclusiveEnd });
             const res = await fetch(`/api/expenses?${params}`);
             if (res.ok) setExpenses(await res.json());
         } finally {
