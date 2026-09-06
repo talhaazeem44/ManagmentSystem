@@ -171,6 +171,10 @@ export default function AdvanceBookingsPage() {
                     bikeId: selectedBike.id,
                     engineNumber: selectedBike.engineNumber,
                     chassisNumber: selectedBike.chassisNumber,
+                    // Update model + colour to match the bike actually delivered
+                    // (customer may have booked a CD125 but received a different model at delivery)
+                    bikeModel: selectedBike.model,
+                    bikeColor: selectedBike.color,
                     ...(amount > 0 ? { deliveryPayment: { amount, paymentMode: remainingMode } } : {}),
                 }),
             });
@@ -469,7 +473,8 @@ export default function AdvanceBookingsPage() {
                                     {isDelivering && !selectedBike && (
                                         <div style={{ borderTop: '1px solid rgba(16,185,129,0.25)', paddingTop: '0.6rem' }}>
                                             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', marginBottom: '0.4rem' }}>
-                                                Select the bike being delivered {b.bikeModel ? `(${b.bikeModel})` : ''} — this links it to inventory instead of creating a separate sale
+                                                Select the bike being delivered — any model, engine &amp; chassis will be saved from inventory
+                                                {b.bikeModel && <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}> (booked: {b.bikeModel})</span>}
                                             </div>
                                             <input
                                                 className="input"
@@ -503,6 +508,9 @@ export default function AdvanceBookingsPage() {
                                         <div style={{ borderTop: '1px solid rgba(16,185,129,0.25)', paddingTop: '0.6rem' }}>
                                             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', marginBottom: '0.5rem' }}>
                                                 Delivering: <strong>{selectedBike.model}</strong> · {selectedBike.color} — {selectedBike.engineNumber} / {selectedBike.chassisNumber}
+                                                {selectedBike.model !== b.bikeModel && b.bikeModel && (
+                                                    <span style={{ marginLeft: '0.4rem', fontSize: '0.68rem', color: '#f59e0b', fontWeight: 700 }}>⚠️ Different from booked model ({b.bikeModel})</span>
+                                                )}
                                                 {' '}<button onClick={() => setSelectedBike(null)} style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', padding: 0 }}>change bike</button>
                                             </div>
                                             {remainingForBooking(b) > 0 && (
