@@ -144,7 +144,8 @@ export default function InventoryPage() {
     const stats = {
         total: bikes.length,
         available: bikes.filter(b => b.status === 'AVAILABLE').length,
-        sold: bikes.filter(b => b.status === 'SOLD').length
+        sold: bikes.filter(b => b.status === 'SOLD').length,
+        exchanged: bikes.filter(b => b.status === 'EXCHANGED').length,
     };
 
     return (
@@ -193,7 +194,8 @@ export default function InventoryPage() {
                                         {deliveryOrders.map(order => {
                                             const total = order.bikes?.length ?? 0;
                                             const sold = order.bikes?.filter(b => b.status === 'SOLD').length ?? 0;
-                                            const available = total - sold;
+                                            const exchanged = order.bikes?.filter(b => b.status === 'EXCHANGED').length ?? 0;
+                                            const available = total - sold - exchanged;
                                             return (
                                                 <tr key={order._id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                                                     <td style={{ padding: '6px 8px', fontWeight: 600 }}>{order.doNumber}</td>
@@ -314,8 +316,9 @@ export default function InventoryPage() {
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
                                             <strong style={{ fontSize: '0.95rem' }}>{bike.model}</strong>
                                             <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{bike.color}</span>
-                                            <span className={`badge ${bike.status === 'AVAILABLE' ? 'badge-success' : 'badge-error'}`} style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
-                                                {bike.status}
+                                            <span className={`badge ${bike.status === 'AVAILABLE' ? 'badge-success' : bike.status === 'EXCHANGED' ? '' : 'badge-error'}`}
+                                                style={{ fontSize: '0.65rem', padding: '2px 6px', ...(bike.status === 'EXCHANGED' ? { background: 'rgba(139,92,246,0.15)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.3)' } : {}) }}>
+                                                {bike.status === 'EXCHANGED' ? '🔄 EXCHANGED' : bike.status}
                                             </span>
                                         </div>
                                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>

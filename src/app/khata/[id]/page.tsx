@@ -32,7 +32,7 @@ interface AvailableBike {
 interface KhataTransaction {
     _id: string;
     date: string;
-    type: 'STOCK_GIVEN' | 'PAYMENT';
+    type: 'STOCK_GIVEN' | 'PAYMENT' | 'EXCHANGE_RETURN';
     description: string;
     amount: number;
     margin?: number;
@@ -50,6 +50,7 @@ interface KhataParty {
     transactions: KhataTransaction[];
     totalDebit: number;
     totalCredit: number;
+    totalExchanged: number;
     balance: number;
 }
 
@@ -267,12 +268,13 @@ export default function KhataDetailPage() {
     const { toasts, showToast, removeToast } = useToast();
     const [party, setParty] = useState<KhataParty | null>(null);
     const [loading, setLoading] = useState(true);
-    const [activeForm, setActiveForm] = useState<'STOCK' | 'PAYMENT' | null>(null);
+    const [activeForm, setActiveForm] = useState<'STOCK' | 'PAYMENT' | 'EXCHANGE' | null>(null);
     const [bikeRows, setBikeRows] = useState<BikeRow[]>([newBikeRow()]);
     const [stockDate, setStockDate] = useState('');
     const [stockNote, setStockNote] = useState('');
     const [otherAmount, setOtherAmount] = useState('');
     const [paymentForm, setPaymentForm] = useState(emptyPaymentForm);
+    const [exchangeForm, setExchangeForm] = useState({ bikeSearch: '', bikeId: '', model: '', engineNumber: '', chassisNumber: '', amount: '', date: '', note: '' });
     const [submitting, setSubmitting] = useState(false);
     const [confirmDeleteTx, setConfirmDeleteTx] = useState<string | null>(null);
     const [selectedMonth, setSelectedMonth] = useState<string>('ALL');
@@ -407,6 +409,36 @@ export default function KhataDetailPage() {
         }
     };
 
+    const handleAddExchange = async () => {
+        if (!exchangeForm.bikeId || !exchangeForm.amount) return;
+        setSubmitting(true);
+        try {
+            const res = await fetch(`/api/khata/${id}/transactions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'EXCHANGE_RETURN',
+                    bikeId: exchangeForm.bikeId,
+                    amount: Number(exchangeForm.amount),
+                    date: exchangeForm.date || undefined,
+                    note: exchangeForm.note,
+                }),
+            });
+            if (res.ok) {
+                showToast('Exchange return recorded — bike marked as Exchanged', 'success');
+                setExchangeForm({ bikeSearch: '', bikeId: '', model: '', engineNumber: '', chassisNumber: '', amount: '', date: '', note: '' });
+                setActiveForm(null);
+                fetchParty();
+                fetchAvailableBikes();
+            } else {
+                const err = await res.json();
+                showToast(err.message || 'Failed', 'error');
+            }
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     const handleDeleteTx = async (txId: string) => {
         const res = await fetch(`/api/khata/${id}/transactions/${txId}`, { method: 'DELETE' });
         if (res.ok) {
@@ -515,13 +547,14 @@ export default function KhataDetailPage() {
         }
         return filteredTxs.map(t => {
             if (t.type === 'STOCK_GIVEN') balance += t.amount;
-            else balance -= t.amount;
+            else balance -= t.amount; // PAYMENT and EXCHANGE_RETURN both reduce the balance
             return { ...t, runningBalance: balance };
         });
     })();
 
     const filteredDebit = filteredTxs.filter(t => t.type === 'STOCK_GIVEN').reduce((s, t) => s + t.amount, 0);
     const filteredCredit = filteredTxs.filter(t => t.type === 'PAYMENT').reduce((s, t) => s + t.amount, 0);
+    const filteredExchanged = filteredTxs.filter(t => t.type === 'EXCHANGE_RETURN').reduce((s, t) => s + t.amount, 0);
     const filteredMargin = filteredTxs.filter(t => t.type === 'STOCK_GIVEN').reduce((s, t) => s + (t.margin || 0), 0);
 
     const monthLabel = (m: string) => {
@@ -629,6 +662,11 @@ export default function KhataDetailPage() {
                             onClick={() => setActiveForm(activeForm === 'PAYMENT' ? null : 'PAYMENT')}>
                             {activeForm === 'PAYMENT' ? 'Cancel' : '💰 Record Payment'}
                         </button>
+                        <button className={`btn ${activeForm === 'EXCHANGE' ? 'btn-secondary' : ''}`}
+                            style={activeForm !== 'EXCHANGE' ? { background: 'rgba(139,92,246,0.15)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.4)' } : {}}
+                            onClick={() => setActiveForm(activeForm === 'EXCHANGE' ? null : 'EXCHANGE')}>
+                            {activeForm === 'EXCHANGE' ? 'Cancel' : '🔄 Exchange Return'}
+                        </button>
                     </div>
                 </div>
 
@@ -642,6 +680,13 @@ export default function KhataDetailPage() {
                         <div style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.3rem' }}>Total Paid</div>
                         <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981' }}>Rs. {party.totalCredit.toLocaleString()}</div>
                     </div>
+                    {(party.totalExchanged || 0) > 0 && (
+                        <div className="card" style={{ padding: '1.1rem', borderLeft: '4px solid #8b5cf6' }}>
+                            <div style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.3rem' }}>Bikes Returned</div>
+                            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#8b5cf6' }}>Rs. {(party.totalExchanged || 0).toLocaleString()}</div>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>exchange returns</div>
+                        </div>
+                    )}
                     <div className="card" style={{ padding: '1.1rem', borderLeft: `4px solid ${party.balance > 0 ? '#f59e0b' : '#10b981'}` }}>
                         <div style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.3rem' }}>Outstanding</div>
                         <div style={{ fontSize: '1.4rem', fontWeight: 800, color: party.balance > 0 ? '#f59e0b' : '#10b981' }}>Rs. {party.balance.toLocaleString()}</div>
@@ -737,6 +782,84 @@ export default function KhataDetailPage() {
                     </div>
                 )}
 
+                {/* ── Exchange Return form ── */}
+                {activeForm === 'EXCHANGE' && (
+                    <div className="card" style={{ marginBottom: '1.25rem', borderLeft: '4px solid #8b5cf6' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.4rem' }}>🔄 Exchange Return</h3>
+                        <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+                            Record a bike from your Honda stock being returned to this party as repayment.
+                            The bike will be marked as <strong>Exchanged</strong> in inventory and <strong>no margin</strong> will be counted — profit was already captured when you sold the borrowed bike.
+                        </p>
+                        <div className="grid-2" style={{ marginBottom: '1rem' }}>
+                            <div className="form-group">
+                                <label className="label">Select Bike to Return *</label>
+                                {exchangeForm.bikeId ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '8px', padding: '0.5rem 0.75rem' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{exchangeForm.model}</div>
+                                            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{exchangeForm.engineNumber} / {exchangeForm.chassisNumber}</div>
+                                        </div>
+                                        <button type="button" onClick={() => setExchangeForm({ ...exchangeForm, bikeId: '', model: '', engineNumber: '', chassisNumber: '', bikeSearch: '' })}
+                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700 }}>✕</button>
+                                    </div>
+                                ) : (
+                                    <div style={{ position: 'relative' }}>
+                                        <input type="text" className="input" placeholder="Search by engine / chassis number..."
+                                            value={exchangeForm.bikeSearch}
+                                            onChange={e => setExchangeForm({ ...exchangeForm, bikeSearch: e.target.value })} />
+                                        {exchangeForm.bikeSearch.trim().length > 1 && (() => {
+                                            const q = exchangeForm.bikeSearch.trim().toLowerCase();
+                                            const matches = availableBikes.filter(b =>
+                                                b.engineNumber?.toLowerCase().includes(q) || b.chassisNumber?.toLowerCase().includes(q)
+                                            ).slice(0, 8);
+                                            return matches.length > 0 ? (
+                                                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: '6px', boxShadow: '0 4px 16px rgba(0,0,0,0.15)', maxHeight: '200px', overflowY: 'auto' }}>
+                                                    {matches.map(b => (
+                                                        <div key={b.id} onClick={() => setExchangeForm({ ...exchangeForm, bikeId: b.id, model: b.model, engineNumber: b.engineNumber, chassisNumber: b.chassisNumber, bikeSearch: '' })}
+                                                            style={{ padding: '0.4rem 0.75rem', cursor: 'pointer', borderBottom: '1px solid var(--color-border)' }}>
+                                                            <div style={{ fontWeight: 600, fontSize: '0.8rem' }}>{b.engineNumber} / {b.chassisNumber}</div>
+                                                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{b.model} · {b.color}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : null;
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Agreed Exchange Value (PKR) *</label>
+                                <input type="text" inputMode="decimal" className="input" placeholder="e.g. 135000"
+                                    value={exchangeForm.amount}
+                                    onChange={e => setExchangeForm({ ...exchangeForm, amount: e.target.value })} />
+                                <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>This reduces the outstanding balance with this party</div>
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Date</label>
+                                <input type="date" className="input" value={exchangeForm.date}
+                                    onChange={e => setExchangeForm({ ...exchangeForm, date: e.target.value })} />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Note</label>
+                                <input className="input" placeholder="Optional note..." value={exchangeForm.note}
+                                    onChange={e => setExchangeForm({ ...exchangeForm, note: e.target.value })} />
+                            </div>
+                        </div>
+                        {exchangeForm.bikeId && exchangeForm.amount && (
+                            <div style={{ marginBottom: '1rem', padding: '0.6rem 1rem', background: 'rgba(139,92,246,0.08)', borderRadius: '8px', fontSize: '0.82rem' }}>
+                                🔄 <strong>{exchangeForm.model}</strong> ({exchangeForm.engineNumber}) will be returned to <strong>{party.name}</strong>,
+                                reducing their outstanding balance by <strong style={{ color: '#8b5cf6' }}>Rs. {Number(exchangeForm.amount).toLocaleString()}</strong>.
+                                Margin = Rs. 0 (no double-counting).
+                            </div>
+                        )}
+                        <button className="btn" style={{ background: '#8b5cf6', color: '#fff' }}
+                            disabled={submitting || !exchangeForm.bikeId || !exchangeForm.amount}
+                            onClick={handleAddExchange}>
+                            {submitting ? 'Saving...' : '✅ Record Exchange Return'}
+                        </button>
+                    </div>
+                )}
+
                 {/* Month filter */}
                 {allMonths.length > 0 && (
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
@@ -758,6 +881,11 @@ export default function KhataDetailPage() {
                         <div style={{ padding: '0.5rem 0.9rem', background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '8px', fontSize: '0.82rem' }}>
                             Paid: <strong style={{ color: '#10b981' }}>Rs. {filteredCredit.toLocaleString()}</strong>
                         </div>
+                        {filteredExchanged > 0 && (
+                            <div style={{ padding: '0.5rem 0.9rem', background: 'rgba(139,92,246,0.07)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '8px', fontSize: '0.82rem' }}>
+                                Exchanged: <strong style={{ color: '#8b5cf6' }}>Rs. {filteredExchanged.toLocaleString()}</strong>
+                            </div>
+                        )}
                         {filteredMargin !== 0 && (
                             <div style={{ padding: '0.5rem 0.9rem', background: 'rgba(139,92,246,0.07)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '8px', fontSize: '0.82rem' }}>
                                 Margin: <strong style={{ color: '#8b5cf6' }}>Rs. {filteredMargin.toLocaleString()}</strong>
@@ -889,8 +1017,14 @@ export default function KhataDetailPage() {
                                                 <td style={{ padding: '7px 10px', textAlign: 'right', color: tx.type === 'STOCK_GIVEN' ? '#8b5cf6' : 'var(--color-text-muted)' }}>
                                                     {tx.type === 'STOCK_GIVEN' && (tx.margin || 0) !== 0 ? `Rs. ${(tx.margin || 0).toLocaleString()}` : '—'}
                                                 </td>
-                                                <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: tx.type === 'PAYMENT' ? '#10b981' : 'var(--color-text-muted)' }}>
-                                                    {tx.type === 'PAYMENT' ? `Rs. ${tx.amount.toLocaleString()}` : '—'}
+                                                <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700 }}>
+                                                    {tx.type === 'PAYMENT' && (
+                                                        <span style={{ color: '#10b981' }}>Rs. {tx.amount.toLocaleString()}</span>
+                                                    )}
+                                                    {tx.type === 'EXCHANGE_RETURN' && (
+                                                        <span style={{ color: '#8b5cf6' }}>🔄 Rs. {tx.amount.toLocaleString()}</span>
+                                                    )}
+                                                    {tx.type === 'STOCK_GIVEN' && '—'}
                                                 </td>
                                                 <td style={{ padding: '7px 10px', textAlign: 'right' }}>
                                                     {tx.paymentMode ? (

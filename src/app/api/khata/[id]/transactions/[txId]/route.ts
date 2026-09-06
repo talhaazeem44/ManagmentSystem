@@ -10,6 +10,8 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
 
     const existingParty = await KhataParty.findById(id).lean();
     const existingTx = (existingParty as any)?.transactions?.find((t: any) => t._id.toString() === txId);
+    // For STOCK_GIVEN: release the bikes back to AVAILABLE.
+    // For EXCHANGE_RETURN: also release the returned bike back to AVAILABLE (exchange undone).
     const bikeIdsToRelease = (existingTx?.items || []).map((i: any) => i.bikeId).filter(Boolean);
 
     const party = await KhataParty.findByIdAndUpdate(

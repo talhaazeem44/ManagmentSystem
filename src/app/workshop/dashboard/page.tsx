@@ -158,10 +158,12 @@ export default function WorkshopDashboardPage() {
                         <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
                             <div className="card" style={{ padding: '1.25rem', borderLeft: '3px solid #10b981' }}>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>Cash Received</div>
-                                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#10b981' }}>Rs. {Math.round(stats.netCashReceived).toLocaleString()}</div>
-                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>gross Rs. {Math.round(stats.totalCashReceived).toLocaleString()}</div>
+                                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#10b981' }}>Rs. {Math.round(stats.totalCashReceived).toLocaleString()}</div>
                                 {stats.workshopExpenseTotal > 0 && (
-                                    <div style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '0.1rem' }}>− expenses Rs. {Math.round(stats.workshopExpenseTotal).toLocaleString()}</div>
+                                    <>
+                                        <div style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '0.25rem' }}>− expenses Rs. {Math.round(stats.workshopExpenseTotal).toLocaleString()}</div>
+                                        <div style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700, marginTop: '0.1rem' }}>= net Rs. {Math.round(stats.netCashReceived).toLocaleString()}</div>
+                                    </>
                                 )}
                                 <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>cross-check with cash in hand</div>
                             </div>

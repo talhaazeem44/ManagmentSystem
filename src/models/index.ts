@@ -49,7 +49,7 @@ export interface IBike {
     engineNumber: string;
     chassisNumber: string;
     purchasePrice?: number;
-    status: 'AVAILABLE' | 'SOLD';
+    status: 'AVAILABLE' | 'SOLD' | 'EXCHANGED';
     deliveryOrderId: mongoose.Types.ObjectId | string;
     createdAt?: Date;
     updatedAt?: Date;
@@ -61,7 +61,7 @@ const BikeSchema = new Schema<IBike>({
     engineNumber: { type: String, required: true, unique: true },
     chassisNumber: { type: String, required: true, unique: true },
     purchasePrice: { type: Number, default: 0 },
-    status: { type: String, enum: ['AVAILABLE', 'SOLD'], default: 'AVAILABLE' },
+    status: { type: String, enum: ['AVAILABLE', 'SOLD', 'EXCHANGED'], default: 'AVAILABLE' },
     deliveryOrderId: { type: Schema.Types.ObjectId, ref: 'DeliveryOrder', required: true },
 }, {
     timestamps: true
@@ -402,7 +402,7 @@ export interface IKhataItem {
 export interface IKhataTransaction {
     _id?: string;
     date: Date;
-    type: 'STOCK_GIVEN' | 'PAYMENT';
+    type: 'STOCK_GIVEN' | 'PAYMENT' | 'EXCHANGE_RETURN';
     description: string;
     amount: number;
     margin?: number;
@@ -424,7 +424,7 @@ export interface IKhataParty {
 
 const KhataTransactionSchema = new Schema<IKhataTransaction>({
     date: { type: Date, default: Date.now },
-    type: { type: String, enum: ['STOCK_GIVEN', 'PAYMENT'], required: true },
+    type: { type: String, enum: ['STOCK_GIVEN', 'PAYMENT', 'EXCHANGE_RETURN'], required: true },
     description: { type: String, required: true },
     amount: { type: Number, required: true },
     margin: { type: Number, default: 0 },

@@ -9,7 +9,8 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     if (!party) return NextResponse.json({ message: 'Not found' }, { status: 404 });
     const totalDebit = (party.transactions || []).filter((t: any) => t.type === 'STOCK_GIVEN').reduce((s: number, t: any) => s + t.amount, 0);
     const totalCredit = (party.transactions || []).filter((t: any) => t.type === 'PAYMENT').reduce((s: number, t: any) => s + t.amount, 0);
-    return NextResponse.json({ ...party, totalDebit, totalCredit, balance: totalDebit - totalCredit });
+    const totalExchanged = (party.transactions || []).filter((t: any) => t.type === 'EXCHANGE_RETURN').reduce((s: number, t: any) => s + t.amount, 0);
+    return NextResponse.json({ ...party, totalDebit, totalCredit, totalExchanged, balance: totalDebit - totalCredit - totalExchanged });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

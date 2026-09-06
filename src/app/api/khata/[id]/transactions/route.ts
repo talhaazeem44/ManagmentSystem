@@ -56,6 +56,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             description = items.map((i: any) => `${i.quantity}x ${i.model}`).join(' + ');
     }
 
+    // Exchange return: a bike from inventory given back to a party as repayment.
+    // margin is explicitly 0 — profit was already captured on the original sale of the borrowed bike.
+    if (body.type === 'EXCHANGE_RETURN') {
+        if (!body.bikeId) return NextResponse.json({ message: 'bikeId required for exchange return' }, { status: 400 });
+        const bike = await Bike.findById(body.bikeId).lean() as any;
+        if (!bike) return NextResponse.json({ message: 'Bike not found' }, { status: 404 });
+        if (bike.status !== 'AVAILABLE') return NextResponse.json({ message: `Bike ${bike.engineNumber} is not available (status: ${bike.status})` }, { status: 409 });
+
+        amount = Number(body.amount) || 0;
+        if (!amount) return NextResponse.json({ message: 'Agreed exchange value (amount) is required' }, { status: 400 });
+        margin = 0; // never count margin on a return
+        description = body.description?.trim() || `Exchange Return — ${bike.model} (${bike.engineNumber})`;
+        items = [{
+            model: bike.model,
+            quantity: 1,
+            pricePerUnit: amount,
+            standardPrice: amount,
+            baseMargin: 0,
+            totalMargin: 0,
+            bikeId: bike._id.toString(),
+            engineNumber: bike.engineNumber,
+            chassisNumber: bike.chassisNumber,
+        }];
+    }
+
     if (!amount) return NextResponse.json({ message: 'amount required' }, { status: 400 });
     if (!description) return NextResponse.json({ message: 'description required' }, { status: 400 });
 
@@ -79,9 +104,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     );
     if (!party) return NextResponse.json({ message: 'Not found' }, { status: 404 });
 
-    const soldBikeIds = items.map((i: any) => i.bikeId).filter(Boolean);
+    // STOCK_GIVEN: mark linked inventory bikes as SOLD
+    const soldBikeIds = body.type === 'STOCK_GIVEN' ? items.map((i: any) => i.bikeId).filter(Boolean) : [];
     if (soldBikeIds.length > 0) {
         await Bike.updateMany({ _id: { $in: soldBikeIds } }, { $set: { status: 'SOLD' } });
+    }
+    // EXCHANGE_RETURN: mark the returned bike as EXCHANGED (not SOLD — no double-margin)
+    if (body.type === 'EXCHANGE_RETURN' && body.bikeId) {
+        await Bike.findByIdAndUpdate(body.bikeId, { $set: { status: 'EXCHANGED' } });
     }
 
     return NextResponse.json({ success: true });
