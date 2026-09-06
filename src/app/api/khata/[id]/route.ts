@@ -10,7 +10,8 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     const totalDebit = (party.transactions || []).filter((t: any) => t.type === 'STOCK_GIVEN').reduce((s: number, t: any) => s + t.amount, 0);
     const totalCredit = (party.transactions || []).filter((t: any) => t.type === 'PAYMENT').reduce((s: number, t: any) => s + t.amount, 0);
     const totalExchanged = (party.transactions || []).filter((t: any) => t.type === 'EXCHANGE_RETURN').reduce((s: number, t: any) => s + t.amount, 0);
-    return NextResponse.json({ ...party, totalDebit, totalCredit, totalExchanged, balance: totalDebit - totalCredit - totalExchanged });
+    // outstanding = stock given minus cash payments only; exchange returns are inventory record, not financial settlement
+    return NextResponse.json({ ...party, totalDebit, totalCredit, totalExchanged, balance: totalDebit - totalCredit });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -541,13 +541,19 @@ export default function KhataDetailPage() {
         if (selectedMonth !== 'ALL') {
             const [y, m] = selectedMonth.split('-').map(Number);
             const monthStart = new Date(y, m - 1, 1);
+            // Only STOCK_GIVEN and PAYMENT affect the financial balance
             balance = (party?.transactions || [])
                 .filter(t => new Date(t.date) < monthStart)
-                .reduce((s, t) => t.type === 'STOCK_GIVEN' ? s + t.amount : s - t.amount, 0);
+                .reduce((s, t) => {
+                    if (t.type === 'STOCK_GIVEN') return s + t.amount;
+                    if (t.type === 'PAYMENT') return s - t.amount;
+                    return s; // EXCHANGE_RETURN: no effect on outstanding
+                }, 0);
         }
         return filteredTxs.map(t => {
             if (t.type === 'STOCK_GIVEN') balance += t.amount;
-            else balance -= t.amount; // PAYMENT and EXCHANGE_RETURN both reduce the balance
+            else if (t.type === 'PAYMENT') balance -= t.amount;
+            // EXCHANGE_RETURN: balance stays the same — it's inventory record only
             return { ...t, runningBalance: balance };
         });
     })();
