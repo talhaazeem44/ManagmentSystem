@@ -64,8 +64,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         if (!bike) return NextResponse.json({ message: 'Bike not found' }, { status: 404 });
         if (bike.status !== 'AVAILABLE') return NextResponse.json({ message: `Bike ${bike.engineNumber} is not available (status: ${bike.status})` }, { status: 409 });
 
-        amount = Number(body.amount) || 0;
-        if (!amount) return NextResponse.json({ message: 'Agreed exchange value (amount) is required' }, { status: 400 });
+        amount = Number(body.amount) || 0; // optional — defaults to 0 (record-only exchange)
         margin = 0; // never count margin on a return
         description = body.description?.trim() || `Exchange Return — ${bike.model} (${bike.engineNumber})`;
         items = [{
@@ -81,7 +80,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         }];
     }
 
-    if (!amount) return NextResponse.json({ message: 'amount required' }, { status: 400 });
+    // Allow amount=0 for exchange returns (record-only, no financial value agreed)
+    if (!amount && body.type !== 'EXCHANGE_RETURN') return NextResponse.json({ message: 'amount required' }, { status: 400 });
     if (!description) return NextResponse.json({ message: 'description required' }, { status: 400 });
 
     const party = await KhataParty.findByIdAndUpdate(

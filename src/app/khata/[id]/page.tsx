@@ -834,7 +834,7 @@ export default function KhataDetailPage() {
                                 )}
                             </div>
                             <div className="form-group">
-                                <label className="label">Agreed Exchange Value (PKR) *</label>
+                                <label className="label">Agreed Exchange Value (PKR) <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>— optional</span></label>
                                 <input type="text" inputMode="decimal" className="input" placeholder="e.g. 135000"
                                     value={exchangeForm.amount}
                                     onChange={e => setExchangeForm({ ...exchangeForm, amount: e.target.value })} />
@@ -859,7 +859,7 @@ export default function KhataDetailPage() {
                             </div>
                         )}
                         <button className="btn" style={{ background: '#8b5cf6', color: '#fff' }}
-                            disabled={submitting || !exchangeForm.bikeId || !exchangeForm.amount}
+                            disabled={submitting || !exchangeForm.bikeId}
                             onClick={handleAddExchange}>
                             {submitting ? 'Saving...' : '✅ Record Exchange Return'}
                         </button>
