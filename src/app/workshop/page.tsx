@@ -54,6 +54,7 @@ export default function WorkshopPage() {
         customerName: '',
         customerMobile: '',
         bikeNumber: '',
+        mechanicName: '',
         serviceType: 'Tuning',
         description: '',
         serviceCharges: '',
@@ -127,7 +128,7 @@ export default function WorkshopPage() {
             if (res.ok) {
                 const newRecord = await res.json();
                 setHistory([newRecord, ...history]);
-                setFormData({ customerName: '', customerMobile: '', bikeNumber: '', serviceType: 'Tuning', description: '', serviceCharges: '', paymentMode: 'CASH', receivedNow: '', receivedNowMode: 'CASH' });
+                setFormData({ customerName: '', customerMobile: '', bikeNumber: '', mechanicName: '', serviceType: 'Tuning', description: '', serviceCharges: '', paymentMode: 'CASH', receivedNow: '', receivedNowMode: 'CASH' });
                 setBillItems([]);
                 setPrintingService(newRecord);
             } else {
@@ -165,6 +166,18 @@ export default function WorkshopPage() {
                                 <label className="label">Bike Number</label>
                                 <input type="text" className="input" value={formData.bikeNumber}
                                     onChange={e => setFormData({ ...formData, bikeNumber: e.target.value })} />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                <label className="label">Mechanic Name</label>
+                                <select className="select" value={formData.mechanicName}
+                                    onChange={e => setFormData({ ...formData, mechanicName: e.target.value })}>
+                                    <option value="">— Select Mechanic —</option>
+                                    <option value="Hamza">Hamza</option>
+                                    <option value="Adnan">Adnan</option>
+                                    <option value="Waseem">Waseem</option>
+                                    <option value="Tariq">Tariq</option>
+                                    <option value="Other">Other</option>
+                                </select>
                             </div>
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
                                 <label className="label">Service Type</label>
@@ -284,32 +297,48 @@ export default function WorkshopPage() {
                                     />
 
                                     <div style={{ display: 'flex', gap: '0.4rem' }}>
-                                        <input type="text" inputMode="decimal" className="input" placeholder="Price"
-                                            value={manualItem.price}
-                                            onChange={e => setManualItem({ ...manualItem, price: e.target.value })} />
-                                        <input type="text" inputMode="decimal" className="input" style={{ maxWidth: '70px' }} placeholder="Qty"
-                                            value={manualItem.qty}
-                                            onChange={e => setManualItem({ ...manualItem, qty: e.target.value })} />
-                                        <button type="button" className="btn btn-secondary"
-                                            onClick={() => {
-                                                if (!manualItem.name || !manualItem.price) return;
-                                                setBillItems([...billItems, {
-                                                    stockId: manualItem.stockId,
-                                                    name: manualItem.name,
-                                                    productCode: manualItem.productCode,
-                                                    quantity: Number(manualItem.qty) || 1,
-                                                    // Items picked from stock keep their real cost price so margin is tracked
-                                                    // correctly; a manual item marked "no cost" (e.g. labour typed here
-                                                    // instead of the Labour field) is treated as pure profit; any other
-                                                    // fully-manual item has no known cost, so price = cost (zero margin).
-                                                    retailPrice: manualItem.stockId
-                                                        ? (Number(manualItem.retailPrice) || 0)
-                                                        : (manualItem.noCost ? 0 : Number(manualItem.price)),
-                                                    customerPrice: Number(manualItem.price),
-                                                }]);
-                                                setManualItem({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1', noCost: false });
-                                            }}
-                                            disabled={!manualItem.name || !manualItem.price}>Add</button>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginBottom: '2px' }}>Sell Price</div>
+                                            <input type="text" inputMode="decimal" className="input" placeholder="Price"
+                                                value={manualItem.price}
+                                                onChange={e => setManualItem({ ...manualItem, price: e.target.value })} />
+                                        </div>
+                                        {manualItem.stockId && (
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontSize: '0.68rem', color: '#f59e0b', marginBottom: '2px' }}>Purchase Cost ✎</div>
+                                                <input type="text" inputMode="decimal" className="input"
+                                                    placeholder="Cost price"
+                                                    value={manualItem.retailPrice}
+                                                    style={{ borderColor: 'rgba(245,158,11,0.4)' }}
+                                                    onChange={e => setManualItem({ ...manualItem, retailPrice: e.target.value })} />
+                                            </div>
+                                        )}
+                                        <div style={{ maxWidth: '70px' }}>
+                                            <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginBottom: '2px' }}>Qty</div>
+                                            <input type="text" inputMode="decimal" className="input"
+                                                value={manualItem.qty}
+                                                onChange={e => setManualItem({ ...manualItem, qty: e.target.value })} />
+                                        </div>
+                                        <div style={{ alignSelf: 'flex-end' }}>
+                                            <button type="button" className="btn btn-secondary"
+                                                onClick={() => {
+                                                    if (!manualItem.name || !manualItem.price) return;
+                                                    setBillItems([...billItems, {
+                                                        stockId: manualItem.stockId,
+                                                        name: manualItem.name,
+                                                        productCode: manualItem.productCode,
+                                                        quantity: Number(manualItem.qty) || 1,
+                                                        // Stock items: use the (possibly overridden) purchase cost for correct margin.
+                                                        // Manual items: if "no cost" ticked, treat as pure profit; otherwise cost = price (zero margin).
+                                                        retailPrice: manualItem.stockId
+                                                            ? (Number(manualItem.retailPrice) || 0)
+                                                            : (manualItem.noCost ? 0 : Number(manualItem.price)),
+                                                        customerPrice: Number(manualItem.price),
+                                                    }]);
+                                                    setManualItem({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1', noCost: false });
+                                                }}
+                                                disabled={!manualItem.name || !manualItem.price}>Add</button>
+                                        </div>
                                     </div>
                                     {!manualItem.stockId && (
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>

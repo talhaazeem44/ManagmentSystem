@@ -16,6 +16,7 @@ interface ServiceReceiptProps {
         customerName: string;
         customerMobile?: string;
         bikeNumber?: string;
+        mechanicName?: string;
         serviceType: string;
         date: string | Date;
         description?: string;
@@ -39,6 +40,9 @@ const ServiceReceipt: React.FC<ServiceReceiptProps> = ({ service, onDone }) => {
 
     const dateStr = new Date(service.date).toLocaleDateString('en-PK', {
         day: '2-digit', month: 'short', year: '2-digit',
+    });
+    const timeStr = new Date(service.date).toLocaleTimeString('en-PK', {
+        hour: '2-digit', minute: '2-digit', hour12: true,
     });
 
     // Print straight to the thermal printer over USB (no OS driver, no print dialog).
@@ -152,13 +156,14 @@ html,body {
                         </div>
 
                         <div style={s.row}><span>Bill #:</span><span style={s.bold}>{billNo}</span></div>
-                        <div style={s.row}><span>Date:</span><span>{dateStr}</span></div>
+                        <div style={s.row}><span>Date:</span><span>{dateStr} {timeStr}</span></div>
 
                         <div style={s.divider} />
 
                         <div style={s.row}><span>Customer:</span><span style={s.bold}>{service.customerName}</span></div>
                         {service.customerMobile && <div style={s.row}><span>Contact:</span><span>{service.customerMobile}</span></div>}
                         {service.bikeNumber && <div style={s.row}><span>Bike No:</span><span style={s.bold}>{service.bikeNumber}</span></div>}
+                        {service.mechanicName && <div style={s.row}><span>Mechanic:</span><span style={s.bold}>{service.mechanicName}</span></div>}
 
                         <div style={s.divider} />
 
@@ -200,12 +205,20 @@ html,body {
 
                         <div style={s.divider} />
                         <div style={s.totalRow}><span>TOTAL:</span><span>Rs.{total.toLocaleString()}</span></div>
-                        {service.paymentMode === 'CREDIT' && (
-                            <div style={s.totalRow}>
-                                <span>CREDIT — PENDING:</span>
-                                <span>Rs.{(service.balance ?? 0).toLocaleString()}</span>
-                            </div>
-                        )}
+                        {service.paymentMode === 'CREDIT' && (() => {
+                            const received = total - (service.balance ?? 0);
+                            return (
+                                <>
+                                    {received > 0 && (
+                                        <div style={s.row}><span style={{ color: '#166534' }}>Paid Now:</span><span style={{ ...s.bold, color: '#166534' }}>Rs.{received.toLocaleString()}</span></div>
+                                    )}
+                                    <div style={{ ...s.totalRow, color: '#dc2626' }}>
+                                        <span>CREDIT — PENDING:</span>
+                                        <span>Rs.{(service.balance ?? 0).toLocaleString()}</span>
+                                    </div>
+                                </>
+                            );
+                        })()}
                         <div style={s.divider} />
 
                         <div style={{ ...s.center, fontSize: '7pt' }}>

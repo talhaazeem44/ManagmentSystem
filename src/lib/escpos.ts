@@ -75,6 +75,7 @@ export interface ThermalReceiptData {
     customerName: string;
     customerMobile?: string;
     bikeNumber?: string;
+    mechanicName?: string;
     serviceType: string;
     date: string | Date;
     description?: string;
@@ -92,6 +93,7 @@ export function buildServiceReceiptBytes(service: ThermalReceiptData): Uint8Arra
     const items = service.items ?? [];
     const billNo = service._id ? service._id.slice(-6).toUpperCase() : '';
     const dateStr = new Date(service.date).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: '2-digit' });
+    const timeStr = new Date(service.date).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     const b = new EscPosBuilder();
     b.init();
@@ -109,10 +111,11 @@ export function buildServiceReceiptBytes(service: ThermalReceiptData): Uint8Arra
     b.text(divider());
 
     b.align('left');
-    b.text(twoCol(`Bill #: ${billNo}`, dateStr));
+    b.text(twoCol(`Bill #: ${billNo}`, `${dateStr} ${timeStr}`));
     b.bold(true); b.text(twoCol('Customer:', service.customerName)); b.bold(false);
     if (service.customerMobile) b.text(twoCol('Contact:', service.customerMobile));
     if (service.bikeNumber) { b.bold(true); b.text(twoCol('Bike No:', service.bikeNumber)); b.bold(false); }
+    if (service.mechanicName) { b.text(twoCol('Mechanic:', service.mechanicName)); }
 
     b.text(divider());
     b.bold(true).text('SR  DESCRIPTION\n').bold(false);
@@ -137,6 +140,10 @@ export function buildServiceReceiptBytes(service: ThermalReceiptData): Uint8Arra
     b.text(twoCol('TOTAL:', `Rs.${total.toLocaleString()}`, 21)); // half width at double size
     b.doubleSize(false).bold(false);
     if (service.paymentMode === 'CREDIT') {
+        const received = total - (service.balance ?? 0);
+        if (received > 0) {
+            b.text(twoCol('Paid Now:', `Rs.${received.toLocaleString()}`));
+        }
         b.bold(true);
         b.text(twoCol('CREDIT - PENDING:', `Rs.${(service.balance ?? 0).toLocaleString()}`));
         b.bold(false);

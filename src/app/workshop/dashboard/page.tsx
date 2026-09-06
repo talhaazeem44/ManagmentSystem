@@ -18,6 +18,7 @@ interface RecentJob {
     serviceType: string;
     totalAmount: number;
     margin: number;
+    paymentMode?: string;
     date: string;
 }
 
@@ -31,11 +32,14 @@ interface LowStockItem {
 
 interface WorkshopStats {
     totalRevenue: number;
+    totalCollected: number;
     totalMargin: number;
     totalLabour: number;
     totalPartsRevenue: number;
     totalCashReceived: number;
     totalBankReceived: number;
+    workshopExpenseTotal: number;
+    netCashReceived: number;
     jobCount: number;
     avgTicket: number;
     byServiceType: Record<string, ServiceTypeBreakdown>;
@@ -45,7 +49,7 @@ interface WorkshopStats {
     lowStockItems: LowStockItem[];
 }
 
-type RangeKey = 'today' | 'week' | 'month' | 'all';
+type RangeKey = 'today' | 'yesterday' | 'week' | 'month' | 'all';
 
 function Card({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
     return (
@@ -63,6 +67,11 @@ function rangeToDates(range: RangeKey): { startDate?: string; endDate?: string }
     if (range === 'today') {
         const start = new Date(); start.setHours(0, 0, 0, 0);
         return { startDate: start.toISOString(), endDate: now.toISOString() };
+    }
+    if (range === 'yesterday') {
+        const start = new Date(); start.setDate(start.getDate() - 1); start.setHours(0, 0, 0, 0);
+        const end = new Date(start); end.setHours(23, 59, 59, 999);
+        return { startDate: start.toISOString(), endDate: end.toISOString() };
     }
     if (range === 'week') {
         const start = new Date(); start.setDate(start.getDate() - 6); start.setHours(0, 0, 0, 0);
@@ -88,7 +97,7 @@ export default function WorkshopDashboardPage() {
             .finally(() => setLoading(false));
     }, [range]);
 
-    const rangeLabel = range === 'today' ? 'Today' : range === 'week' ? 'Last 7 Days' : range === 'month' ? 'This Month' : 'All Time';
+    const rangeLabel = range === 'today' ? 'Today' : range === 'yesterday' ? 'Yesterday' : range === 'week' ? 'Last 7 Days' : range === 'month' ? 'This Month' : 'All Time';
 
     return (
         <DashboardLayout>
@@ -98,12 +107,12 @@ export default function WorkshopDashboardPage() {
                         <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Workshop Dashboard</h1>
                         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Earnings and job stats — {rangeLabel}</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.4rem' }}>
-                        {(['today', 'week', 'month', 'all'] as RangeKey[]).map(r => (
+                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                        {(['today', 'yesterday', 'week', 'month', 'all'] as RangeKey[]).map(r => (
                             <button key={r} onClick={() => setRange(r)}
                                 className={r === range ? 'btn btn-primary' : 'btn btn-secondary'}
                                 style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>
-                                {r === 'today' ? 'Today' : r === 'week' ? '7 Days' : r === 'month' ? 'Month' : 'All Time'}
+                                {r === 'today' ? 'Today' : r === 'yesterday' ? 'Yesterday' : r === 'week' ? '7 Days' : r === 'month' ? 'Month' : 'All Time'}
                             </button>
                         ))}
                     </div>
@@ -135,15 +144,28 @@ export default function WorkshopDashboardPage() {
                         )}
 
                         <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
-                            <Card label="Total Earned (Margin)" value={`Rs. ${stats.totalMargin.toLocaleString()}`} color="#10b981" sub={`${stats.jobCount} jobs`} />
-                            <Card label="Total Revenue" value={`Rs. ${stats.totalRevenue.toLocaleString()}`} color="var(--color-primary)" />
-                            <Card label="Labour Charges" value={`Rs. ${stats.totalLabour.toLocaleString()}`} color="#f59e0b" />
-                            <Card label="Parts Sold" value={`Rs. ${stats.totalPartsRevenue.toLocaleString()}`} color="#3b82f6" />
+                            <Card label="Total Earned (Margin)" value={`Rs. ${Math.round(stats.totalMargin).toLocaleString()}`} color="#10b981" sub={`${stats.jobCount} jobs`} />
+                            <div className="card" style={{ padding: '1.25rem', borderLeft: '3px solid var(--color-primary)' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>Total Revenue</div>
+                                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-primary)' }}>Rs. {Math.round(stats.totalCollected).toLocaleString()}</div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>billed Rs. {Math.round(stats.totalRevenue).toLocaleString()}</div>
+                                <div style={{ fontSize: '0.68rem', color: '#f59e0b', marginTop: '0.1rem' }}>collected only (excl. unpaid credit)</div>
+                            </div>
+                            <Card label="Labour Charges" value={`Rs. ${Math.round(stats.totalLabour).toLocaleString()}`} color="#f59e0b" />
+                            <Card label="Parts Sold" value={`Rs. ${Math.round(stats.totalPartsRevenue).toLocaleString()}`} color="#3b82f6" />
                         </div>
 
                         <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
-                            <Card label="Cash Received" value={`Rs. ${stats.totalCashReceived.toLocaleString()}`} color="#10b981" sub="cross-check with cash in hand" />
-                            <Card label="Bank Received" value={`Rs. ${stats.totalBankReceived.toLocaleString()}`} color="#3b82f6" />
+                            <div className="card" style={{ padding: '1.25rem', borderLeft: '3px solid #10b981' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>Cash Received</div>
+                                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#10b981' }}>Rs. {Math.round(stats.netCashReceived).toLocaleString()}</div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>gross Rs. {Math.round(stats.totalCashReceived).toLocaleString()}</div>
+                                {stats.workshopExpenseTotal > 0 && (
+                                    <div style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '0.1rem' }}>− expenses Rs. {Math.round(stats.workshopExpenseTotal).toLocaleString()}</div>
+                                )}
+                                <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>cross-check with cash in hand</div>
+                            </div>
+                            <Card label="Bank Received" value={`Rs. ${Math.round(stats.totalBankReceived).toLocaleString()}`} color="#3b82f6" />
                             <Card label="Jobs Completed" value={String(stats.jobCount)} sub={rangeLabel} />
                             <Card label="Avg. Bill Value" value={`Rs. ${Math.round(stats.avgTicket).toLocaleString()}`} sub="per job" />
                         </div>
@@ -185,8 +207,8 @@ export default function WorkshopDashboardPage() {
                             {Object.keys(stats.byServiceType).length === 0 ? (
                                 <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>No jobs in this period.</div>
                             ) : (
-                                <div style={{ overflowX: 'auto' }}>
-                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                    <div style={{ overflowX: 'auto' }}>
+                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                                         <thead>
                                             <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
                                                 {['Service Type', 'Jobs', 'Revenue', 'Margin'].map(h => (
@@ -201,8 +223,8 @@ export default function WorkshopDashboardPage() {
                                                     <tr key={type} style={{ borderBottom: '1px solid var(--color-border)' }}>
                                                         <td style={{ padding: '6px 8px', fontWeight: 600 }}>{type}</td>
                                                         <td style={{ padding: '6px 8px', textAlign: 'right' }}>{d.count}</td>
-                                                        <td style={{ padding: '6px 8px', textAlign: 'right' }}>Rs. {d.revenue.toLocaleString()}</td>
-                                                        <td style={{ padding: '6px 8px', textAlign: 'right', color: '#10b981', fontWeight: 700 }}>Rs. {d.margin.toLocaleString()}</td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right' }}>Rs. {Math.round(d.revenue).toLocaleString()}</td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right', color: '#10b981', fontWeight: 700 }}>Rs. {Math.round(d.margin).toLocaleString()}</td>
                                                     </tr>
                                                 ))}
                                         </tbody>
@@ -228,7 +250,7 @@ export default function WorkshopDashboardPage() {
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                                         <thead>
                                             <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
-                                                {['Date', 'Customer', 'Bike No', 'Type', 'Amount', 'Margin'].map(h => (
+                                                {['Date', 'Customer', 'Bike No', 'Type', 'Payment', 'Amount', 'Margin'].map(h => (
                                                     <th key={h} style={{ padding: '6px 8px', textAlign: h === 'Amount' || h === 'Margin' ? 'right' : 'left', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
                                                 ))}
                                             </tr>
@@ -240,19 +262,28 @@ export default function WorkshopDashboardPage() {
                                                     <td style={{ padding: '6px 8px', fontWeight: 600 }}>{job.customerName}</td>
                                                     <td style={{ padding: '6px 8px' }}>{job.bikeNumber || '—'}</td>
                                                     <td style={{ padding: '6px 8px' }}>{job.serviceType}</td>
-                                                    <td style={{ padding: '6px 8px', textAlign: 'right' }}>Rs. {job.totalAmount.toLocaleString()}</td>
-                                                    <td style={{ padding: '6px 8px', textAlign: 'right', color: '#10b981', fontWeight: 700 }}>Rs. {job.margin.toLocaleString()}</td>
+                                                    <td style={{ padding: '6px 8px' }}>
+                                                        <span style={{
+                                                            fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700,
+                                                            background: job.paymentMode === 'BANK_TRANSFER' ? 'rgba(59,130,246,0.12)' : job.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)',
+                                                            color: job.paymentMode === 'BANK_TRANSFER' ? '#3b82f6' : job.paymentMode === 'CREDIT' ? '#ef4444' : '#10b981',
+                                                        }}>
+                                                            {job.paymentMode === 'BANK_TRANSFER' ? 'ONLINE' : job.paymentMode === 'CREDIT' ? 'CREDIT' : 'CASH'}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right' }}>Rs. {Math.round(job.totalAmount).toLocaleString()}</td>
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right', color: '#10b981', fontWeight: 700 }}>Rs. {Math.round(job.margin).toLocaleString()}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                         <tfoot>
                                             <tr style={{ borderTop: '2px solid var(--color-border)' }}>
-                                                <td colSpan={4} style={{ padding: '8px', fontWeight: 700 }}>Total (shown above)</td>
+                                                <td colSpan={5} style={{ padding: '8px', fontWeight: 700 }}>Total (shown above)</td>
                                                 <td style={{ padding: '8px', textAlign: 'right', fontWeight: 800 }}>
-                                                    Rs. {stats.recentJobs.reduce((s, j) => s + Number(j.totalAmount || 0), 0).toLocaleString()}
+                                                    Rs. {Math.round(stats.recentJobs.reduce((s, j) => s + Number(j.totalAmount || 0), 0)).toLocaleString()}
                                                 </td>
                                                 <td style={{ padding: '8px', textAlign: 'right', fontWeight: 800, color: '#10b981' }}>
-                                                    Rs. {stats.recentJobs.reduce((s, j) => s + Number(j.margin || 0), 0).toLocaleString()}
+                                                    Rs. {Math.round(stats.recentJobs.reduce((s, j) => s + Number(j.margin || 0), 0)).toLocaleString()}
                                                 </td>
                                             </tr>
                                         </tfoot>

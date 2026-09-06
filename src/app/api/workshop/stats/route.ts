@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { ServiceSale, WorkshopStock } from '@/models';
+import { ServiceSale, WorkshopStock, Expense } from '@/models';
 
 const DEFAULT_LOW_STOCK_THRESHOLD = 1;
 
@@ -17,7 +17,10 @@ export async function GET(request: NextRequest) {
             filter.date = { $gte: new Date(startDateStr), $lt: new Date(endDateStr) };
         }
 
-        const sales = await ServiceSale.find(filter).sort({ date: -1 }).lean();
+        const [sales, workshopExpenses] = await Promise.all([
+            ServiceSale.find(filter).sort({ date: -1 }).lean(),
+            Expense.find({ deductFrom: 'WORKSHOP', ...(startDateStr && endDateStr ? { date: { $gte: new Date(startDateStr), $lt: new Date(endDateStr) } } : {}) }).lean(),
+        ]);
 
         const totalRevenue = sales.reduce((s, r: any) => s + Number(r.totalAmount || 0), 0);
         const totalMargin = sales.reduce((s, r: any) => s + Number(r.margin || 0), 0);
@@ -60,6 +63,11 @@ export async function GET(request: NextRequest) {
         }
         const totalCashReceived = directCashReceived + creditPaymentsCash;
         const totalBankReceived = directBankReceived + creditPaymentsBank;
+        // WORKSHOP expenses deducted from cash — what you should physically have in hand
+        const workshopExpenseTotal = workshopExpenses.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+        const netCashReceived = Math.max(0, totalCashReceived - workshopExpenseTotal);
+        // Total actually collected (cash + bank) — excludes unpaid credit balances
+        const totalCollected = totalCashReceived + totalBankReceived;
 
         const byServiceType: Record<string, { count: number; revenue: number; margin: number }> = {};
         for (const r of sales as any[]) {
@@ -99,11 +107,14 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             totalRevenue,
+            totalCollected,
             totalMargin,
             totalLabour,
             totalPartsRevenue,
             totalCashReceived,
             totalBankReceived,
+            workshopExpenseTotal,
+            netCashReceived,
             jobCount,
             avgTicket,
             byServiceType,
@@ -123,6 +134,7 @@ export async function GET(request: NextRequest) {
                 serviceType: r.serviceType,
                 totalAmount: r.totalAmount,
                 margin: r.margin,
+                paymentMode: r.paymentMode,
                 date: r.date,
             })),
         });
