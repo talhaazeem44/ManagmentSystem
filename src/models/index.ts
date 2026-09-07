@@ -497,3 +497,18 @@ const UsedBikeSchema = new Schema<IUsedBike>({
 }, { timestamps: true });
 
 export const UsedBike: Model<IUsedBike> = models.UsedBike || mongoose.model<IUsedBike>('UsedBike', UsedBikeSchema);
+
+// ── Mechanic ──────────────────────────────────────────────────────────────────
+export interface IMechanic {
+    _id?: string;
+    name: string;
+    active: boolean;
+    createdAt?: Date;
+}
+
+const MechanicSchema = new Schema<IMechanic>({
+    name: { type: String, required: true, unique: true, trim: true },
+    active: { type: Boolean, default: true },
+}, { timestamps: true });
+
+export const Mechanic: Model<IMechanic> = models.Mechanic || mongoose.model<IMechanic>('Mechanic', MechanicSchema);

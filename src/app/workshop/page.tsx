@@ -63,10 +63,57 @@ export default function WorkshopPage() {
         receivedNowMode: 'CASH',
     });
 
+    const [mechanics, setMechanics] = useState<{ _id: string; name: string }[]>([]);
+    const [showMechanicMgr, setShowMechanicMgr] = useState(false);
+    const [newMechanicName, setNewMechanicName] = useState('');
+    const [addingMechanic, setAddingMechanic] = useState(false);
+
     useEffect(() => {
         fetchHistory();
         fetchStock();
+        fetchMechanics();
     }, []);
+
+    const fetchMechanics = async () => {
+        try {
+            const res = await fetch('/api/mechanics');
+            if (res.ok) setMechanics(await res.json());
+        } catch { }
+    };
+
+    const handleAddMechanic = async () => {
+        if (!newMechanicName.trim()) return;
+        setAddingMechanic(true);
+        try {
+            const res = await fetch('/api/mechanics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newMechanicName.trim() }),
+            });
+            if (res.ok) {
+                setNewMechanicName('');
+                fetchMechanics();
+                showToast('Mechanic added', 'success');
+            } else {
+                const err = await res.json();
+                showToast(err.message || 'Failed', 'error');
+            }
+        } finally {
+            setAddingMechanic(false);
+        }
+    };
+
+    const handleDeleteMechanic = async (id: string, name: string) => {
+        const res = await fetch('/api/mechanics', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id }),
+        });
+        if (res.ok) {
+            fetchMechanics();
+            showToast(`${name} removed`, 'success');
+        }
+    };
 
     const fetchHistory = async () => {
         try {
@@ -145,7 +192,54 @@ export default function WorkshopPage() {
     return (
         <DashboardLayout>
             <div className="animate-fade-in">
-                <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '1.25rem' }}>Workshop Services</h1>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <h1 style={{ fontSize: '2rem', fontWeight: 700 }}>Workshop Services</h1>
+                    <button
+                        className={`btn ${showMechanicMgr ? 'btn-secondary' : ''}`}
+                        style={!showMechanicMgr ? { background: 'rgba(139,92,246,0.12)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.3)' } : {}}
+                        onClick={() => setShowMechanicMgr(!showMechanicMgr)}>
+                        ⚙️ {showMechanicMgr ? 'Close Mechanics' : 'Manage Mechanics'}
+                    </button>
+                </div>
+
+                {/* ── Manage Mechanics Panel ── */}
+                {showMechanicMgr && (
+                    <div className="card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid #8b5cf6' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '1rem' }}>⚙️ Mechanic List</div>
+
+                        {/* Add new */}
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                            <input
+                                className="input"
+                                style={{ flex: 1, minWidth: '180px', maxWidth: '280px' }}
+                                placeholder="New mechanic name..."
+                                value={newMechanicName}
+                                onChange={e => setNewMechanicName(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleAddMechanic()}
+                            />
+                            <button className="btn" style={{ background: '#8b5cf6', color: '#fff' }}
+                                disabled={addingMechanic || !newMechanicName.trim()}
+                                onClick={handleAddMechanic}>
+                                {addingMechanic ? 'Adding...' : '➕ Add'}
+                            </button>
+                        </div>
+
+                        {/* List */}
+                        {mechanics.length === 0 ? (
+                            <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>No mechanics added yet. Add one above.</div>
+                        ) : (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                {mechanics.map(m => (
+                                    <div key={m._id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.25)', borderRadius: '8px', padding: '0.3rem 0.6rem 0.3rem 0.8rem' }}>
+                                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{m.name}</span>
+                                        <button onClick={() => handleDeleteMechanic(m._id, m.name)}
+                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', padding: '0 2px', lineHeight: 1 }}>✕</button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div className="grid-2" style={{ alignItems: 'start' }}>
                     {/* New Service Form */}
@@ -172,11 +266,9 @@ export default function WorkshopPage() {
                                 <select className="select" value={formData.mechanicName}
                                     onChange={e => setFormData({ ...formData, mechanicName: e.target.value })}>
                                     <option value="">— Select Mechanic —</option>
-                                    <option value="Hamza">Hamza</option>
-                                    <option value="Adnan">Adnan</option>
-                                    <option value="Waseem">Waseem</option>
-                                    <option value="Tariq">Tariq</option>
-                                    <option value="Other">Other</option>
+                                    {mechanics.map(m => (
+                                        <option key={m._id} value={m.name}>{m.name}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
