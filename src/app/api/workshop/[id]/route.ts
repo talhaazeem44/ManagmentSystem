@@ -47,7 +47,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
                     customerName:   editBill.customerName   ?? existing.customerName,
                     customerMobile: editBill.customerMobile ?? existing.customerMobile,
                     bikeNumber:     editBill.bikeNumber     ?? existing.bikeNumber,
-                    mechanicName:   editBill.mechanicName   ?? existing.mechanicName,
+                    mechanicName:   editBill.mechanicName   ?? (existing as any).mechanicName,
                     serviceType:    editBill.serviceType    ?? existing.serviceType,
                     description:    editBill.description    ?? existing.description,
                     serviceCharges, items, totalAmount, totalCost, margin, balance,

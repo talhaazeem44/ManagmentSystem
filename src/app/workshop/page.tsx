@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import ServiceReceipt from '@/components/ServiceReceipt';
 import Toast from '@/components/Toast';
@@ -29,6 +29,7 @@ interface ServiceRecord {
     customerName: string;
     customerMobile: string;
     bikeNumber: string;
+    mechanicName?: string;
     serviceType: string;
     description: string;
     serviceCharges: number;
@@ -172,7 +173,7 @@ export default function WorkshopPage() {
             customerName:   record.customerName || '',
             customerMobile: record.customerMobile || '',
             bikeNumber:     record.bikeNumber || '',
-            mechanicName:   (record as any).mechanicName || '',
+            mechanicName:   record.mechanicName || '',
             serviceType:    record.serviceType || '',
             serviceCharges: String(record.serviceCharges || ''),
             description:    record.description || '',
@@ -586,7 +587,8 @@ export default function WorkshopPage() {
                                 <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>No records yet.</div>
                             )}
                             {history.map(record => (
-                                <div key={record._id} style={{ padding: '0.75rem 1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-elevated)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <React.Fragment key={record._id}>
+                                <div style={{ padding: '0.75rem 1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-elevated)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
                                     <div style={{ flex: '1 1 180px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
                                             <strong style={{ fontSize: '0.9rem' }}>{record.customerName}</strong>
@@ -624,8 +626,8 @@ export default function WorkshopPage() {
                                     </div>
                                 </div>
 
-                                {/* ── Inline Edit Panel ── */}
-                                {editingRecord?._id === record._id && (
+                {/* Inline Edit Panel */}
+                {editingRecord?._id === record._id && (
                                     <div style={{ borderTop: '1px solid rgba(245,158,11,0.25)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
                                         <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#f59e0b', marginBottom: '0.75rem' }}>✏️ Edit Bill</div>
 
@@ -777,6 +779,7 @@ export default function WorkshopPage() {
                                         </button>
                                     </div>
                                 )}
+                                </React.Fragment>
                             ))}
                         </div>
                     </div>
