@@ -67,6 +67,12 @@ export default function WorkshopPage() {
     const [showMechanicMgr, setShowMechanicMgr] = useState(false);
     const [newMechanicName, setNewMechanicName] = useState('');
     const [addingMechanic, setAddingMechanic] = useState(false);
+    const [editingRecord, setEditingRecord] = useState<ServiceRecord | null>(null);
+    const [editBillItems, setEditBillItems] = useState<BillItem[]>([]);
+    const [editFields, setEditFields] = useState({ customerName: '', customerMobile: '', bikeNumber: '', mechanicName: '', serviceType: '', serviceCharges: '', description: '' });
+    const [editManualItem, setEditManualItem] = useState({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1', noCost: false });
+    const [editSuggestions, setEditSuggestions] = useState<StockItem[]>([]);
+    const [savingEdit, setSavingEdit] = useState(false);
 
     useEffect(() => {
         fetchHistory();
@@ -157,6 +163,60 @@ export default function WorkshopPage() {
         if (!confirm('Delete this record?')) return;
         await fetch(`/api/workshop/${id}`, { method: 'DELETE' });
         setHistory(history.filter(r => r._id !== id));
+    };
+
+    const startEdit = (record: ServiceRecord) => {
+        setEditingRecord(record);
+        setEditBillItems(record.items ? [...record.items] : []);
+        setEditFields({
+            customerName:   record.customerName || '',
+            customerMobile: record.customerMobile || '',
+            bikeNumber:     record.bikeNumber || '',
+            mechanicName:   (record as any).mechanicName || '',
+            serviceType:    record.serviceType || '',
+            serviceCharges: String(record.serviceCharges || ''),
+            description:    record.description || '',
+        });
+        setEditManualItem({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1', noCost: false });
+    };
+
+    const addEditItem = () => {
+        if (!editManualItem.name || !editManualItem.price) return;
+        setEditBillItems(prev => [...prev, {
+            stockId:       editManualItem.stockId,
+            name:          editManualItem.name,
+            productCode:   editManualItem.productCode,
+            quantity:      Number(editManualItem.qty) || 1,
+            retailPrice:   editManualItem.stockId ? (Number(editManualItem.retailPrice) || 0) : (editManualItem.noCost ? 0 : Number(editManualItem.price)),
+            customerPrice: Number(editManualItem.price),
+        }]);
+        setEditManualItem({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1', noCost: false });
+        setEditSuggestions([]);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingRecord?._id) return;
+        setSavingEdit(true);
+        try {
+            const res = await fetch(`/api/workshop/${editingRecord._id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    editBill: { ...editFields, serviceCharges: Number(editFields.serviceCharges) || 0, items: editBillItems },
+                }),
+            });
+            if (res.ok) {
+                const updated = await res.json();
+                setHistory(prev => prev.map(r => r._id === updated._id ? updated : r));
+                setEditingRecord(null);
+                showToast('Bill updated successfully', 'success');
+            } else {
+                const err = await res.json().catch(() => ({ message: 'Failed' }));
+                showToast(err.message || 'Failed to update', 'error');
+            }
+        } finally {
+            setSavingEdit(false);
+        }
     };
 
     const serviceCharges = Number(formData.serviceCharges) || 0;
@@ -554,10 +614,169 @@ export default function WorkshopPage() {
                                             style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
                                             onClick={() => setPrintingService(record)}>🖨️</button>
                                         <button className="btn"
+                                            style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}
+                                            onClick={() => editingRecord?._id === record._id ? setEditingRecord(null) : startEdit(record)}>
+                                            {editingRecord?._id === record._id ? '✕ Cancel' : '✏️'}
+                                        </button>
+                                        <button className="btn"
                                             style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
                                             onClick={() => deleteRecord(record._id!)}>🗑️</button>
                                     </div>
                                 </div>
+
+                                {/* ── Inline Edit Panel ── */}
+                                {editingRecord?._id === record._id && (
+                                    <div style={{ borderTop: '1px solid rgba(245,158,11,0.25)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
+                                        <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#f59e0b', marginBottom: '0.75rem' }}>✏️ Edit Bill</div>
+
+                                        {/* Basic fields */}
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                            {([
+                                                ['Customer Name', 'customerName'],
+                                                ['Mobile', 'customerMobile'],
+                                                ['Bike Number', 'bikeNumber'],
+                                            ] as [string, keyof typeof editFields][]).map(([label, key]) => (
+                                                <div key={key} className="form-group" style={{ margin: 0 }}>
+                                                    <label className="label" style={{ fontSize: '0.7rem' }}>{label}</label>
+                                                    <input className="input" style={{ fontSize: '0.8rem', padding: '0.35rem 0.5rem' }}
+                                                        value={editFields[key]}
+                                                        onChange={e => setEditFields({ ...editFields, [key]: e.target.value })} />
+                                                </div>
+                                            ))}
+                                            <div className="form-group" style={{ margin: 0 }}>
+                                                <label className="label" style={{ fontSize: '0.7rem' }}>Mechanic</label>
+                                                <select className="select" style={{ fontSize: '0.8rem', padding: '0.35rem 0.5rem' }}
+                                                    value={editFields.mechanicName}
+                                                    onChange={e => setEditFields({ ...editFields, mechanicName: e.target.value })}>
+                                                    <option value="">— Select —</option>
+                                                    {mechanics.map(m => <option key={m._id} value={m.name}>{m.name}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="form-group" style={{ margin: 0 }}>
+                                                <label className="label" style={{ fontSize: '0.7rem' }}>Service Type</label>
+                                                <select className="select" style={{ fontSize: '0.8rem', padding: '0.35rem 0.5rem' }}
+                                                    value={editFields.serviceType}
+                                                    onChange={e => setEditFields({ ...editFields, serviceType: e.target.value })}>
+                                                    {['First Service','Second Service','Third Service','Tuning','Oil','Repair','Washing','Other'].map(t => (
+                                                        <option key={t} value={t}>{t}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="form-group" style={{ margin: 0 }}>
+                                                <label className="label" style={{ fontSize: '0.7rem' }}>Service Charges (Rs.)</label>
+                                                <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.8rem', padding: '0.35rem 0.5rem' }}
+                                                    value={editFields.serviceCharges}
+                                                    onChange={e => setEditFields({ ...editFields, serviceCharges: e.target.value })} />
+                                            </div>
+                                        </div>
+
+                                        {/* Notes */}
+                                        <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                                            <label className="label" style={{ fontSize: '0.7rem' }}>Notes</label>
+                                            <textarea className="input" style={{ fontSize: '0.8rem', minHeight: '48px' }}
+                                                value={editFields.description}
+                                                onChange={e => setEditFields({ ...editFields, description: e.target.value })} />
+                                        </div>
+
+                                        {/* Parts / items */}
+                                        <div style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: '0.4rem' }}>PARTS / ITEMS</div>
+
+                                        {/* Current items table */}
+                                        {editBillItems.length > 0 && (
+                                            <table style={{ width: '100%', fontSize: '0.78rem', borderCollapse: 'collapse', marginBottom: '0.5rem' }}>
+                                                <thead>
+                                                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                                        <th style={{ textAlign: 'left', padding: '3px 5px' }}>Item</th>
+                                                        <th style={{ textAlign: 'right', padding: '3px 5px' }}>Qty</th>
+                                                        <th style={{ textAlign: 'right', padding: '3px 5px' }}>Price</th>
+                                                        <th style={{ textAlign: 'right', padding: '3px 5px' }}>Total</th>
+                                                        <th></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {editBillItems.map((item, idx) => (
+                                                        <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                            <td style={{ padding: '3px 5px' }}>{item.name}{item.productCode && <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginLeft: '4px' }}>{item.productCode}</span>}</td>
+                                                            <td style={{ textAlign: 'right', padding: '3px 5px' }}>
+                                                                <input type="number" min="1" style={{ width: '48px', fontSize: '0.78rem', textAlign: 'right', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '1px 4px', color: 'inherit' }}
+                                                                    value={item.quantity}
+                                                                    onChange={e => setEditBillItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: Number(e.target.value) || 1 } : it))} />
+                                                            </td>
+                                                            <td style={{ textAlign: 'right', padding: '3px 5px' }}>Rs.{item.customerPrice.toLocaleString()}</td>
+                                                            <td style={{ textAlign: 'right', padding: '3px 5px' }}>Rs.{(item.customerPrice * item.quantity).toLocaleString()}</td>
+                                                            <td style={{ textAlign: 'right', padding: '3px 5px' }}>
+                                                                <button type="button" onClick={() => setEditBillItems(prev => prev.filter((_, i) => i !== idx))}
+                                                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700 }}>✕</button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        )}
+
+                                        {/* Add item row */}
+                                        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '0.75rem', padding: '0.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '6px' }}>
+                                            <div style={{ flex: 2, minWidth: '140px', position: 'relative' }}>
+                                                <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginBottom: '2px' }}>Item Name</div>
+                                                <input className="input" style={{ fontSize: '0.78rem', padding: '0.3rem 0.5rem' }}
+                                                    placeholder="Search or type..."
+                                                    value={editManualItem.name}
+                                                    onChange={e => {
+                                                        const q = e.target.value;
+                                                        setEditManualItem({ ...editManualItem, name: q, stockId: '', productCode: '', retailPrice: '' });
+                                                        if (q.trim().length > 1) {
+                                                            setEditSuggestions(stockList.filter(s => s.name.toLowerCase().includes(q.toLowerCase()) || s.productCode?.toLowerCase().includes(q.toLowerCase())).slice(0, 8));
+                                                        } else { setEditSuggestions([]); }
+                                                    }} />
+                                                {editSuggestions.length > 0 && (
+                                                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 60, background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: '6px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)', maxHeight: '160px', overflowY: 'auto' }}>
+                                                        {editSuggestions.map(s => (
+                                                            <div key={s._id} onMouseDown={() => {
+                                                                setEditManualItem({ stockId: s._id, name: s.name, productCode: s.productCode ?? '', price: String(s.customerPrice), retailPrice: String(s.retailPrice), qty: '1', noCost: false });
+                                                                setEditSuggestions([]);
+                                                            }} style={{ padding: '0.4rem 0.6rem', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between' }}>
+                                                                <span style={{ fontSize: '0.8rem' }}>{s.name}{s.productCode && <span style={{ color: 'var(--color-text-muted)', marginLeft: '4px', fontSize: '0.7rem' }}>{s.productCode}</span>}</span>
+                                                                <span style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: 700 }}>Rs.{s.customerPrice.toLocaleString()}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div style={{ width: '72px' }}>
+                                                <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginBottom: '2px' }}>Price</div>
+                                                <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.78rem', padding: '0.3rem 0.5rem' }}
+                                                    value={editManualItem.price} placeholder="Price"
+                                                    onChange={e => setEditManualItem({ ...editManualItem, price: e.target.value })} />
+                                            </div>
+                                            <div style={{ width: '48px' }}>
+                                                <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginBottom: '2px' }}>Qty</div>
+                                                <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.78rem', padding: '0.3rem 0.5rem' }}
+                                                    value={editManualItem.qty}
+                                                    onChange={e => setEditManualItem({ ...editManualItem, qty: e.target.value })} />
+                                            </div>
+                                            <button type="button" className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.35rem 0.6rem' }}
+                                                disabled={!editManualItem.name || !editManualItem.price}
+                                                onClick={addEditItem}>+ Add</button>
+                                        </div>
+
+                                        {/* Edit summary */}
+                                        {(() => {
+                                            const sc = Number(editFields.serviceCharges) || 0;
+                                            const pt = editBillItems.reduce((s, i) => s + i.customerPrice * i.quantity, 0);
+                                            return (
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: 700, padding: '0.4rem 0.6rem', background: 'rgba(245,158,11,0.07)', borderRadius: '6px', marginBottom: '0.75rem' }}>
+                                                    <span>New Total</span>
+                                                    <span style={{ color: '#f59e0b' }}>Rs. {(sc + pt).toLocaleString()}</span>
+                                                </div>
+                                            );
+                                        })()}
+
+                                        <button className="btn btn-primary" style={{ fontSize: '0.8rem' }}
+                                            disabled={savingEdit} onClick={handleSaveEdit}>
+                                            {savingEdit ? 'Saving...' : '✅ Save Changes'}
+                                        </button>
+                                    </div>
+                                )}
                             ))}
                         </div>
                     </div>

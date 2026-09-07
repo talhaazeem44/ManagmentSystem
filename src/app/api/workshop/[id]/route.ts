@@ -1,13 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import { ServiceSale } from '@/models';
+import { ServiceSale, WorkshopStock } from '@/models';
 import { resolveTransactionDate } from '@/lib/dates';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         await connectDB();
         const { id } = await params;
-        const { addPayment, removePaymentIndex, editCredit } = await request.json();
+        const body = await request.json();
+        const { addPayment, removePaymentIndex, editCredit, editBill } = body;
+
+        // ── Full bill edit: update items, service charges, customer fields ──────
+        if (editBill) {
+            const existing = await ServiceSale.findById(id);
+            if (!existing) return NextResponse.json({ message: 'Not found' }, { status: 404 });
+
+            const items = (editBill.items || []).map((item: any) => {
+                if (!item.stockId) { const { stockId, ...rest } = item; return rest; }
+                return item;
+            });
+            const serviceCharges = Number(editBill.serviceCharges) || 0;
+            const itemsTotal = items.reduce((s: number, i: any) => s + i.customerPrice * i.quantity, 0);
+            const totalCost   = items.reduce((s: number, i: any) => s + i.retailPrice  * i.quantity, 0);
+            const totalAmount = serviceCharges + itemsTotal;
+            const margin      = totalAmount - totalCost;
+
+            // Recalculate balance: keep existing payments, subtract from new total
+            const totalPaid = (existing.payments || []).reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+            const balance = existing.paymentMode === 'CREDIT' ? Math.max(0, totalAmount - totalPaid) : 0;
+
+            // Diff stock: restore old items qty, deduct new items qty
+            const oldItems: any[] = existing.items || [];
+            for (const old of oldItems) {
+                if (old.stockId) {
+                    await WorkshopStock.findByIdAndUpdate(old.stockId, { $inc: { quantity: old.quantity } });
+                }
+            }
+            for (const item of items) {
+                if (item.stockId) {
+                    await WorkshopStock.findByIdAndUpdate(item.stockId, { $inc: { quantity: -item.quantity } });
+                }
+            }
+
+            const updated = await ServiceSale.findByIdAndUpdate(id, {
+                $set: {
+                    customerName:   editBill.customerName   ?? existing.customerName,
+                    customerMobile: editBill.customerMobile ?? existing.customerMobile,
+                    bikeNumber:     editBill.bikeNumber     ?? existing.bikeNumber,
+                    mechanicName:   editBill.mechanicName   ?? existing.mechanicName,
+                    serviceType:    editBill.serviceType    ?? existing.serviceType,
+                    description:    editBill.description    ?? existing.description,
+                    serviceCharges, items, totalAmount, totalCost, margin, balance,
+                },
+            }, { new: true });
+            return NextResponse.json(updated);
+        }
+
 
         // Direct correction of a credit bill's amounts (e.g. a discount was agreed after
         // billing, or the wrong total/balance was recorded) — sets totalAmount and balance
