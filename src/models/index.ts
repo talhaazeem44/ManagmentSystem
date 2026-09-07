@@ -497,3 +497,51 @@ const UsedBikeSchema = new Schema<IUsedBike>({
 }, { timestamps: true });
 
 export const UsedBike: Model<IUsedBike> = models.UsedBike || mongoose.model<IUsedBike>('UsedBike', UsedBikeSchema);
+
+// ── FBR Digital Invoice ───────────────────────────────────────────────────────
+// One record per invoice sent (or attempted) to FBR's Digital Invoicing system.
+export type FbrSourceType = 'SALE' | 'SERVICE_SALE';
+export type FbrStatus = 'PENDING' | 'VALID' | 'INVALID';
+
+export interface IFbrInvoice {
+    _id?: string;
+    sourceType: FbrSourceType;
+    sourceId: mongoose.Types.ObjectId | string;
+    localInvoiceNumber: string;      // our own receipt/invoice number
+    mode: 'sandbox' | 'production';
+    status: FbrStatus;
+    fbrInvoiceNumber?: string;       // IRN returned by FBR
+    fbrDated?: string;
+    error?: string;
+    attempts: number;
+    payload?: unknown;               // exact JSON sent, for audit/retry
+    response?: unknown;              // exact JSON received
+    submittedAt?: Date;
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+const FbrInvoiceSchema = new Schema<IFbrInvoice>({
+    sourceType: { type: String, enum: ['SALE', 'SERVICE_SALE'], required: true },
+    sourceId: { type: Schema.Types.ObjectId, required: true },
+    localInvoiceNumber: { type: String, required: true },
+    mode: { type: String, enum: ['sandbox', 'production'], required: true },
+    status: { type: String, enum: ['PENDING', 'VALID', 'INVALID'], default: 'PENDING' },
+    fbrInvoiceNumber: { type: String },
+    fbrDated: { type: String },
+    error: { type: String },
+    attempts: { type: Number, default: 0 },
+    payload: { type: Schema.Types.Mixed },
+    response: { type: Schema.Types.Mixed },
+    submittedAt: { type: Date },
+}, { timestamps: true });
+
+// A source document may be retried, but only one VALID invoice may exist per
+// source in a given mode — that's the IRN of record.
+FbrInvoiceSchema.index(
+    { sourceType: 1, sourceId: 1, mode: 1 },
+    { unique: true, partialFilterExpression: { status: 'VALID' } }
+);
+FbrInvoiceSchema.index({ status: 1, createdAt: -1 });
+
+export const FbrInvoice: Model<IFbrInvoice> = models.FbrInvoice || mongoose.model<IFbrInvoice>('FbrInvoice', FbrInvoiceSchema);

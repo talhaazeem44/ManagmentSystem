@@ -26,6 +26,7 @@ export default function DashboardLayout({
         { href: '/expenses', label: 'Expenses', icon: '💸' },
         { href: '/khata', label: 'Khata', icon: '📒' },
         { href: '/used-bikes', label: 'Used Bikes', icon: '🔁' },
+        { href: '/fbr', label: 'FBR Invoicing', icon: '🧾' },
     ];
 
     const workshopNavItems = [

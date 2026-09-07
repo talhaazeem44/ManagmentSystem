@@ -21,6 +21,12 @@ interface SaleReceiptProps {
                 date: string;
             }
         };
+        fbr?: {
+            invoiceNumber: string;
+            dated?: string;
+            mode: 'sandbox' | 'production';
+            qrDataUrl: string;
+        } | null;
         customer: {
             name: string;
             fatherName: string;
@@ -181,6 +187,23 @@ const SaleReceipt: React.FC<SaleReceiptProps> = ({ sale }) => {
                     font-size: 0.9rem;
                 }
 
+                .fbr-stamp {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    border: 1px solid black;
+                    padding: 8px;
+                    margin-top: 20px;
+                    font-size: 0.75rem;
+                    line-height: 1.4;
+                }
+
+                .fbr-stamp img {
+                    width: 20mm;
+                    height: 20mm;
+                    flex-shrink: 0;
+                }
+
                 .urdu-note {
                     direction: rtl;
                     font-size: 0.9rem;
@@ -280,6 +303,21 @@ const SaleReceipt: React.FC<SaleReceiptProps> = ({ sale }) => {
                     </div>
                 ) : null}
             </div>
+
+            {sale.fbr && (
+                <div className="fbr-stamp">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={sale.fbr.qrDataUrl} alt="FBR invoice QR" />
+                    <div>
+                        <div style={{ fontWeight: 700 }}>FBR Digital Invoice</div>
+                        <div>IRN: <strong>{sale.fbr.invoiceNumber}</strong></div>
+                        {sale.fbr.dated && <div>Dated: {sale.fbr.dated}</div>}
+                        {sale.fbr.mode === 'sandbox' && (
+                            <div style={{ fontStyle: 'italic' }}>SANDBOX — not a live FBR invoice</div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             <div className="urdu-note">
                 نوٹ: یہ رسید رجسٹریشن کیلئے استعمال نہیں ہو سکتی۔ اصل کاغذات کے حصول کیلئے یہ رسید اور اصل شناختی کارڈ ضرور لائیں۔ نیز موٹر سائیکل کی تاریخ خرید اور گاہک کا نام تبدیل نہ ہوگا۔

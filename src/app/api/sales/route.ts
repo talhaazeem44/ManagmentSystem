@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Sale, Bike, Customer, DeliveryOrder, Counter } from '@/models';
+import { submitToFbrInBackground } from '@/lib/fbrSubmit';
 
 export async function POST(request: NextRequest) {
     try {
@@ -95,6 +96,11 @@ export async function POST(request: NextRequest) {
         // Update bike status
         bike.status = 'SOLD';
         await bike.save();
+
+        // Report to FBR Digital Invoicing. Deliberately not awaited: an FBR
+        // outage must never block recording the sale — failures land on /fbr
+        // for retry.
+        void submitToFbrInBackground('SALE', sale._id.toString());
 
         // Fetch related data for response
         const deliveryOrder = await DeliveryOrder.findById(bike.deliveryOrderId);

@@ -64,6 +64,12 @@ interface Sale {
         chassisNumber: string;
         deliveryOrder: { doNumber: string };
     };
+    fbr?: {
+        invoiceNumber: string;
+        dated?: string;
+        mode: 'sandbox' | 'production';
+        qrDataUrl: string;
+    } | null;
     customer: {
         name: string;
         cnic: string;
@@ -491,6 +497,25 @@ export default function ReceiptPage() {
                     <div className={styles.urduBox}>
                         <p className={styles.urduText}>نوٹ: یہ رسید رجسٹریشن کیلئے استعمال نہیں ہو سکتی۔ اصل کاغذات کے حصول کیلئے یہ رسید اور اصل شناختی کارڈ ضرور لائیں۔ نیز موٹر سائیکل کی تاریخ خرید اور گاہک کا نام تبدیل نہ ہوگا۔</p>
                     </div>
+
+                    {sale.fbr && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.5rem', border: '1px solid #000', padding: '0.4rem 0.5rem' }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src={sale.fbr.qrDataUrl}
+                                alt="FBR invoice QR"
+                                style={{ width: '20mm', height: '20mm', flexShrink: 0 }}
+                            />
+                            <div style={{ fontSize: '0.72rem', lineHeight: 1.4 }}>
+                                <div style={{ fontWeight: 700 }}>FBR Digital Invoice</div>
+                                <div>IRN: <strong>{sale.fbr.invoiceNumber}</strong></div>
+                                {sale.fbr.dated && <div>Dated: {sale.fbr.dated}</div>}
+                                {sale.fbr.mode === 'sandbox' && (
+                                    <div style={{ fontStyle: 'italic' }}>SANDBOX — not a live FBR invoice</div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     <div className={styles.footer}>
                         <div className={styles.dealerInfo}>
