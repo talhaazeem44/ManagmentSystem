@@ -303,12 +303,17 @@ const CounterSchema = new Schema<ICounter>({
 export const Counter: Model<ICounter> = models.Counter || mongoose.model<ICounter>('Counter', CounterSchema);
 
 // ── Expense ───────────────────────────────────────────────────────────────────
+export type PaymentMode = 'CASH' | 'BANK_TRANSFER';
+
 export interface IExpense {
     _id?: string;
     amount: number;
     description: string;
     category: string;
     deductFrom: 'MARGIN' | 'CASH' | 'WORKSHOP';
+    // How the money actually left. Only collected for WORKSHOP expenses today,
+    // so older records have none — treat a missing value as CASH.
+    paymentMode?: PaymentMode;
     date: Date;
     createdAt?: Date;
 }
@@ -318,6 +323,7 @@ const ExpenseSchema = new Schema<IExpense>({
     description: { type: String, required: true },
     category: { type: String, default: 'Other' },
     deductFrom: { type: String, enum: ['MARGIN', 'CASH', 'WORKSHOP'], required: true },
+    paymentMode: { type: String, enum: ['CASH', 'BANK_TRANSFER'] },
     date: { type: Date, default: Date.now },
 }, { timestamps: true });
 
@@ -374,6 +380,9 @@ export interface IWorkshopDeposit {
     _id?: string;
     amount: number;
     note?: string;
+    // How the money came in. Records created before this field existed have
+    // none, and are counted as CASH.
+    paymentMode?: PaymentMode;
     date: Date;
     createdAt?: Date;
 }
@@ -381,6 +390,7 @@ export interface IWorkshopDeposit {
 const WorkshopDepositSchema = new Schema<IWorkshopDeposit>({
     amount: { type: Number, required: true },
     note: { type: String },
+    paymentMode: { type: String, enum: ['CASH', 'BANK_TRANSFER'] },
     date: { type: Date, default: Date.now },
 }, { timestamps: true });
 

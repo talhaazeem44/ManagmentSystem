@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         await dbConnect();
-        const { amount, note, date } = await request.json();
+        const { amount, note, paymentMode, date } = await request.json();
 
         if (!amount || Number(amount) <= 0) {
             return NextResponse.json({ message: 'Amount is required' }, { status: 400 });
@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
         const deposit = await WorkshopDeposit.create({
             amount: Number(amount),
             note: note || '',
+            paymentMode: paymentMode === 'BANK_TRANSFER' ? 'BANK_TRANSFER' : 'CASH',
             date: resolveTransactionDate(date),
         });
 
