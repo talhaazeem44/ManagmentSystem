@@ -12,6 +12,7 @@ interface Expense {
     description: string;
     category: string;
     deductFrom: 'MARGIN' | 'CASH' | 'WORKSHOP';
+    paymentMode?: 'CASH' | 'BANK_TRANSFER';
     date: string;
 }
 
@@ -34,6 +35,9 @@ const emptyForm = {
     description: '',
     category: 'Petrol',
     deductFrom: 'CASH' as 'MARGIN' | 'CASH' | 'WORKSHOP',
+    // Only sent for WORKSHOP expenses — the workshop tracker needs to know
+    // whether the money left the drawer or the bank.
+    paymentMode: 'CASH' as 'CASH' | 'BANK_TRANSFER',
     date: '',
 };
 
@@ -240,6 +244,16 @@ export default function ExpensesPage() {
                                     <option value="WORKSHOP">Workshop</option>
                                 </select>
                             </div>
+                            {form.deductFrom === 'WORKSHOP' && (
+                                <div className="form-group">
+                                    <label className="label">Payment Mode *</label>
+                                    <select className="select" value={form.paymentMode}
+                                        onChange={e => setForm({ ...form, paymentMode: e.target.value as 'CASH' | 'BANK_TRANSFER' })}>
+                                        <option value="CASH">Paid by Cash</option>
+                                        <option value="BANK_TRANSFER">Paid by Bank Transfer</option>
+                                    </select>
+                                </div>
+                            )}
                             <div className="form-group">
                                 <label className="label">Date</label>
                                 <input type="date" className="input" value={form.date}
@@ -295,6 +309,9 @@ export default function ExpensesPage() {
                                                         color: exp.deductFrom === 'CASH' ? '#ef4444' : exp.deductFrom === 'WORKSHOP' ? '#8b5cf6' : '#f59e0b' }}>
                                                         -{exp.deductFrom}
                                                     </span>
+                                                    {exp.deductFrom === 'WORKSHOP' && (
+                                                        <span>{exp.paymentMode === 'BANK_TRANSFER' ? '🏦 Bank' : '💵 Cash'}</span>
+                                                    )}
                                                 </div>
                                                 {isConfirming && <div style={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: 600, marginTop: '0.3rem' }}>Delete this expense?</div>}
                                             </div>

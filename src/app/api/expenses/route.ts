@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         await dbConnect();
-        const { amount, description, category, deductFrom, date } = await request.json();
+        const { amount, description, category, deductFrom, paymentMode, date } = await request.json();
 
         if (!amount || !description || !deductFrom) {
             return NextResponse.json({ message: 'Amount, description and deduct from are required' }, { status: 400 });
@@ -44,11 +44,16 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
         }
 
+        // Payment mode is only meaningful for workshop expenses, where the tracker
+        // has to separate money out of the drawer from money out of the bank.
         const expense = await Expense.create({
             amount: Number(amount),
             description,
             category: category || 'Other',
             deductFrom,
+            paymentMode: deductFrom === 'WORKSHOP'
+                ? (paymentMode === 'BANK_TRANSFER' ? 'BANK_TRANSFER' : 'CASH')
+                : undefined,
             date: resolveTransactionDate(date),
         });
 

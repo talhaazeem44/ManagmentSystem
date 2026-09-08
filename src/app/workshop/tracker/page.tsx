@@ -5,10 +5,13 @@ import DashboardLayout from '@/components/DashboardLayout';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 
+type PaymentMode = 'CASH' | 'BANK_TRANSFER';
+
 interface DepositRecord {
     _id: string;
     amount: number;
     note?: string;
+    paymentMode?: PaymentMode;
     date: string;
 }
 
@@ -16,15 +19,20 @@ interface ExpenseRecord {
     _id: string;
     amount: number;
     description: string;
+    paymentMode?: PaymentMode;
     date: string;
 }
+
+/** Entries saved before payment mode existed are cash — that is what they were. */
+const isBank = (r: { paymentMode?: PaymentMode }) => r.paymentMode === 'BANK_TRANSFER';
+const sum = (rows: { amount: number }[]) => rows.reduce((s, r) => s + r.amount, 0);
 
 export default function WorkshopTrackerPage() {
     const { toasts, showToast, removeToast } = useToast();
     const [deposits, setDeposits] = useState<DepositRecord[]>([]);
     const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
-    const [depositForm, setDepositForm] = useState({ amount: '', note: '', date: new Date().toISOString().split('T')[0] });
-    const [expenseForm, setExpenseForm] = useState({ amount: '', description: '', date: new Date().toISOString().split('T')[0] });
+    const [depositForm, setDepositForm] = useState({ amount: '', note: '', paymentMode: 'CASH' as PaymentMode, date: new Date().toISOString().split('T')[0] });
+    const [expenseForm, setExpenseForm] = useState({ amount: '', description: '', paymentMode: 'CASH' as PaymentMode, date: new Date().toISOString().split('T')[0] });
     const [savingDeposit, setSavingDeposit] = useState(false);
     const [savingExpense, setSavingExpense] = useState(false);
     const [trackerMonth, setTrackerMonth] = useState(() => {
@@ -67,11 +75,11 @@ export default function WorkshopTrackerPage() {
             const res = await fetch('/api/workshop/deposits', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: Number(depositForm.amount), note: depositForm.note, date: depositForm.date }),
+                body: JSON.stringify({ amount: Number(depositForm.amount), note: depositForm.note, paymentMode: depositForm.paymentMode, date: depositForm.date }),
             });
             if (res.ok) {
                 showToast('Deposit saved', 'success');
-                setDepositForm({ amount: '', note: '', date: new Date().toISOString().split('T')[0] });
+                setDepositForm({ amount: '', note: '', paymentMode: 'CASH', date: new Date().toISOString().split('T')[0] });
                 await fetchTrackerData();
             } else {
                 const err = await res.json().catch(() => ({ message: `Failed to save deposit (HTTP ${res.status})` }));
@@ -91,11 +99,11 @@ export default function WorkshopTrackerPage() {
             const res = await fetch('/api/expenses', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: Number(expenseForm.amount), description: expenseForm.description, deductFrom: 'WORKSHOP', date: expenseForm.date }),
+                body: JSON.stringify({ amount: Number(expenseForm.amount), description: expenseForm.description, deductFrom: 'WORKSHOP', paymentMode: expenseForm.paymentMode, date: expenseForm.date }),
             });
             if (res.ok) {
                 showToast('Expense saved', 'success');
-                setExpenseForm({ amount: '', description: '', date: new Date().toISOString().split('T')[0] });
+                setExpenseForm({ amount: '', description: '', paymentMode: 'CASH', date: new Date().toISOString().split('T')[0] });
                 await fetchTrackerData();
             } else {
                 const err = await res.json().catch(() => ({ message: `Failed to save expense (HTTP ${res.status})` }));
@@ -119,14 +127,25 @@ export default function WorkshopTrackerPage() {
         fetchTrackerData();
     };
 
-    const totalDeposits = deposits.reduce((s, d) => s + d.amount, 0);
-    const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-    const netCash = totalDeposits - totalExpenses;
+    const totalDeposits = sum(deposits);
+    const totalExpenses = sum(expenses);
+
+    // Cash and bank are tracked apart: a bank-transfer expense never leaves the
+    // drawer, so counting it against cash would understate what is actually there.
+    const cashIn = sum(deposits.filter(d => !isBank(d)));
+    const bankIn = sum(deposits.filter(isBank));
+    const cashOut = sum(expenses.filter(e => !isBank(e)));
+    const bankOut = sum(expenses.filter(isBank));
+
+    const netCash = cashIn - cashOut;          // physical cash in hand
+    const netBank = bankIn - bankOut;          // money through the bank
+    const netTotal = totalDeposits - totalExpenses;
+
     const monthLabel = new Date(trackerMonth + '-01').toLocaleDateString('en-PK', { month: 'long', year: 'numeric' });
 
-    const trackerLog: { id: string; type: 'deposit' | 'expense'; amount: number; label: string; date: string }[] = [
-        ...deposits.map(d => ({ id: d._id, type: 'deposit' as const, amount: d.amount, label: d.note || 'Daily Sale', date: d.date })),
-        ...expenses.map(e => ({ id: e._id, type: 'expense' as const, amount: e.amount, label: e.description, date: e.date })),
+    const trackerLog: { id: string; type: 'deposit' | 'expense'; amount: number; label: string; bank: boolean; date: string }[] = [
+        ...deposits.map(d => ({ id: d._id, type: 'deposit' as const, amount: d.amount, label: d.note || 'Daily Sale', bank: isBank(d), date: d.date })),
+        ...expenses.map(e => ({ id: e._id, type: 'expense' as const, amount: e.amount, label: e.description, bank: isBank(e), date: e.date })),
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     return (
@@ -143,19 +162,29 @@ export default function WorkshopTrackerPage() {
                     />
                 </div>
 
-                {/* Summary Cards */}
+                {/* Summary Cards — each total is split into what moved as cash
+                    and what moved through the bank. */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
                     <div className="card" style={{ padding: '1.25rem', textAlign: 'center', borderLeft: '4px solid #10b981' }}>
                         <div style={{ fontSize: '0.7rem', color: '#10b981', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>{monthLabel} — Deposits</div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981' }}>Rs. {totalDeposits.toLocaleString()}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
+                            Cash {cashIn.toLocaleString()} · Bank {bankIn.toLocaleString()}
+                        </div>
                     </div>
                     <div className="card" style={{ padding: '1.25rem', textAlign: 'center', borderLeft: '4px solid #ef4444' }}>
                         <div style={{ fontSize: '0.7rem', color: '#ef4444', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>Expenses</div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ef4444' }}>− Rs. {totalExpenses.toLocaleString()}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
+                            Cash {cashOut.toLocaleString()} · Bank {bankOut.toLocaleString()}
+                        </div>
                     </div>
                     <div className="card" style={{ padding: '1.25rem', textAlign: 'center', borderLeft: `4px solid ${netCash >= 0 ? '#3b82f6' : '#ef4444'}` }}>
-                        <div style={{ fontSize: '0.7rem', color: netCash >= 0 ? '#3b82f6' : '#ef4444', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>Net Cash</div>
+                        <div style={{ fontSize: '0.7rem', color: netCash >= 0 ? '#3b82f6' : '#ef4444', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>Cash in Hand</div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 800, color: netCash >= 0 ? '#3b82f6' : '#ef4444' }}>Rs. {netCash.toLocaleString()}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
+                            Bank {netBank.toLocaleString()} · Total {netTotal.toLocaleString()}
+                        </div>
                     </div>
                 </div>
 
@@ -171,6 +200,11 @@ export default function WorkshopTrackerPage() {
                                 <input type="text" className="input" placeholder="Note (optional)"
                                     value={depositForm.note}
                                     onChange={e => setDepositForm({ ...depositForm, note: e.target.value })} />
+                                <select className="select" value={depositForm.paymentMode}
+                                    onChange={e => setDepositForm({ ...depositForm, paymentMode: e.target.value as PaymentMode })}>
+                                    <option value="CASH">Cash</option>
+                                    <option value="BANK_TRANSFER">Bank Transfer</option>
+                                </select>
                                 <input type="date" className="input"
                                     value={depositForm.date}
                                     onChange={e => setDepositForm({ ...depositForm, date: e.target.value })} />
@@ -190,6 +224,11 @@ export default function WorkshopTrackerPage() {
                                 <input type="text" className="input" placeholder="Description (e.g. Oil purchased)" required
                                     value={expenseForm.description}
                                     onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })} />
+                                <select className="select" value={expenseForm.paymentMode}
+                                    onChange={e => setExpenseForm({ ...expenseForm, paymentMode: e.target.value as PaymentMode })}>
+                                    <option value="CASH">Paid by Cash</option>
+                                    <option value="BANK_TRANSFER">Paid by Bank Transfer</option>
+                                </select>
                                 <input type="date" className="input"
                                     value={expenseForm.date}
                                     onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })} />
@@ -217,6 +256,7 @@ export default function WorkshopTrackerPage() {
                                             <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
                                                 {new Date(entry.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}
                                                 {' · '}{entry.type === 'deposit' ? 'Sale' : 'Expense'}
+                                                {' · '}{entry.bank ? '🏦 Bank' : '💵 Cash'}
                                             </div>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

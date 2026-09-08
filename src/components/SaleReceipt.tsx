@@ -198,9 +198,10 @@ const SaleReceipt: React.FC<SaleReceiptProps> = ({ sale }) => {
                     line-height: 1.4;
                 }
 
+                /* FBR DI API v1.12 §6: QR must print at 1.0 x 1.0 inch */
                 .fbr-stamp img {
-                    width: 20mm;
-                    height: 20mm;
+                    width: 1in;
+                    height: 1in;
                     flex-shrink: 0;
                 }
 

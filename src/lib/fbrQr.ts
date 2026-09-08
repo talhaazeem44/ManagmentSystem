@@ -14,12 +14,18 @@ export interface FbrStamp {
     qrDataUrl: string;
 }
 
-/** Renders the IRN as a PNG data URL sized for a 7x7mm print at ~300dpi. */
+/**
+ * Renders the IRN as a PNG data URL. FBR's spec (DI API v1.12 §6) requires
+ * QR version 2.0 (a 25x25 module grid) printed at 1.0 x 1.0 inch. At level M
+ * the encoder already picks version 2 for a ~27 character IRN, so the size is
+ * correct without pinning it. 300px keeps it crisp at 1 inch on a 300dpi
+ * receipt printer.
+ */
 export async function irnQrDataUrl(invoiceNumber: string): Promise<string> {
     return QRCode.toDataURL(invoiceNumber, {
         errorCorrectionLevel: 'M',
         margin: 1,
-        width: 256,
+        width: 300,
         color: { dark: '#000000', light: '#ffffff' },
     });
 }

@@ -545,7 +545,8 @@ export default function ReceiptPage() {
                             <img
                                 src={sale.fbr.qrDataUrl}
                                 alt="FBR invoice QR"
-                                style={{ width: '20mm', height: '20mm', flexShrink: 0 }}
+                                /* FBR DI API v1.12 §6: 1.0 x 1.0 inch */
+                                style={{ width: '1in', height: '1in', flexShrink: 0 }}
                             />
                             <div style={{ fontSize: '0.72rem', lineHeight: 1.4 }}>
                                 <div style={{ fontWeight: 700 }}>FBR Digital Invoice</div>
