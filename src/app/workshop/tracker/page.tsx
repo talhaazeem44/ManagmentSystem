@@ -162,30 +162,47 @@ export default function WorkshopTrackerPage() {
                     />
                 </div>
 
-                {/* Summary Cards — each total is split into what moved as cash
-                    and what moved through the bank. */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+                {/* Summary Cards — cash and bank are kept on separate cards so the
+                    drawer figure is never mixed with money that moved by transfer. */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                     <div className="card" style={{ padding: '1.25rem', textAlign: 'center', borderLeft: '4px solid #10b981' }}>
                         <div style={{ fontSize: '0.7rem', color: '#10b981', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>{monthLabel} — Deposits</div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981' }}>Rs. {totalDeposits.toLocaleString()}</div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
-                            Cash {cashIn.toLocaleString()} · Bank {bankIn.toLocaleString()}
+                            💵 {cashIn.toLocaleString()} · 🏦 {bankIn.toLocaleString()}
                         </div>
                     </div>
                     <div className="card" style={{ padding: '1.25rem', textAlign: 'center', borderLeft: '4px solid #ef4444' }}>
                         <div style={{ fontSize: '0.7rem', color: '#ef4444', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>Expenses</div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ef4444' }}>− Rs. {totalExpenses.toLocaleString()}</div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
-                            Cash {cashOut.toLocaleString()} · Bank {bankOut.toLocaleString()}
+                            💵 {cashOut.toLocaleString()} · 🏦 {bankOut.toLocaleString()}
                         </div>
                     </div>
                     <div className="card" style={{ padding: '1.25rem', textAlign: 'center', borderLeft: `4px solid ${netCash >= 0 ? '#3b82f6' : '#ef4444'}` }}>
-                        <div style={{ fontSize: '0.7rem', color: netCash >= 0 ? '#3b82f6' : '#ef4444', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>Cash in Hand</div>
+                        <div style={{ fontSize: '0.7rem', color: netCash >= 0 ? '#3b82f6' : '#ef4444', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>💵 Cash in Hand</div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 800, color: netCash >= 0 ? '#3b82f6' : '#ef4444' }}>Rs. {netCash.toLocaleString()}</div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
-                            Bank {netBank.toLocaleString()} · Total {netTotal.toLocaleString()}
+                            In {cashIn.toLocaleString()} · Out {cashOut.toLocaleString()}
                         </div>
                     </div>
+                    <div className="card" style={{ padding: '1.25rem', textAlign: 'center', borderLeft: `4px solid ${netBank >= 0 ? '#8b5cf6' : '#ef4444'}` }}>
+                        <div style={{ fontSize: '0.7rem', color: netBank >= 0 ? '#8b5cf6' : '#ef4444', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>🏦 Bank</div>
+                        <div style={{ fontSize: '1.75rem', fontWeight: 800, color: netBank >= 0 ? '#8b5cf6' : '#ef4444' }}>Rs. {netBank.toLocaleString()}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
+                            In {bankIn.toLocaleString()} · Out {bankOut.toLocaleString()}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Cash + bank together — the figure the old "Net Cash" card used to show */}
+                <div className="card" style={{ padding: '0.85rem 1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                        Total Balance (Cash + Bank)
+                    </span>
+                    <span style={{ fontSize: '1.15rem', fontWeight: 800, color: netTotal >= 0 ? '#10b981' : '#ef4444' }}>
+                        Rs. {netTotal.toLocaleString()}
+                    </span>
                 </div>
 
                 <div className="grid-2" style={{ alignItems: 'start' }}>
