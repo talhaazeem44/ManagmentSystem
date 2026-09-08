@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { ServiceSale, WorkshopStock } from '@/models';
+import { submitToFbrInBackground } from '@/lib/fbrSubmit';
 
 export async function GET(request: NextRequest) {
     try {
@@ -78,6 +79,10 @@ export async function POST(request: NextRequest) {
             balance,
             payments,
         });
+
+        // Report to FBR Digital Invoicing without blocking the sale — see
+        // submitToFbrInBackground; failures are retryable from /fbr.
+        void submitToFbrInBackground('SERVICE_SALE', service._id.toString());
 
         return NextResponse.json(service, { status: 201 });
     } catch (error: any) {

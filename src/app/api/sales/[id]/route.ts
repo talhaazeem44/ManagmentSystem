@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Sale, Bike, Customer, DeliveryOrder } from '@/models';
 import { resolveTransactionDate } from '@/lib/dates';
+import { getFbrStamp } from '@/lib/fbrQr';
 
 const CUSTOMER_EDITABLE_FIELDS = ['name', 'fatherName', 'careOf', 'mobile', 'address', 'cnic'] as const;
 
@@ -25,12 +26,15 @@ export async function GET(
         const bike = await Bike.findById(sale.bikeId).lean();
         const customer = await Customer.findById(sale.customerId).lean();
         const deliveryOrder = bike ? await DeliveryOrder.findById(bike.deliveryOrderId).lean() : null;
+        // IRN + QR for the printed receipt; null until FBR has accepted this sale.
+        const fbr = await getFbrStamp('SALE', sale._id.toString());
 
         return NextResponse.json({
             ...sale,
             id: sale._id.toString(),
             bike: bike ? { ...bike, deliveryOrder } : null,
-            customer
+            customer,
+            fbr
         });
     } catch (error: any) {
         console.error('Error fetching sale:', error);
