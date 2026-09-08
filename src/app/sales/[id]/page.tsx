@@ -91,6 +91,8 @@ export default function ReceiptPage() {
     const [payError, setPayError] = useState('');
     const [deletingPayment, setDeletingPayment] = useState<number | null>(null);
     const [exporting, setExporting] = useState(false);
+    const [fbrSubmitting, setFbrSubmitting] = useState(false);
+    const [fbrError, setFbrError] = useState('');
     const receiptRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -103,6 +105,32 @@ export default function ReceiptPage() {
             if (res.ok) setSale(await res.json());
         } finally {
             setLoading(false);
+        }
+    };
+
+    /**
+     * Send this sale to FBR on demand. Sales created before the FBR integration
+     * (and ones FBR rejected) have no IRN, so no QR prints — this is the retry.
+     */
+    const handleFbrSubmit = async () => {
+        if (!sale) return;
+        setFbrSubmitting(true); setFbrError('');
+        try {
+            const res = await fetch('/api/fbr/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sourceType: 'SALE', sourceId: sale.id }),
+            });
+            const data = await res.json();
+            if (res.ok && data.status === 'VALID') {
+                await fetchSale(sale.id);
+            } else {
+                setFbrError(data.error || data.message || 'FBR rejected this invoice');
+            }
+        } catch (error) {
+            setFbrError(error instanceof Error ? error.message : 'Could not reach FBR');
+        } finally {
+            setFbrSubmitting(false);
         }
     };
 
@@ -211,6 +239,19 @@ export default function ReceiptPage() {
                         <button onClick={() => window.print()} className="btn btn-primary">🖨️ Print Receipt</button>
                     </div>
                 </div>
+
+                {/* ── FBR: no IRN yet means no QR on the receipt ── */}
+                {!sale.fbr && (
+                    <div className="no-print" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', padding: '0.75rem 1rem', border: '1px solid #f0c36d', background: '#fdf6e3', borderRadius: '0.5rem' }}>
+                        <span style={{ fontSize: '0.85rem' }}>
+                            Is sale ka FBR invoice number nahi hai, is liye receipt par QR nahi chhapega.
+                        </span>
+                        <button onClick={handleFbrSubmit} disabled={fbrSubmitting} className="btn btn-secondary">
+                            {fbrSubmitting ? '⏳ Submitting...' : '📤 Submit to FBR'}
+                        </button>
+                        {fbrError && <span style={{ fontSize: '0.8rem', color: '#b00020' }}>{fbrError}</span>}
+                    </div>
+                )}
 
                 {/* ── Record Payment (credit only, screen only) ── */}
                 {isCreditWithBalance && (
