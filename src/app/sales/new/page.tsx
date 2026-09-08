@@ -149,6 +149,11 @@ export default function NewSalePage() {
         }
     }, [doFilter]);
 
+    // FBR rejects anything that is not a 13-digit CNIC or a 7/9-digit NTN
+    // (error 0002), and a rejected invoice means no QR on the receipt.
+    const cnicDigits = cnic.replace(/\D/g, '').length;
+    const cnicIsValid = cnicDigits === 13 || cnicDigits === 7 || cnicDigits === 9;
+
     // Auto-fill customer info when CNIC is entered
     const handleCnicBlur = async () => {
         const cleaned = cnic.trim();
@@ -176,6 +181,12 @@ export default function NewSalePage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!cnicIsValid) {
+            showToast('CNIC 13 digits ka hona chahiye (ya NTN 7/9 digits) — warna FBR invoice reject kar dega aur receipt par QR nahi aayega.', 'error');
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
@@ -373,6 +384,11 @@ export default function NewSalePage() {
                                 {cnicLookupStatus === 'new' && (
                                     <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
                                         New customer
+                                    </p>
+                                )}
+                                {cnicDigits > 0 && !cnicIsValid && (
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--color-danger, #b00020)', marginTop: '0.25rem' }}>
+                                        ⚠ {cnicDigits} digits — FBR ke liye 13-digit CNIC (ya 7/9-digit NTN) chahiye
                                     </p>
                                 )}
                             </div>

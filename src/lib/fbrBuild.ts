@@ -26,6 +26,20 @@ function buyerType(id: string): 'Registered' | 'Unregistered' {
     return id.length === 7 || id.length === 9 ? 'Registered' : 'Unregistered';
 }
 
+/**
+ * FBR accepts only a 13-digit CNIC or a 7/9-digit NTN (error 0002 otherwise).
+ * Catching it here keeps a half-typed CNIC from costing a round trip and gives
+ * the shopkeeper a message that says which record to fix.
+ */
+function assertBuyerId(id: string, who: string): void {
+    if (id.length !== 13 && id.length !== 7 && id.length !== 9) {
+        throw new Error(
+            `${who} ka CNIC/NTN galat hai (${id.length} digits: "${id}"). ` +
+            'FBR sirf 13-digit CNIC ya 7/9-digit NTN leta hai — customer record theek karke dobara submit karein.'
+        );
+    }
+}
+
 function base(invoiceDate: string, buyerRegistrationType: 'Registered' | 'Unregistered') {
     const s = seller();
     const payload: Partial<FbrInvoicePayload> = {
@@ -64,6 +78,7 @@ export async function buildSalePayload(saleId: string): Promise<{
 
     const buyerId = cleanId(customer.cnic);
     if (!buyerId) throw new Error('Customer CNIC is missing — FBR requires buyer NTN/CNIC');
+    assertBuyerId(buyerId, `Customer "${customer.name}"`);
 
     // The recorded price is what the customer pays, i.e. tax-inclusive.
     const item = itemFromGross({
@@ -125,7 +140,8 @@ export async function buildServiceSalePayload(serviceSaleId: string): Promise<{
 
     // Workshop walk-ins are unregistered and carry no CNIC on the service sale,
     // so they bill against the reserved unregistered-buyer id.
-    const buyerId = process.env.FBR_UNREGISTERED_BUYER_ID || '1000000000000';
+    const buyerId = cleanId(process.env.FBR_UNREGISTERED_BUYER_ID) || '1000000000000';
+    assertBuyerId(buyerId, 'FBR_UNREGISTERED_BUYER_ID');
 
     return {
         localInvoiceNumber: String(ss._id),

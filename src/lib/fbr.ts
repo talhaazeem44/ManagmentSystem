@@ -183,6 +183,23 @@ export function itemFromGross(opts: {
 
 // ── Transport ────────────────────────────────────────────────────────────────
 
+/**
+ * FBR's gateway sometimes returns hand-assembled JSON with tabs and a trailing
+ * comma before the closing brace — `JSON.parse` rejects it, and the rejection
+ * reason inside would be lost. Strip trailing commas and try again.
+ */
+function parseFbrJson(text: string): unknown {
+    try {
+        return JSON.parse(text);
+    } catch {
+        try {
+            return JSON.parse(text.replace(/,(\s*[}\]])/g, '$1'));
+        } catch {
+            return { raw: text };
+        }
+    }
+}
+
 async function call<T>(url: string, init: RequestInit & { timeoutMs?: number } = {}): Promise<T> {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), init.timeoutMs ?? 30_000);
@@ -197,8 +214,7 @@ async function call<T>(url: string, init: RequestInit & { timeoutMs?: number } =
             },
         });
         const text = await res.text();
-        let body: unknown;
-        try { body = text ? JSON.parse(text) : null; } catch { body = { raw: text }; }
+        const body: unknown = text ? parseFbrJson(text) : null;
         if (!res.ok) {
             const b = (body ?? {}) as { message?: string; error?: string; raw?: string };
             const msg = b.message || b.error || b.raw || res.statusText;
@@ -237,10 +253,20 @@ export function readResponse(res: FbrPostResponse): {
     if (ok && res.invoiceNumber) {
         return { status: 'VALID', invoiceNumber: res.invoiceNumber };
     }
-    const itemErr = v?.invoiceStatuses?.find(i => i.error)?.error;
+    const itemStatus = v?.invoiceStatuses?.find(i => i.error);
+    const reason = v?.error || itemStatus?.error;
+    const code = v?.errorCode || itemStatus?.errorCode;
+    // Nothing readable in the parsed shape — fall back to whatever FBR sent, so
+    // an unrecognised response never turns into a blank "rejected" message.
+    const rawBody = (res as { raw?: string }).raw;
+
     return {
         status: 'INVALID',
         invoiceNumber: res.invoiceNumber,
-        error: v?.error || itemErr || 'FBR rejected the invoice (no reason returned)',
+        error: reason
+            ? (code ? `[${code}] ${reason}` : reason)
+            : (rawBody
+                ? `FBR rejected the invoice: ${String(rawBody).slice(0, 500)}`
+                : `FBR rejected the invoice (unrecognised response: ${JSON.stringify(res).slice(0, 500)})`),
     };
 }
