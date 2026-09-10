@@ -84,6 +84,8 @@ export default function DashboardPage() {
     const [monthModelBreakdown, setMonthModelBreakdown] = useState<Record<string, number> | null>(null);
     const [planTargets, setPlanTargets] = useState<Record<string, number>>({});
     const [editingPlan, setEditingPlan] = useState(false);
+    // Default view is plain stock-in-hand; the Honda plan columns are opt-in.
+    const [showPlan, setShowPlan] = useState(false);
     const [editTargets, setEditTargets] = useState<Record<string, string>>({});
     const [savingPlan, setSavingPlan] = useState(false);
     const currentMonth = new Date().toISOString().slice(0, 7);
@@ -354,13 +356,18 @@ export default function DashboardPage() {
                     </div>
                 )}
 
-                {/* ── Monthly Plan vs Remaining Stock ── */}
+                {/* ── Stock by model. The Honda plan columns are kept behind a
+                       toggle so the default view is just "what do I have". ── */}
                 <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>
-                            {new Date().toLocaleDateString('en-PK', { month: 'long', year: 'numeric' })} — Honda Plan · Sold · Pending · Stock
+                            {showPlan
+                                ? `${new Date().toLocaleDateString('en-PK', { month: 'long', year: 'numeric' })} — Honda Plan · Sold · Pending · Stock`
+                                : '🏍️ Stock in Hand — Model Wise'}
                         </div>
-                        {editingPlan ? (
+                        {!showPlan ? (
+                            <button onClick={() => setShowPlan(true)} className="btn btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}>📋 Show Plan</button>
+                        ) : editingPlan ? (
                             <div style={{ display: 'flex', gap: '0.4rem' }}>
                                 <button onClick={() => setEditingPlan(false)} className="btn btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}>Cancel</button>
                                 <button onClick={savePlan} disabled={savingPlan} className="btn btn-primary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}>
@@ -368,21 +375,27 @@ export default function DashboardPage() {
                                 </button>
                             </div>
                         ) : (
-                            <button onClick={startEditPlan} className="btn btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}>✏️ Edit Plan</button>
+                            <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <button onClick={() => { setEditingPlan(false); setShowPlan(false); }} className="btn btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}>Hide Plan</button>
+                                <button onClick={startEditPlan} className="btn btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}>✏️ Edit Plan</button>
+                            </div>
                         )}
                     </div>
                     <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                             <thead>
                                 <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                                    {['Model', 'Plan', 'Sold', 'Pending', 'In Stock'].map((h, i) => (
+                                    {(showPlan ? ['Model', 'Plan', 'Sold', 'Pending', 'In Stock'] : ['Model', 'In Stock']).map((h, i) => (
                                         <th key={h} style={{ padding: '5px 8px', textAlign: i === 0 ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody>
                                 {HONDA_BIKE_MODELS
-                                    .filter(model => editingPlan || (planTargets[model] ?? 0) > 0 || (monthModelBreakdown?.[model] ?? 0) > 0 || (stats?.allTime?.availableModelBreakdown?.[model] ?? 0) > 0)
+                                    .filter(model => showPlan
+                                        ? (editingPlan || (planTargets[model] ?? 0) > 0 || (monthModelBreakdown?.[model] ?? 0) > 0 || (stats?.allTime?.availableModelBreakdown?.[model] ?? 0) > 0)
+                                        // Stock view: only models actually sitting in inventory
+                                        : (stats?.allTime?.availableModelBreakdown?.[model] ?? 0) > 0)
                                     .map(model => {
                                         const plan = planTargets[model] ?? 0;
                                         const sold = monthModelBreakdown?.[model] ?? 0;
@@ -393,25 +406,29 @@ export default function DashboardPage() {
                                         return (
                                             <tr key={model} style={{ borderBottom: '1px solid var(--color-border)' }}>
                                                 <td style={{ padding: '5px 8px' }}>{model}</td>
-                                                <td style={{ padding: '5px 8px', textAlign: 'right' }}>
-                                                    {editingPlan ? (
-                                                        <input
-                                                            type="number"
-                                                            className="input"
-                                                            value={editTargets[model] ?? '0'}
-                                                            onChange={e => setEditTargets(t => ({ ...t, [model]: e.target.value }))}
-                                                            style={{ width: '70px', fontSize: '0.8rem', padding: '0.2rem 0.4rem', textAlign: 'right' }}
-                                                            min="0"
-                                                        />
-                                                    ) : (
-                                                        <strong>{plan}</strong>
-                                                    )}
-                                                </td>
-                                                <td style={{ padding: '5px 8px', textAlign: 'right', color: '#10b981', fontWeight: 600 }}>{sold}</td>
-                                                <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 600, color: pending > 0 ? '#f59e0b' : '#10b981' }}>
-                                                    {pending > 0 ? pending : pending === 0 ? '✓' : `✓ +${-pending}`}
-                                                </td>
-                                                <td style={{ padding: '5px 8px', textAlign: 'right', color: inStock > 0 ? 'var(--color-text)' : '#ef4444', fontWeight: 600 }}>{inStock}</td>
+                                                {showPlan && (
+                                                    <>
+                                                        <td style={{ padding: '5px 8px', textAlign: 'right' }}>
+                                                            {editingPlan ? (
+                                                                <input
+                                                                    type="number"
+                                                                    className="input"
+                                                                    value={editTargets[model] ?? '0'}
+                                                                    onChange={e => setEditTargets(t => ({ ...t, [model]: e.target.value }))}
+                                                                    style={{ width: '70px', fontSize: '0.8rem', padding: '0.2rem 0.4rem', textAlign: 'right' }}
+                                                                    min="0"
+                                                                />
+                                                            ) : (
+                                                                <strong>{plan}</strong>
+                                                            )}
+                                                        </td>
+                                                        <td style={{ padding: '5px 8px', textAlign: 'right', color: '#10b981', fontWeight: 600 }}>{sold}</td>
+                                                        <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 600, color: pending > 0 ? '#f59e0b' : '#10b981' }}>
+                                                            {pending > 0 ? pending : pending === 0 ? '✓' : `✓ +${-pending}`}
+                                                        </td>
+                                                    </>
+                                                )}
+                                                <td style={{ padding: '5px 8px', textAlign: 'right', color: inStock > 0 ? 'var(--color-text)' : '#ef4444', fontWeight: 700 }}>{inStock}</td>
                                             </tr>
                                         );
                                     })}
@@ -424,11 +441,15 @@ export default function DashboardPage() {
                                     return (
                                         <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 800 }}>
                                             <td style={{ padding: '7px 8px' }}>TOTAL</td>
-                                            <td style={{ padding: '7px 8px', textAlign: 'right' }}>{tPlan}</td>
-                                            <td style={{ padding: '7px 8px', textAlign: 'right', color: '#10b981' }}>{tSold}</td>
-                                            <td style={{ padding: '7px 8px', textAlign: 'right', color: tPending > 0 ? '#f59e0b' : '#10b981' }}>
-                                                {tPending > 0 ? tPending : tPending === 0 ? '✓' : `✓ +${-tPending}`}
-                                            </td>
+                                            {showPlan && (
+                                                <>
+                                                    <td style={{ padding: '7px 8px', textAlign: 'right' }}>{tPlan}</td>
+                                                    <td style={{ padding: '7px 8px', textAlign: 'right', color: '#10b981' }}>{tSold}</td>
+                                                    <td style={{ padding: '7px 8px', textAlign: 'right', color: tPending > 0 ? '#f59e0b' : '#10b981' }}>
+                                                        {tPending > 0 ? tPending : tPending === 0 ? '✓' : `✓ +${-tPending}`}
+                                                    </td>
+                                                </>
+                                            )}
                                             <td style={{ padding: '7px 8px', textAlign: 'right' }}>{tStock}</td>
                                         </tr>
                                     );
@@ -437,7 +458,9 @@ export default function DashboardPage() {
                         </table>
                     </div>
                     <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
-                        <strong>Pending</strong> = plan still to sell this month (Plan − Sold). <strong>In Stock</strong> = bikes available in inventory right now.
+                        {showPlan
+                            ? <><strong>Pending</strong> = plan still to sell this month (Plan − Sold). <strong>In Stock</strong> = bikes available in inventory right now.</>
+                            : <><strong>In Stock</strong> = bikes available in inventory right now. Models with zero stock are hidden.</>}
                     </div>
                 </div>
 
