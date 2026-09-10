@@ -358,7 +358,7 @@ export default function DashboardPage() {
                 <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>
-                            {new Date().toLocaleDateString('en-PK', { month: 'long', year: 'numeric' })} — Honda Plan vs Stock
+                            {new Date().toLocaleDateString('en-PK', { month: 'long', year: 'numeric' })} — Honda Plan · Sold · Pending · Stock
                         </div>
                         {editingPlan ? (
                             <div style={{ display: 'flex', gap: '0.4rem' }}>
@@ -375,7 +375,7 @@ export default function DashboardPage() {
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                             <thead>
                                 <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                                    {['Model', 'Plan', 'Sold', 'Remaining'].map((h, i) => (
+                                    {['Model', 'Plan', 'Sold', 'Pending', 'In Stock'].map((h, i) => (
                                         <th key={h} style={{ padding: '5px 8px', textAlign: i === 0 ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
                                     ))}
                                 </tr>
@@ -386,7 +386,10 @@ export default function DashboardPage() {
                                     .map(model => {
                                         const plan = planTargets[model] ?? 0;
                                         const sold = monthModelBreakdown?.[model] ?? 0;
-                                        const remaining = stats?.allTime?.availableModelBreakdown?.[model] ?? 0;
+                                        // Pending = how much of this month's Honda plan is still to be
+                                        // sold. Stock in hand is a separate thing and gets its own column.
+                                        const pending = plan - sold;
+                                        const inStock = stats?.allTime?.availableModelBreakdown?.[model] ?? 0;
                                         return (
                                             <tr key={model} style={{ borderBottom: '1px solid var(--color-border)' }}>
                                                 <td style={{ padding: '5px 8px' }}>{model}</td>
@@ -405,12 +408,36 @@ export default function DashboardPage() {
                                                     )}
                                                 </td>
                                                 <td style={{ padding: '5px 8px', textAlign: 'right', color: '#10b981', fontWeight: 600 }}>{sold}</td>
-                                                <td style={{ padding: '5px 8px', textAlign: 'right', color: '#f59e0b', fontWeight: 600 }}>{remaining}</td>
+                                                <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 600, color: pending > 0 ? '#f59e0b' : '#10b981' }}>
+                                                    {pending > 0 ? pending : pending === 0 ? '✓' : `✓ +${-pending}`}
+                                                </td>
+                                                <td style={{ padding: '5px 8px', textAlign: 'right', color: inStock > 0 ? 'var(--color-text)' : '#ef4444', fontWeight: 600 }}>{inStock}</td>
                                             </tr>
                                         );
                                     })}
+                                {/* Whole-month totals across every model */}
+                                {(() => {
+                                    const tPlan = HONDA_BIKE_MODELS.reduce((s, m) => s + (planTargets[m] ?? 0), 0);
+                                    const tSold = HONDA_BIKE_MODELS.reduce((s, m) => s + (monthModelBreakdown?.[m] ?? 0), 0);
+                                    const tStock = HONDA_BIKE_MODELS.reduce((s, m) => s + (stats?.allTime?.availableModelBreakdown?.[m] ?? 0), 0);
+                                    const tPending = tPlan - tSold;
+                                    return (
+                                        <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 800 }}>
+                                            <td style={{ padding: '7px 8px' }}>TOTAL</td>
+                                            <td style={{ padding: '7px 8px', textAlign: 'right' }}>{tPlan}</td>
+                                            <td style={{ padding: '7px 8px', textAlign: 'right', color: '#10b981' }}>{tSold}</td>
+                                            <td style={{ padding: '7px 8px', textAlign: 'right', color: tPending > 0 ? '#f59e0b' : '#10b981' }}>
+                                                {tPending > 0 ? tPending : tPending === 0 ? '✓' : `✓ +${-tPending}`}
+                                            </td>
+                                            <td style={{ padding: '7px 8px', textAlign: 'right' }}>{tStock}</td>
+                                        </tr>
+                                    );
+                                })()}
                             </tbody>
                         </table>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                        <strong>Pending</strong> = plan still to sell this month (Plan − Sold). <strong>In Stock</strong> = bikes available in inventory right now.
                     </div>
                 </div>
 
