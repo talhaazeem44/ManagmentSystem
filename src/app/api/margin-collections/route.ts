@@ -5,8 +5,9 @@ import { MarginCollection } from '@/models';
 export async function GET() {
     try {
         await dbConnect();
-        const last = await MarginCollection.findOne().sort({ collectedAt: -1 }).lean();
-        return NextResponse.json({ last: last || null });
+        const all = await MarginCollection.find().sort({ collectedAt: -1 }).lean();
+        const last = all.length ? all[0] : null;
+        return NextResponse.json({ last: last || null, all });
     } catch (error: any) {
         return NextResponse.json({ message: 'Failed to fetch', error: error.message }, { status: 500 });
     }
