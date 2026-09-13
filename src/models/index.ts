@@ -111,6 +111,7 @@ export interface ISale {
     receivedCash?: number;
     balance?: number;
     registrationCost?: number;
+    registrationPaymentMode?: string;
     taxAmount?: number;
     paymentMode: string;
     bankTransferAmount?: number;
@@ -137,6 +138,7 @@ const SaleSchema = new Schema<ISale>({
     receivedCash: { type: Number, default: 0 },
     balance: { type: Number, default: 0 },
     registrationCost: { type: Number },
+    registrationPaymentMode: { type: String, default: 'CASH' },
     taxAmount: { type: Number, default: 0 },
     paymentMode: { type: String, default: 'CASH' },
     bankTransferAmount: { type: Number, default: 0 },

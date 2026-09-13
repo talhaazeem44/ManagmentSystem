@@ -54,6 +54,7 @@ export default function NewSalePage() {
     const [receivedCash, setReceivedCash] = useState('');
     const [balance, setBalance] = useState('');
     const [registrationCost, setRegistrationCost] = useState('');
+    const [registrationPaymentMode, setRegistrationPaymentMode] = useState('CASH');
     const [paymentMode, setPaymentMode] = useState('CASH');
     const [bankTransferAmount, setBankTransferAmount] = useState('');
     const [taxAmount] = useState('1000');
@@ -197,6 +198,7 @@ export default function NewSalePage() {
                     receivedCash: receivedCash || 0,
                     balance: balance || 0,
                     registrationCost: registrationCost || null,
+                    registrationPaymentMode,
                     taxAmount: taxAmount || 0,
                     paymentMode,
                     bankTransferAmount: bankTransferAmount || 0,
@@ -467,6 +469,20 @@ export default function NewSalePage() {
                                     onChange={(e) => setRegistrationCost(e.target.value)}
                                     placeholder="9000"
                                 />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label className="label col-6">Registration Payment Mode</label>
+                                <select
+                                    className="select"
+                                    value={registrationPaymentMode}
+                                    onChange={(e) => setRegistrationPaymentMode(e.target.value)}
+                                >
+                                    <option value="CASH">Cash</option>
+                                    <option value="BANK_TRANSFER">Bank Transfer</option>
+                                </select>
                             </div>
                         </div>
 

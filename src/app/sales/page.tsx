@@ -11,6 +11,7 @@ interface Sale {
     saleDate: string;
     price: number;
     registrationCost: number | null;
+    registrationPaymentMode?: string;
     paymentMode: string;
     receiptNumber: string | null;
     receivedCash: number;
@@ -31,6 +32,7 @@ interface EditState {
     receivedCash: string;
     bankTransferAmount: string;
     registrationCost: string;
+    registrationPaymentMode: string;
     balance: string;
     paymentMode: string;
     customerName: string;
@@ -82,6 +84,7 @@ export default function SalesPage() {
             receivedCash: String(sale.receivedCash ?? 0),
             bankTransferAmount: String(sale.bankTransferAmount ?? 0),
             registrationCost: String(sale.registrationCost ?? 0),
+            registrationPaymentMode: sale.registrationPaymentMode ?? 'CASH',
             balance: String(sale.balance ?? 0),
             paymentMode: sale.paymentMode,
             customerName: sale.customer?.name ?? '',
@@ -107,6 +110,7 @@ export default function SalesPage() {
                     receivedCash: parseFloat(editState.receivedCash) || 0,
                     bankTransferAmount: parseFloat(editState.bankTransferAmount) || 0,
                     registrationCost: parseFloat(editState.registrationCost) || 0,
+                    registrationPaymentMode: editState.registrationPaymentMode,
                     balance: parseFloat(editState.balance) || 0,
                     paymentMode: editState.paymentMode,
                     customer: {
@@ -178,6 +182,14 @@ export default function SalesPage() {
         </select>
     );
 
+    const regModeSelect = () => (
+        <select value={editState?.registrationPaymentMode ?? 'CASH'} onChange={e => setEditState(prev => prev ? { ...prev, registrationPaymentMode: e.target.value } : prev)}
+            style={{ padding: '0.2rem 0.4rem', fontSize: '0.8rem', border: '1px solid var(--color-primary)', borderRadius: '4px', background: 'var(--color-bg)', color: 'var(--color-text)' }}>
+            {[{ v: 'CASH', l: 'CASH' }, { v: 'BANK_TRANSFER', l: 'BANK' }]
+                .map(({ v, l }) => <option key={v} value={v}>{l}</option>)}
+        </select>
+    );
+
     return (
         <DashboardLayout>
             <div className="animate-fade-in">
@@ -222,7 +234,7 @@ export default function SalesPage() {
                             <table style={{ width: 'max-content', minWidth: '100%', maxWidth: 'none', borderCollapse: 'collapse' }}>
                                 <thead>
                                     <tr>
-                                        {['#','Date','Rcpt','Customer','CNIC','Mobile','Model','Color','Engine No','Chassis No','DO','Mode','Price','Cash Rcvd','Bank Xfer','Reg','Balance','Actions'].map(h => (
+                                        {['#','Date','Rcpt','Customer','CNIC','Mobile','Model','Color','Engine No','Chassis No','DO','Mode','Price','Cash Rcvd','Bank Xfer','Reg','Reg Mode','Balance','Actions'].map(h => (
                                             <th key={h} style={thS}>{h}</th>
                                         ))}
                                     </tr>
@@ -259,6 +271,7 @@ export default function SalesPage() {
                                                 <td style={{ ...tdS, color: '#10b981' }}>{isEditing ? editInput('receivedCash', '90px') : `Rs. ${Number(sale.receivedCash ?? 0).toLocaleString()}`}</td>
                                                 <td style={{ ...tdS, color: '#3b82f6' }}>{isEditing ? editInput('bankTransferAmount', '90px') : (sale.bankTransferAmount > 0 ? `Rs. ${Number(sale.bankTransferAmount).toLocaleString()}` : '—')}</td>
                                                 <td style={{ ...tdS, color: '#8b5cf6' }}>{isEditing ? editInput('registrationCost', '80px') : (sale.registrationCost ? `Rs. ${Number(sale.registrationCost).toLocaleString()}` : '—')}</td>
+                                                <td style={tdS}>{isEditing ? regModeSelect() : (sale.registrationCost ? (sale.registrationPaymentMode ?? 'CASH') : '—')}</td>
                                                 <td style={{ ...tdS, color: (sale.balance ?? 0) > 0 ? '#ef4444' : 'var(--color-text-muted)' }}>{isEditing ? editInput('balance', '80px') : ((sale.balance ?? 0) > 0 ? `Rs. ${Number(sale.balance).toLocaleString()}` : '—')}</td>
 
                                                 <td style={{ ...tdS, minWidth: '110px' }}>
@@ -284,7 +297,7 @@ export default function SalesPage() {
                                             </tr>
                                             {isEditing && (
                                                 <tr style={{ borderBottom: '1px solid var(--color-border)', background: 'rgba(59,130,246,0.05)' }}>
-                                                    <td colSpan={18} style={{ padding: '0.5rem 0.6rem 0.75rem' }}>
+                                                    <td colSpan={19} style={{ padding: '0.5rem 0.6rem 0.75rem' }}>
                                                         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                                                             <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.68rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
                                                                 Father/Husband Name

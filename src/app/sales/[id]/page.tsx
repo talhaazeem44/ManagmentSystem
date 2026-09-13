@@ -52,6 +52,7 @@ interface Sale {
     receivedCash?: number;
     balance?: number;
     registrationCost: number | null;
+    registrationPaymentMode?: string;
     bankTransferAmount?: number;
     paymentMode: string;
     receiptNumber: string | null;
@@ -462,6 +463,14 @@ export default function ReceiptPage() {
                                 {sale.registrationCost ? Number(sale.registrationCost).toLocaleString() : ''}
                             </span>
                         </div>
+                        {sale.registrationCost ? (
+                            <div className={styles.field}>
+                                <span className={styles.label}>Reg. Payment Mode:</span>
+                                <span className={styles.value}>
+                                    {(sale.registrationPaymentMode ?? sale.paymentMode).replace('_', ' ')}
+                                </span>
+                            </div>
+                        ) : null}
 
                         {/* Payment history inside receipt (visible on print) — capped so it can never push the receipt past one A4 page */}
                         {payments.length > 0 && (() => {
