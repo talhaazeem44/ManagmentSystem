@@ -363,6 +363,22 @@ const CashCollectionSchema = new Schema<ICashCollection>({
 
 export const CashCollection: Model<ICashCollection> = models.CashCollection || mongoose.model<ICashCollection>('CashCollection', CashCollectionSchema);
 
+// ── Cash Top-Up (bank-transferred money later withdrawn as physical cash) ──────
+export interface ICashTopUp {
+    _id?: string;
+    amount: number;
+    date: Date;
+    note?: string;
+}
+
+const CashTopUpSchema = new Schema<ICashTopUp>({
+    amount: { type: Number, required: true },
+    date: { type: Date, default: Date.now },
+    note: { type: String },
+}, { timestamps: true });
+
+export const CashTopUp: Model<ICashTopUp> = models.CashTopUp || mongoose.model<ICashTopUp>('CashTopUp', CashTopUpSchema);
+
 // ── Monthly Plan ───────────────────────────────────────────────────────────────
 export interface IMonthlyPlan {
     _id?: string;

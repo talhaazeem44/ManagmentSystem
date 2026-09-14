@@ -9,7 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 interface RangeStats {
     bikeProfit: number; advanceMargin: number; regProfit: number; workshopProfit: number; profit: number;
     sales: number; cashReceived: number; cashInHand: number; expenseMargin: number;
-    registrationCollected: number; totalCashIn: number; bankTransfer: number; cashToDeposit: number; expenseCash: number; cashDepositOnly: number;
+    registrationCollected: number; totalCashIn: number; bankTransfer: number; cashToDeposit: number; expenseCash: number; cashDepositOnly: number; cashTopUp?: number;
     extraCash: number;
 }
 
@@ -89,6 +89,8 @@ export default function ProfitPage() {
     const [monthCashStats, setMonthCashStats] = useState<RangeStats | null>(null);
     const [lastCashCol, setLastCashCol] = useState<CollectionRecord | null>(null);
     const [collectingCash, setCollectingCash] = useState(false);
+    const [topUpAmount, setTopUpAmount] = useState('');
+    const [addingTopUp, setAddingTopUp] = useState(false);
 
     const [monthBreakdown, setMonthBreakdown] = useState<BreakdownItem[]>([]);
     const [monthExpenseList, setMonthExpenseList] = useState<ExpenseItem[]>([]);
@@ -208,6 +210,20 @@ export default function ProfitPage() {
             });
             await fetchAll();
         } finally { setCollectingCash(false); }
+    };
+
+    const handleAddCashTopUp = async () => {
+        const amount = parseFloat(topUpAmount);
+        if (!amount || amount <= 0) return;
+        setAddingTopUp(true);
+        try {
+            await fetch('/api/cash-topups', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount }),
+            });
+            setTopUpAmount('');
+            await fetchAll();
+        } finally { setAddingTopUp(false); }
     };
 
     const rs = stats?.range;
@@ -626,7 +642,17 @@ export default function ProfitPage() {
                                     <span>Cash received: Rs. {(sinceCashStats?.cashReceived ?? 0).toLocaleString()}</span>
                                     <span>Registration: Rs. {(sinceCashStats?.registrationCollected ?? 0).toLocaleString()}</span>
                                     <span>Honda deposit: − Rs. {(sinceCashStats?.cashDepositOnly ?? 0).toLocaleString()}</span>
+                                    {(sinceCashStats?.cashTopUp ?? 0) > 0 && <span>Cash top-up (withdrawn from bank): + Rs. {(sinceCashStats?.cashTopUp ?? 0).toLocaleString()}</span>}
                                     {(sinceCashStats?.expenseCash ?? 0) > 0 && <span>Expenses: − Rs. {(sinceCashStats?.expenseCash ?? 0).toLocaleString()}</span>}
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                                    <input type="number" inputMode="decimal" className="input" placeholder="Cash withdrawn from bank"
+                                        value={topUpAmount} onChange={e => setTopUpAmount(e.target.value)}
+                                        style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem', flex: 1 }} />
+                                    <button onClick={handleAddCashTopUp} disabled={addingTopUp || !topUpAmount || parseFloat(topUpAmount) <= 0}
+                                        className="btn btn-secondary" style={{ fontSize: '0.78rem', padding: '0.4rem 0.75rem', whiteSpace: 'nowrap' }}>
+                                        {addingTopUp ? '⏳' : '+ Add'}
+                                    </button>
                                 </div>
                                 <button onClick={handleCollectCash} disabled={collectingCash || !hasCashToDeposit}
                                     className="btn btn-primary" style={{ fontSize: '0.82rem', padding: '0.45rem 1.1rem', width: '100%', background: '#f59e0b', borderColor: '#f59e0b' }}>

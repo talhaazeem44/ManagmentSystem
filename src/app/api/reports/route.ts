@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { Sale, Bike, DeliveryOrder, ServiceSale, Customer, AdvanceBooking, Expense, KhataParty, UsedBike } from '@/models';
+import { Sale, Bike, DeliveryOrder, ServiceSale, Customer, AdvanceBooking, Expense, KhataParty, UsedBike, CashTopUp } from '@/models';
 import {
     BIKE_BOOK_PRICES,
     BIKE_STANDARD_PRICES,
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
 
         const [filteredSales, filteredServices, allSales, allServices,
             totalBikesCount, availableBikesCount, soldBikesCount,
-            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings, filteredAdvanceBookings, filteredExpenses, weekSales, creditPaymentSales, allKhataParties, allSoldUsedBikes, advancePaymentBookings, allDeliveredAdvanceBookings, rangeDeliveredByDate] = await Promise.all([
+            deliveryOrders, bikes, creditSalesRaw, pendingAdvanceBookings, filteredAdvanceBookings, filteredExpenses, weekSales, creditPaymentSales, allKhataParties, allSoldUsedBikes, advancePaymentBookings, allDeliveredAdvanceBookings, rangeDeliveredByDate, filteredCashTopUps] = await Promise.all([
             Sale.find({ saleDate: { $gte: filterStartDate, $lt: filterEndDate } }).populate('bikeId').populate('customerId').lean(),
             ServiceSale.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
             Sale.find().populate('bikeId').lean(),
@@ -98,6 +98,8 @@ export async function GET(request: NextRequest) {
             // Advance bookings delivered within this date range (by updatedAt) — captures bookings whose
             // original booking date is outside the range but were delivered/fulfilled in it.
             AdvanceBooking.find({ status: 'DELIVERED', bikeId: { $exists: true, $ne: null }, updatedAt: { $gte: filterStartDate, $lt: filterEndDate } }).populate('bikeId').lean(),
+            // Manual cash top-ups (bank-transferred money later withdrawn as physical cash)
+            CashTopUp.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
         ]);
 
         // 7-day chart data
@@ -213,6 +215,10 @@ export async function GET(request: NextRequest) {
             .reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
         const rangeCashReceived = filteredSales.reduce((s, sale: any) => s + Number(sale.receivedCash || 0), 0) + rangeAdvanceCash + creditPaymentsInRange;
         const rangeRegistration = filteredSales.reduce((s, sale: any) => s + Number(sale.registrationCost || 0), 0);
+        // Registration fees paid by bank transfer never arrived as physical cash — only CASH-mode
+        // registration should count toward cash-in-hand; BANK_TRANSFER-mode joins the bank transfer total.
+        const rangeRegistrationCash = filteredSales.reduce((s, sale: any) => (sale.registrationPaymentMode === 'BANK_TRANSFER' ? s : s + Number(sale.registrationCost || 0)), 0);
+        const rangeRegistrationBank = rangeRegistration - rangeRegistrationCash;
 
         // All Khata dealer payments in range (both Cash and Bank Transfer) — kept together for the
         // dealer-payment detail list, but split by mode for the cash-in-hand vs bank-transfer totals.
@@ -228,7 +234,7 @@ export async function GET(request: NextRequest) {
             .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
             .map((t: any) => ({ partyName: t.partyName, amount: Number(t.amount || 0), date: t.date, note: t.note || '', paymentMode: t.paymentMode === 'BANK_TRANSFER' ? 'BANK_TRANSFER' : 'CASH' }));
 
-        const rangeBankTransfer = filteredSales.reduce((s, sale: any) => s + Number(sale.bankTransferAmount || 0), 0) + creditBankPaymentsInRange + rangeAdvanceBankTransfer + rangeKhataBankTransfer;
+        const rangeBankTransfer = filteredSales.reduce((s, sale: any) => s + Number(sale.bankTransferAmount || 0), 0) + creditBankPaymentsInRange + rangeAdvanceBankTransfer + rangeKhataBankTransfer + rangeRegistrationBank;
 
         // Used bikes (buyback) resold in this range — resale amount counts as cash received
         const usedBikesSoldInRange = (allSoldUsedBikes as any[]).filter(u => u.soldDate && new Date(u.soldDate) >= filterStartDate && new Date(u.soldDate) < filterEndDate);
@@ -242,7 +248,7 @@ export async function GET(request: NextRequest) {
                 margin: Number(u.soldPrice || 0) - Number(u.purchasePrice || 0),
             }));
 
-        const rangeTotalCashIn = rangeCashReceived + rangeRegistration + rangeKhataCashReceived + rangeUsedBikeCashReceived;
+        const rangeTotalCashIn = rangeCashReceived + rangeRegistrationCash + rangeKhataCashReceived + rangeUsedBikeCashReceived;
         const rangeCashToDeposit = filteredSales.reduce((s, sale: any) => {
             const model = sale.bikeId?.model || '';
             return s + Number(sale.bikeId?.purchasePrice || BIKE_BOOK_PRICES[model] || 0);
@@ -253,7 +259,12 @@ export async function GET(request: NextRequest) {
             const model = sale.bikeId?.model || '';
             return s + Number(sale.bikeId?.purchasePrice || BIKE_BOOK_PRICES[model] || 0);
         }, 0);
-        const rangeCashInHand = Math.max(0, rangeTotalCashIn - rangeCashToDeposit - expenseCash);
+        // Manual top-ups: bank-transferred money you later physically withdrew as cash
+        const rangeCashTopUp = (filteredCashTopUps as any[]).reduce((s, t) => s + Number(t.amount || 0), 0);
+        const cashTopUpList = (filteredCashTopUps as any[])
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .map(t => ({ amount: Number(t.amount || 0), date: t.date, note: t.note || '' }));
+        const rangeCashInHand = Math.max(0, rangeTotalCashIn + rangeCashTopUp - rangeCashToDeposit - expenseCash);
 
         const modelBreakdown: Record<string, number> = {};
         for (const sale of filteredSales as any[]) {
@@ -510,6 +521,8 @@ export async function GET(request: NextRequest) {
                 expenseList,
                 cashInHand: rangeCashInHand,
                 cashDepositOnly: rangeCashDepositOnly,
+                cashTopUp: rangeCashTopUp,
+                cashTopUpList,
                 startDate: filterStartDate,
                 endDate: filterEndDate,
             },
