@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { ServiceSale, WorkshopStock } from '@/models';
+import { resolveTransactionDate } from '@/lib/dates';
 
 export async function GET(request: NextRequest) {
     try {
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
         const receivedNowMode: 'CASH' | 'BANK_TRANSFER' = body.receivedNowMode === 'BANK_TRANSFER' ? 'BANK_TRANSFER' : 'CASH';
         const balance = body.paymentMode === 'CREDIT' ? Math.max(0, totalAmount - receivedNow) : 0;
         const payments = body.paymentMode === 'CREDIT' && receivedNow > 0
-            ? [{ amount: receivedNow, date: body.date || new Date(), note: 'Received at billing', paymentMode: receivedNowMode }]
+            ? [{ amount: receivedNow, date: resolveTransactionDate(body.date), note: 'Received at billing', paymentMode: receivedNowMode }]
             : [];
 
         // Deduct stock quantities — manually-typed items (not picked from stock) have no
@@ -70,6 +71,7 @@ export async function POST(request: NextRequest) {
         const { receivedNow: _omitReceivedNow, receivedNowMode: _omitReceivedNowMode, ...serviceBody } = body;
         const service = await ServiceSale.create({
             ...serviceBody,
+            date: resolveTransactionDate(body.date),
             serviceCharges,
             items,
             totalAmount,

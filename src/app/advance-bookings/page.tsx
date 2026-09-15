@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { HONDA_BIKE_MODELS, BIKE_STANDARD_PRICES } from '@/lib/constants';
+import { todayDateInputValue } from '@/lib/dates';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 import Loader from '@/components/Loader';
@@ -37,7 +38,7 @@ interface AvailableBike {
     status: string;
 }
 
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => todayDateInputValue();
 
 const emptyForm = {
     customerName: '',

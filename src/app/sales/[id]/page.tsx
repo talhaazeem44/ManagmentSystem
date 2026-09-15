@@ -7,6 +7,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import styles from './receipt.module.css';
 import { BIKE_STANDARD_PRICES, RECEIPT_COLOURS, guessReceiptColour } from '@/lib/constants';
 import Loader from '@/components/Loader';
+import { todayDateInputValue } from '@/lib/dates';
 
 const COLOUR_OPTIONS = RECEIPT_COLOURS.map(c => c.label);
 
@@ -75,7 +76,7 @@ interface Sale {
     };
 }
 
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => todayDateInputValue();
 
 export default function ReceiptPage() {
     const params = useParams();

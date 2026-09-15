@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
+import { todayDateInputValue } from '@/lib/dates';
 
 type PaymentMode = 'CASH' | 'BANK_TRANSFER';
 
@@ -31,8 +32,8 @@ export default function WorkshopTrackerPage() {
     const { toasts, showToast, removeToast } = useToast();
     const [deposits, setDeposits] = useState<DepositRecord[]>([]);
     const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
-    const [depositForm, setDepositForm] = useState({ amount: '', note: '', paymentMode: 'CASH' as PaymentMode, date: new Date().toISOString().split('T')[0] });
-    const [expenseForm, setExpenseForm] = useState({ amount: '', description: '', paymentMode: 'CASH' as PaymentMode, date: new Date().toISOString().split('T')[0] });
+    const [depositForm, setDepositForm] = useState({ amount: '', note: '', paymentMode: 'CASH' as PaymentMode, date: todayDateInputValue() });
+    const [expenseForm, setExpenseForm] = useState({ amount: '', description: '', paymentMode: 'CASH' as PaymentMode, date: todayDateInputValue() });
     const [savingDeposit, setSavingDeposit] = useState(false);
     const [savingExpense, setSavingExpense] = useState(false);
     const [trackerMonth, setTrackerMonth] = useState(() => {
@@ -79,7 +80,7 @@ export default function WorkshopTrackerPage() {
             });
             if (res.ok) {
                 showToast('Deposit saved', 'success');
-                setDepositForm({ amount: '', note: '', paymentMode: 'CASH', date: new Date().toISOString().split('T')[0] });
+                setDepositForm({ amount: '', note: '', paymentMode: 'CASH', date: todayDateInputValue() });
                 await fetchTrackerData();
             } else {
                 const err = await res.json().catch(() => ({ message: `Failed to save deposit (HTTP ${res.status})` }));
@@ -103,7 +104,7 @@ export default function WorkshopTrackerPage() {
             });
             if (res.ok) {
                 showToast('Expense saved', 'success');
-                setExpenseForm({ amount: '', description: '', paymentMode: 'CASH', date: new Date().toISOString().split('T')[0] });
+                setExpenseForm({ amount: '', description: '', paymentMode: 'CASH', date: todayDateInputValue() });
                 await fetchTrackerData();
             } else {
                 const err = await res.json().catch(() => ({ message: `Failed to save expense (HTTP ${res.status})` }));

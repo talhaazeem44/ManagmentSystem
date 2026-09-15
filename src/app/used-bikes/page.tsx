@@ -6,6 +6,7 @@ import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 import Loader from '@/components/Loader';
 import { HONDA_BIKE_MODELS } from '@/lib/constants';
+import { todayDateInputValue, dateInputValue } from '@/lib/dates';
 
 interface UsedBike {
     _id: string;
@@ -28,12 +29,12 @@ interface UsedBike {
 const emptyForm = {
     model: '', color: '', engineNumber: '', chassisNumber: '',
     sourceName: '', sourceMobile: '',
-    purchasePrice: '', purchaseDate: new Date().toISOString().split('T')[0],
+    purchasePrice: '', purchaseDate: todayDateInputValue(),
     purchaseDeductFrom: 'CASH' as 'CASH' | 'MARGIN',
     notes: '',
 };
 
-const emptySellForm = { soldPrice: '', soldDate: new Date().toISOString().split('T')[0], buyerName: '' };
+const emptySellForm = { soldPrice: '', soldDate: todayDateInputValue(), buyerName: '' };
 
 export default function UsedBikesPage() {
     const { toasts, showToast, removeToast } = useToast();
@@ -291,7 +292,7 @@ export default function UsedBikesPage() {
                                                 ) : (
                                                     <div style={{ display: 'flex', gap: '0.25rem' }}>
                                                         <button className="btn" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}
-                                                            onClick={() => { setSellingId(b._id); setSellForm({ soldPrice: String(b.soldPrice ?? ''), soldDate: b.soldDate ? b.soldDate.split('T')[0] : new Date().toISOString().split('T')[0], buyerName: b.buyerName ?? '' }); }}>✏️ Edit</button>
+                                                            onClick={() => { setSellingId(b._id); setSellForm({ soldPrice: String(b.soldPrice ?? ''), soldDate: b.soldDate ? dateInputValue(b.soldDate) : todayDateInputValue(), buyerName: b.buyerName ?? '' }); }}>✏️ Edit</button>
                                                         <button className="btn" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }}
                                                             onClick={() => setConfirmDeleteId(b._id)}>🗑️</button>
                                                     </div>

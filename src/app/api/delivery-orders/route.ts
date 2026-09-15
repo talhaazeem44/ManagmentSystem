@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { DeliveryOrder, Bike } from '@/models';
+import { resolveTransactionDate } from '@/lib/dates';
 
 export async function POST(request: NextRequest) {
     try {
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
         // Create delivery order
         const deliveryOrder = await DeliveryOrder.create({
             doNumber,
-            date: new Date(date),
+            date: resolveTransactionDate(date),
             dealerName,
             dealerAddress,
         });

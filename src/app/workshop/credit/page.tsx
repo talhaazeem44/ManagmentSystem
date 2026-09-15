@@ -5,6 +5,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import Loader from '@/components/Loader';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
+import { todayDateInputValue } from '@/lib/dates';
 
 interface BillItem {
     stockId?: string;
@@ -45,7 +46,7 @@ interface CustomerGroup {
     totalPending: number;
 }
 
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => todayDateInputValue();
 
 export default function WorkshopCreditPage() {
     const { toasts, showToast, removeToast } = useToast();

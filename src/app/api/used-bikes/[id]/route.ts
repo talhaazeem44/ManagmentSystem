@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { UsedBike, Expense } from '@/models';
+import { resolveTransactionDate } from '@/lib/dates';
 
 export async function PATCH(
     request: NextRequest,
@@ -21,7 +22,7 @@ export async function PATCH(
                 return NextResponse.json({ message: 'A valid sold price is required' }, { status: 400 });
             }
             existing.soldPrice = Number(soldPrice);
-            existing.soldDate = soldDate ? new Date(soldDate) : new Date();
+            existing.soldDate = resolveTransactionDate(soldDate);
             existing.buyerName = buyerName || undefined;
             existing.status = 'SOLD';
             await existing.save();
@@ -49,7 +50,7 @@ export async function PATCH(
         }
         if (body.purchasePrice !== undefined) update.purchasePrice = Number(body.purchasePrice);
         if (body.purchaseDeductFrom !== undefined) update.purchaseDeductFrom = body.purchaseDeductFrom;
-        if (body.purchaseDate !== undefined) update.purchaseDate = new Date(body.purchaseDate);
+        if (body.purchaseDate !== undefined) update.purchaseDate = resolveTransactionDate(body.purchaseDate);
 
         // Keep the linked Expense record in sync so cash/margin figures don't drift from this record
         if (existing.purchaseExpenseId && (update.purchasePrice !== undefined || update.purchaseDeductFrom !== undefined || update.purchaseDate !== undefined)) {

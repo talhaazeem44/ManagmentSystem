@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/useToast';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import Loader from '@/components/Loader';
 import { HONDA_BIKE_MODELS } from '@/lib/constants';
+import { todayDateInputValue } from '@/lib/dates';
 
 interface SaleRecord {
     id: string;
@@ -628,7 +629,7 @@ export default function DashboardPage() {
                             className="input"
                             style={{ fontSize: '0.8rem', padding: '0.35rem 0.6rem', maxWidth: '180px' }}
                             value={customDate}
-                            max={new Date().toISOString().split('T')[0]}
+                            max={todayDateInputValue()}
                             onChange={e => {
                                 setCustomDate(e.target.value);
                                 setShowCustomBreakdown(true);

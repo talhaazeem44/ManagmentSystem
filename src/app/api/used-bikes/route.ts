@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { UsedBike, Expense } from '@/models';
+import { resolveTransactionDate } from '@/lib/dates';
 
 export async function GET(request: NextRequest) {
     try {
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ message: 'purchaseDeductFrom must be CASH or MARGIN' }, { status: 400 });
         }
 
-        const date = purchaseDate ? new Date(purchaseDate) : new Date();
+        const date = resolveTransactionDate(purchaseDate);
 
         // Reuse the existing Expense system for the cash/margin deduction — same mechanics as any
         // other expense, just categorized so it's identifiable in the expense breakdown.

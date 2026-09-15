@@ -6,6 +6,7 @@ import { HONDA_BIKE_MODELS, BIKE_COLORS, BIKE_BOOK_PRICES } from '@/lib/constant
 import * as XLSX from 'xlsx';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
+import { todayDateInputValue } from '@/lib/dates';
 
 interface BikeEntry {
     id: string;
@@ -96,7 +97,7 @@ function findCol(headers: string[], keywords: string[]): number {
 export default function ReceiveInventoryPage() {
     const { toasts, showToast, removeToast } = useToast();
     const [doNumber, setDoNumber] = useState('');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(todayDateInputValue());
     const [dealerName, setDealerName] = useState('NAEEM AUTOS (SBL)');
     const [dealerAddress, setDealerAddress] = useState('1-5 KM DASKA ROAD, SAMBRIAL, Pakistan');
     const [bikes, setBikes] = useState<BikeEntry[]>([
@@ -304,7 +305,7 @@ export default function ReceiveInventoryPage() {
             if (response.ok) {
                 showToast('Delivery Order received successfully!', 'success');
                 setDoNumber('');
-                setDate(new Date().toISOString().split('T')[0]);
+                setDate(todayDateInputValue());
                 setBikes([{ id: '1', orderNumber: '', model: '', color: '', engineNumber: '', chassisNumber: '', purchasePrice: '' }]);
             } else {
                 let message = 'Failed to save delivery order';

@@ -8,6 +8,7 @@ import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 import Loader from '@/components/Loader';
 import { HONDA_BIKE_MODELS, getKhataMargin } from '@/lib/constants';
+import { dateInputValue } from '@/lib/dates';
 
 interface KhataItem {
     model: string;
@@ -457,12 +458,11 @@ export default function KhataDetailPage() {
         setActiveForm(null);
         setEditingTx(tx);
         if (tx.type === 'PAYMENT') {
-            const d = new Date(tx.date);
             setEditPaymentForm({
                 amount: String(tx.amount),
                 paymentMode: tx.paymentMode || 'CASH',
                 note: tx.note || '',
-                date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+                date: dateInputValue(tx.date),
             });
         } else {
             const rows: BikeRow[] = (tx.items && tx.items.length > 0)
@@ -480,8 +480,7 @@ export default function KhataDetailPage() {
                 : [newBikeRow()];
             setEditBikeRows(rows);
             setEditOtherAmount('');
-            const d = new Date(tx.date);
-            setEditDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+            setEditDate(dateInputValue(tx.date));
             setEditNote(tx.note || '');
         }
     };
