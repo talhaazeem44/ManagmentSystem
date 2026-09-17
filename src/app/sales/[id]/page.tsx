@@ -473,12 +473,16 @@ export default function ReceiptPage() {
                             </div>
                         ) : null}
 
-                        {/* Payment history inside receipt (visible on print) — capped so it can never push the receipt past one A4 page */}
-                        {payments.length > 0 && (() => {
+                        {/* Payment history inside receipt (visible on print) — capped so it can never push the receipt past one A4 page.
+                            Internal corrections (edits made on the Sales list page, not real customer payments) are excluded here —
+                            they still show in the on-screen payment history above for staff, just not on the printed receipt. */}
+                        {(() => {
+                            const printablePayments = payments.filter(p => p.note !== 'Edited on Sales page');
+                            if (printablePayments.length === 0) return null;
                             const MAX_ROWS = 3;
-                            const shown = payments.slice(0, MAX_ROWS);
-                            const hiddenCount = payments.length - shown.length;
-                            const rowFont = payments.length > MAX_ROWS ? '0.68rem' : '0.75rem';
+                            const shown = printablePayments.slice(0, MAX_ROWS);
+                            const hiddenCount = printablePayments.length - shown.length;
+                            const rowFont = printablePayments.length > MAX_ROWS ? '0.68rem' : '0.75rem';
                             return (
                                 <div style={{ marginTop: '0.4rem', borderTop: '1px solid #ccc', paddingTop: '0.3rem' }}>
                                     <div style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '0.2rem' }}>Payment History:</div>
