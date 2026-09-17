@@ -26,6 +26,17 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
             await Bike.findByIdAndUpdate(body.bikeId, { status: 'SOLD' });
         }
 
+        // Record when the bike was actually handed over. A precise date+time explicitly sent
+        // (e.g. correcting it later via the edit form) is used exactly as chosen; otherwise —
+        // the initial "mark delivered" action — default to the server's own clock rather than
+        // the client's, which may have a wrong system date, as a starting point that's still
+        // editable afterward.
+        if (body.deliveredAt !== undefined) {
+            body.deliveredAt = new Date(body.deliveredAt);
+        } else if (body.status === 'DELIVERED') {
+            body.deliveredAt = new Date();
+        }
+
         const updateOps: any = { $set: body };
 
         // Remaining balance collected at delivery — add to advancePaid and record as

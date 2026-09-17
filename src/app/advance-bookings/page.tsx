@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { HONDA_BIKE_MODELS, BIKE_STANDARD_PRICES } from '@/lib/constants';
-import { todayDateInputValue } from '@/lib/dates';
+import { todayDateInputValue, dateTimeInputValue, pakistanDateTimeToInstant } from '@/lib/dates';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 import Loader from '@/components/Loader';
@@ -13,6 +13,7 @@ interface AdvanceBooking {
     customerName: string;
     customerMobile?: string;
     cnic?: string;
+    address?: string;
     bikeModel?: string;
     bikeColor?: string;
     careOf?: string;
@@ -27,6 +28,7 @@ interface AdvanceBooking {
     chassisNumber?: string;
     status: 'PENDING' | 'DELIVERED';
     date: string;
+    deliveredAt?: string;
 }
 
 interface AvailableBike {
@@ -44,6 +46,7 @@ const emptyForm = {
     customerName: '',
     customerMobile: '',
     cnic: '',
+    address: '',
     bikeModel: '',
     bikeColor: '',
     careOf: '',
@@ -66,6 +69,7 @@ interface EditForm {
     engineNumber: string;
     chassisNumber: string;
     totalPrice: string;
+    deliveredAt: string;
 }
 
 export default function AdvanceBookingsPage() {
@@ -86,7 +90,7 @@ export default function AdvanceBookingsPage() {
     const [remainingAmount, setRemainingAmount] = useState('');
     const [remainingMode, setRemainingMode] = useState<'CASH' | 'BANK_TRANSFER'>('CASH');
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [editForm, setEditForm] = useState<EditForm>({ customerName: '', cnic: '', engineNumber: '', chassisNumber: '', totalPrice: '' });
+    const [editForm, setEditForm] = useState<EditForm>({ customerName: '', cnic: '', engineNumber: '', chassisNumber: '', totalPrice: '', deliveredAt: '' });
     const [savingEdit, setSavingEdit] = useState(false);
 
     const fetchBookings = async () => {
@@ -180,10 +184,8 @@ export default function AdvanceBookingsPage() {
                 }),
             });
             if (res.ok) {
-                showToast('Marked as delivered and linked to inventory', 'success');
-                setDeliveringId(null);
-                setSelectedBike(null);
-                fetchBookings();
+                showToast('Marked as delivered — opening receipt...', 'success');
+                printBooking(booking);
             } else {
                 const err = await res.json().catch(() => ({ message: 'Failed to update' }));
                 showToast(err.message || 'Failed to update', 'error');
@@ -201,6 +203,7 @@ export default function AdvanceBookingsPage() {
             engineNumber: b.engineNumber || '',
             chassisNumber: b.chassisNumber || '',
             totalPrice: b.totalPrice ? String(b.totalPrice) : '',
+            deliveredAt: b.deliveredAt ? dateTimeInputValue(b.deliveredAt) : '',
         });
     };
 
@@ -216,6 +219,7 @@ export default function AdvanceBookingsPage() {
                     engineNumber: editForm.engineNumber,
                     chassisNumber: editForm.chassisNumber,
                     totalPrice: editForm.totalPrice ? Number(editForm.totalPrice) : undefined,
+                    ...(editForm.deliveredAt ? { deliveredAt: pakistanDateTimeToInstant(editForm.deliveredAt).toISOString() } : {}),
                 }),
             });
             if (res.ok) {
@@ -281,6 +285,10 @@ export default function AdvanceBookingsPage() {
                                 <div className="form-group">
                                     <label className="label">CNIC</label>
                                     <input className="input" value={form.cnic} onChange={e => setForm({ ...form, cnic: e.target.value })} placeholder="34601-XXXXXXX-X" />
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Address</label>
+                                    <input className="input" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="Street, City" />
                                 </div>
                                 <div className="form-group">
                                     <label className="label">Care of</label>
@@ -384,6 +392,7 @@ export default function AdvanceBookingsPage() {
                                                 {b.bikeModel && <span>🏍️ {b.bikeModel}{b.bikeColor ? ` · ${b.bikeColor}` : ''}</span>}
                                                 <span>📅 {new Date(b.date).toLocaleDateString()}</span>
                                                 {b.expectedDeliveryDate && <span style={{ color: isOverdue ? '#ef4444' : 'var(--color-text-muted)', fontWeight: isOverdue ? 700 : 400 }}>🚚 By {new Date(b.expectedDeliveryDate).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}</span>}
+                                                {b.status === 'DELIVERED' && b.deliveredAt && <span>✅ Delivered {new Date(b.deliveredAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })} · {new Date(b.deliveredAt).toLocaleTimeString('en-PK', { hour: 'numeric', minute: '2-digit' })}</span>}
                                             </div>
                                             <div style={{ marginTop: '0.35rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.85rem' }}>
                                                 <span>Advance: <strong style={{ color: 'var(--color-success)' }}>Rs. {b.advancePaid.toLocaleString()}</strong>{' '}
@@ -468,6 +477,14 @@ export default function AdvanceBookingsPage() {
                                                         onChange={e => setEditForm({ ...editForm, totalPrice: e.target.value })}
                                                         placeholder="238500" />
                                                 </div>
+                                                {b.status === 'DELIVERED' && (
+                                                    <div className="form-group" style={{ margin: 0 }}>
+                                                        <label className="label" style={{ fontSize: '0.72rem' }}>Delivered On</label>
+                                                        <input type="datetime-local" className="input" style={{ fontSize: '0.82rem', padding: '0.4rem 0.6rem' }}
+                                                            value={editForm.deliveredAt}
+                                                            onChange={e => setEditForm({ ...editForm, deliveredAt: e.target.value })} />
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     )}

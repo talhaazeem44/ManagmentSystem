@@ -44,3 +44,25 @@ export function todayDateInputValue(): string {
 export function dateInputValue(date: Date | string): string {
     return formatDateParts(pakistanDateParts(new Date(date).getTime()));
 }
+
+// Converts an <input type="datetime-local"> value ("YYYY-MM-DDTHH:mm") into the real UTC
+// instant it represents *in Pakistan time* — without relying on the browser's own timezone
+// setting, which is what these helpers exist to avoid depending on in the first place.
+export function pakistanDateTimeToInstant(value: string): Date {
+    const [datePart, timePart] = value.split('T');
+    const [y, m, d] = datePart.split('-').map(Number);
+    const [hh, mm] = (timePart || '00:00').split(':').map(Number);
+    return new Date(Date.UTC(y, m - 1, d, hh, mm) - PKT_OFFSET_MS);
+}
+
+// Recovers the "YYYY-MM-DDTHH:mm" an <input type="datetime-local"> should show for a stored
+// instant, displayed as the Pakistan wall-clock time it represents.
+export function dateTimeInputValue(date: Date | string): string {
+    const shifted = new Date(new Date(date).getTime() + PKT_OFFSET_MS);
+    const y = shifted.getUTCFullYear();
+    const mo = String(shifted.getUTCMonth() + 1).padStart(2, '0');
+    const da = String(shifted.getUTCDate()).padStart(2, '0');
+    const hh = String(shifted.getUTCHours()).padStart(2, '0');
+    const mi = String(shifted.getUTCMinutes()).padStart(2, '0');
+    return `${y}-${mo}-${da}T${hh}:${mi}`;
+}

@@ -241,6 +241,7 @@ export interface IAdvanceBooking {
     customerName: string;
     customerMobile?: string;
     cnic?: string;
+    address?: string;
     bikeModel?: string;
     bikeColor?: string;
     careOf?: string;
@@ -253,6 +254,9 @@ export interface IAdvanceBooking {
     expectedDeliveryDate?: Date;
     status: 'PENDING' | 'DELIVERED';
     date: Date;
+    // When the bike was actually handed over — set when status flips to DELIVERED, editable
+    // afterward so records can be corrected/backdated independently of `updatedAt`.
+    deliveredAt?: Date;
     // Inventory bike linked at delivery time — lets a booking be fulfilled
     // without creating a separate Sale record (which would double-count margin).
     bikeId?: string;
@@ -271,6 +275,7 @@ const AdvanceBookingSchema = new Schema<IAdvanceBooking>({
     customerName: { type: String, required: true },
     customerMobile: { type: String },
     cnic: { type: String },
+    address: { type: String },
     bikeModel: { type: String },
     bikeColor: { type: String },
     careOf: { type: String },
@@ -283,6 +288,7 @@ const AdvanceBookingSchema = new Schema<IAdvanceBooking>({
     expectedDeliveryDate: { type: Date },
     status: { type: String, enum: ['PENDING', 'DELIVERED'], default: 'PENDING' },
     date: { type: Date, default: Date.now },
+    deliveredAt: { type: Date },
     bikeId: { type: Schema.Types.ObjectId, ref: 'Bike' },
     engineNumber: { type: String },
     payments: { type: [PaymentSchema], default: [] },

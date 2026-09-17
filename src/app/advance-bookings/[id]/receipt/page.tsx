@@ -52,6 +52,7 @@ interface Booking {
     customerName: string;
     customerMobile?: string;
     cnic?: string;
+    address?: string;
     bikeModel?: string;
     bikeColor?: string;
     careOf?: string;
@@ -67,6 +68,7 @@ interface Booking {
     chassisNumber?: string;
     payments?: Payment[];
     updatedAt?: string;
+    deliveredAt?: string;
 }
 
 const MODELS = ['CD70', 'DREAM', 'PRIDOR', 'CG 125', 'CG125S.SE', 'CB125F.SE', 'CB150F', 'ICON EV'];
@@ -127,7 +129,9 @@ export default function AdvanceBookingReceiptPage() {
     const collectedAtDelivery = payments.reduce((s, p) => s + Number(p.amount || 0), 0);
     const originalAdvance = Math.max(0, displayAdvancePaid - collectedAtDelivery);
 
-    const deliveryDate = isDelivered && booking.updatedAt ? new Date(booking.updatedAt) : new Date(booking.date);
+    const deliveryDate = isDelivered
+        ? new Date(booking.deliveredAt || booking.updatedAt || booking.date)
+        : new Date(booking.date);
     const receiptColour = guessReceiptColour(booking.bikeColor || '');
 
     const handleExportPDF = async () => {
@@ -198,6 +202,10 @@ export default function AdvanceBookingReceiptPage() {
                             </div>
                         </div>
 
+                        <div style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', margin: '0.25rem 0 0.5rem' }}>
+                            ADVANCE BOOKING — DELIVERED
+                        </div>
+
                         <div className={saleStyles.idRow}>
                             <div className={saleStyles.digitField}>
                                 <span className={saleStyles.digitLabel}>C.N.I.C #:</span>
@@ -223,6 +231,10 @@ export default function AdvanceBookingReceiptPage() {
                                     <span className={saleStyles.value}>{booking.careOf}</span>
                                 </div>
                             )}
+                            <div className={saleStyles.field}>
+                                <span className={saleStyles.label}>Address:</span>
+                                <span className={saleStyles.value}>{booking.address || ''}</span>
+                            </div>
                             <div className={saleStyles.field}>
                                 <span className={saleStyles.label}>Mobile #:</span>
                                 <span className={saleStyles.value}>{booking.customerMobile || ''}</span>
@@ -351,6 +363,13 @@ export default function AdvanceBookingReceiptPage() {
                                 <div className={styles.field}>
                                     <span className={styles.label}>Care of:</span>
                                     <span className={styles.value}>{booking.careOf}</span>
+                                </div>
+                            )}
+
+                            {booking.address && (
+                                <div className={styles.field}>
+                                    <span className={styles.label}>Address:</span>
+                                    <span className={styles.value}>{booking.address}</span>
                                 </div>
                             )}
 
