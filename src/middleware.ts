@@ -19,6 +19,11 @@ export async function middleware(request: NextRequest) {
     // must stay separate from isWorkshopApi since regular 'user' accounts also need
     // /api/expenses for their own (non-workshop) expense tracking.
     const isApiExpenses = pathname.startsWith('/api/expenses');
+    // Mechanics and part-lookup are shared endpoints the Workshop page itself depends on
+    // (not under /api/workshop/*), so a workshop-role user needs them allowed too — otherwise
+    // every call gets redirected away and fails silently (wrong content-type, not an error).
+    const isApiMechanics = pathname.startsWith('/api/mechanics');
+    const isApiFetchPartDetails = pathname.startsWith('/api/fetch-part-details');
     const isApiSeedStock = pathname.startsWith('/api/seed-stock');
     const isSetup = pathname === '/setup' || pathname.startsWith('/api/setup');
 
@@ -39,9 +44,10 @@ export async function middleware(request: NextRequest) {
     if (token) {
         const role = token.role as string;
 
-        // Workshop users can only access /workshop pages, /api/workshop, and /api/expenses
-        // (the latter scoped server-side to their own WORKSHOP-tagged records)
-        if (role === 'workshop' && !isWorkshopPage && !isWorkshopApi && !isApiExpenses) {
+        // Workshop users can only access /workshop pages, /api/workshop, /api/expenses
+        // (scoped server-side to their own WORKSHOP-tagged records), /api/mechanics, and
+        // /api/fetch-part-details.
+        if (role === 'workshop' && !isWorkshopPage && !isWorkshopApi && !isApiExpenses && !isApiMechanics && !isApiFetchPartDetails) {
             return NextResponse.redirect(new URL('/workshop', request.url));
         }
 

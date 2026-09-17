@@ -191,6 +191,7 @@ export interface IServiceSale {
     customerName: string;
     customerMobile?: string;
     bikeNumber?: string;
+    mechanicName?: string;
     serviceType: string;
     description?: string;
     serviceCharges: number;
@@ -218,6 +219,7 @@ const ServiceSaleSchema = new Schema<IServiceSale>({
     customerName: { type: String, required: true },
     customerMobile: { type: String },
     bikeNumber: { type: String },
+    mechanicName: { type: String },
     serviceType: { type: String, required: true },
     description: { type: String },
     serviceCharges: { type: Number, default: 0 },

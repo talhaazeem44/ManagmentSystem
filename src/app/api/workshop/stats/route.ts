@@ -78,6 +78,18 @@ export async function GET(request: NextRequest) {
             byServiceType[key].margin += Number(r.margin || 0);
         }
 
+        // Jobs per mechanic in the selected range — only reflects jobs billed after mechanicName
+        // started being recorded, so older jobs won't be attributed to anyone.
+        const byMechanic: Record<string, { count: number; revenue: number; margin: number }> = {};
+        for (const r of sales as any[]) {
+            if (!r.mechanicName) continue;
+            const key = r.mechanicName;
+            if (!byMechanic[key]) byMechanic[key] = { count: 0, revenue: 0, margin: 0 };
+            byMechanic[key].count += 1;
+            byMechanic[key].revenue += Number(r.totalAmount || 0);
+            byMechanic[key].margin += Number(r.margin || 0);
+        }
+
         // Last 7 days chart data (independent of the selected range, for a consistent trend view)
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
@@ -118,6 +130,7 @@ export async function GET(request: NextRequest) {
             jobCount,
             avgTicket,
             byServiceType,
+            byMechanic,
             chartData,
             lowStockThreshold,
             lowStockItems: lowStockItems.map((it: any) => ({

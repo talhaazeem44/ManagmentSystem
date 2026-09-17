@@ -43,6 +43,7 @@ interface WorkshopStats {
     jobCount: number;
     avgTicket: number;
     byServiceType: Record<string, ServiceTypeBreakdown>;
+    byMechanic: Record<string, ServiceTypeBreakdown>;
     chartData: { day: string; jobs: number; revenue: number; margin: number }[];
     recentJobs: RecentJob[];
     lowStockThreshold: number;
@@ -225,6 +226,41 @@ export default function WorkshopDashboardPage() {
                                                     <tr key={type} style={{ borderBottom: '1px solid var(--color-border)' }}>
                                                         <td style={{ padding: '6px 8px', fontWeight: 600 }}>{type}</td>
                                                         <td style={{ padding: '6px 8px', textAlign: 'right' }}>{d.count}</td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right' }}>Rs. {Math.round(d.revenue).toLocaleString()}</td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right', color: '#10b981', fontWeight: 700 }}>Rs. {Math.round(d.margin).toLocaleString()}</td>
+                                                    </tr>
+                                                ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* ── Breakdown by Mechanic ── */}
+                        <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
+                            <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem' }}>Jobs by Mechanic — {rangeLabel}</div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+                                Use the Today / 7 Days / Month buttons above to see day-wise or month-wise totals. Only counts jobs where a mechanic was selected on the bill.
+                            </div>
+                            {Object.keys(stats.byMechanic).length === 0 ? (
+                                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>No jobs with a mechanic assigned in this period.</div>
+                            ) : (
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                                                {['Mechanic', 'Jobs', 'Revenue', 'Margin'].map(h => (
+                                                    <th key={h} style={{ padding: '6px 8px', textAlign: h === 'Mechanic' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Object.entries(stats.byMechanic)
+                                                .sort((a, b) => b[1].count - a[1].count)
+                                                .map(([mechanic, d]) => (
+                                                    <tr key={mechanic} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                                        <td style={{ padding: '6px 8px', fontWeight: 600 }}>{mechanic}</td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>{d.count}</td>
                                                         <td style={{ padding: '6px 8px', textAlign: 'right' }}>Rs. {Math.round(d.revenue).toLocaleString()}</td>
                                                         <td style={{ padding: '6px 8px', textAlign: 'right', color: '#10b981', fontWeight: 700 }}>Rs. {Math.round(d.margin).toLocaleString()}</td>
                                                     </tr>
