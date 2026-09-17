@@ -3,6 +3,10 @@ import dbConnect from '@/lib/mongodb';
 import { DeliveryOrder, Bike } from '@/models';
 import { resolveTransactionDate } from '@/lib/dates';
 
+// The GET handler below takes no request-specific input, which Next.js would otherwise treat
+// as static and cache — serving a stale list to some clients even after the DB changes.
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
     try {
         await dbConnect();

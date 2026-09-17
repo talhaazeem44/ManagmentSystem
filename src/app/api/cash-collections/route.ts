@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { CashCollection } from '@/models';
 
+// This GET handler takes no request-specific input, which Next.js would otherwise treat as
+// static and cache — serving a stale value to some clients even after the DB changes.
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
         await dbConnect();

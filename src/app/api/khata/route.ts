@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { KhataParty } from '@/models';
 
+// This GET handler takes no request-specific input, which Next.js would otherwise treat as
+// static and cache — serving a stale list to some clients even after the DB changes.
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     await dbConnect();
     const parties = await KhataParty.find({}).sort({ updatedAt: -1 }).lean();

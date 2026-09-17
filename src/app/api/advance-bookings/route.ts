@@ -9,6 +9,10 @@ import {
 } from '@/lib/constants';
 import { resolveTransactionDate } from '@/lib/dates';
 
+// This GET handler takes no request-specific input, which Next.js would otherwise treat as
+// static and cache — serving a stale list to some clients even after the DB changes.
+export const dynamic = 'force-dynamic';
+
 function calcAdvanceMargin(bikeModel: string, totalPrice: number, registrationFee: number) {
     const standard = BIKE_STANDARD_PRICES[bikeModel] || totalPrice;
     const base = BIKE_UNIT_MARGINS[bikeModel] || 0;
