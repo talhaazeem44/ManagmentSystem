@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { HONDA_BIKE_MODELS, BIKE_STANDARD_PRICES } from '@/lib/constants';
-import { todayDateInputValue, dateTimeInputValue, pakistanDateTimeToInstant } from '@/lib/dates';
+import { todayDateInputValue, dateInputValue, dateTimeInputValue, pakistanDateTimeToInstant } from '@/lib/dates';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 import Loader from '@/components/Loader';
@@ -69,6 +69,7 @@ interface EditForm {
     engineNumber: string;
     chassisNumber: string;
     totalPrice: string;
+    expectedDeliveryDate: string;
     deliveredAt: string;
 }
 
@@ -90,7 +91,7 @@ export default function AdvanceBookingsPage() {
     const [remainingAmount, setRemainingAmount] = useState('');
     const [remainingMode, setRemainingMode] = useState<'CASH' | 'BANK_TRANSFER'>('CASH');
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [editForm, setEditForm] = useState<EditForm>({ customerName: '', cnic: '', engineNumber: '', chassisNumber: '', totalPrice: '', deliveredAt: '' });
+    const [editForm, setEditForm] = useState<EditForm>({ customerName: '', cnic: '', engineNumber: '', chassisNumber: '', totalPrice: '', expectedDeliveryDate: '', deliveredAt: '' });
     const [savingEdit, setSavingEdit] = useState(false);
 
     const fetchBookings = async () => {
@@ -203,6 +204,7 @@ export default function AdvanceBookingsPage() {
             engineNumber: b.engineNumber || '',
             chassisNumber: b.chassisNumber || '',
             totalPrice: b.totalPrice ? String(b.totalPrice) : '',
+            expectedDeliveryDate: b.expectedDeliveryDate ? dateInputValue(b.expectedDeliveryDate) : '',
             deliveredAt: b.deliveredAt ? dateTimeInputValue(b.deliveredAt) : '',
         });
     };
@@ -219,6 +221,7 @@ export default function AdvanceBookingsPage() {
                     engineNumber: editForm.engineNumber,
                     chassisNumber: editForm.chassisNumber,
                     totalPrice: editForm.totalPrice ? Number(editForm.totalPrice) : undefined,
+                    expectedDeliveryDate: editForm.expectedDeliveryDate || undefined,
                     ...(editForm.deliveredAt ? { deliveredAt: pakistanDateTimeToInstant(editForm.deliveredAt).toISOString() } : {}),
                 }),
             });
@@ -477,6 +480,14 @@ export default function AdvanceBookingsPage() {
                                                         onChange={e => setEditForm({ ...editForm, totalPrice: e.target.value })}
                                                         placeholder="238500" />
                                                 </div>
+                                                {b.status === 'PENDING' && (
+                                                    <div className="form-group" style={{ margin: 0 }}>
+                                                        <label className="label" style={{ fontSize: '0.72rem' }}>Expected Delivery Date</label>
+                                                        <input type="date" className="input" style={{ fontSize: '0.82rem', padding: '0.4rem 0.6rem' }}
+                                                            value={editForm.expectedDeliveryDate}
+                                                            onChange={e => setEditForm({ ...editForm, expectedDeliveryDate: e.target.value })} />
+                                                    </div>
+                                                )}
                                                 {b.status === 'DELIVERED' && (
                                                     <div className="form-group" style={{ margin: 0 }}>
                                                         <label className="label" style={{ fontSize: '0.72rem' }}>Delivered On</label>
