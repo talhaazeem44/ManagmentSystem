@@ -248,6 +248,13 @@ export interface IAdvanceBooking {
     bikeColor?: string;
     careOf?: string;
     advancePaid: number;
+    // advancePaid split by how it was actually received — mirrors Sale's receivedCash/
+    // bankTransferAmount split, since one advance can be part cash + part bank transfer.
+    // Kept in sync so advanceCashAmount + advanceBankAmount === advancePaid.
+    advanceCashAmount?: number;
+    advanceBankAmount?: number;
+    // Legacy field from before the cash/bank split existed — still read as a fallback for
+    // older bookings that predate advanceCashAmount/advanceBankAmount.
     advancePaymentMode?: 'CASH' | 'BANK_TRANSFER';
     totalPrice?: number;
     registrationFee?: number;
@@ -282,6 +289,8 @@ const AdvanceBookingSchema = new Schema<IAdvanceBooking>({
     bikeColor: { type: String },
     careOf: { type: String },
     advancePaid: { type: Number, required: true, default: 0 },
+    advanceCashAmount: { type: Number, default: 0 },
+    advanceBankAmount: { type: Number, default: 0 },
     advancePaymentMode: { type: String, enum: ['CASH', 'BANK_TRANSFER'], default: 'CASH' },
     totalPrice: { type: Number },
     registrationFee: { type: Number, default: 0 },

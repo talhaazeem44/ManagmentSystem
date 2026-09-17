@@ -39,14 +39,23 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
 
         const updateOps: any = { $set: body };
 
-        // Remaining balance collected at delivery — add to advancePaid and record as
-        // a dated payment (today), same mechanism as Sale.payments, so Reports counts
-        // this cash on the day it was actually collected, not the booking's original date.
-        if (deliveryPayment && Number(deliveryPayment.amount) > 0) {
-            const amount = Number(deliveryPayment.amount);
-            const mode: 'CASH' | 'BANK_TRANSFER' = deliveryPayment.paymentMode === 'BANK_TRANSFER' ? 'BANK_TRANSFER' : 'CASH';
-            updateOps.$inc = { advancePaid: amount };
-            updateOps.$push = { payments: { amount, date: new Date(), paymentMode: mode, note: 'Collected at delivery' } };
+        // Remaining balance collected at delivery — add to advancePaid (split by cash/bank,
+        // same as the initial advance) and record each as a dated payment (today), same
+        // mechanism as Sale.payments, so Reports counts this cash on the day it was actually
+        // collected, not the booking's original date. Split across both modes if the customer
+        // paid part cash, part bank transfer.
+        if (deliveryPayment) {
+            const cashAmount = Number(deliveryPayment.cashAmount) || 0;
+            const bankAmount = Number(deliveryPayment.bankAmount) || 0;
+            const total = cashAmount + bankAmount;
+            if (total > 0) {
+                const now = new Date();
+                const entries: any[] = [];
+                if (cashAmount > 0) entries.push({ amount: cashAmount, date: now, paymentMode: 'CASH', note: 'Collected at delivery' });
+                if (bankAmount > 0) entries.push({ amount: bankAmount, date: now, paymentMode: 'BANK_TRANSFER', note: 'Collected at delivery' });
+                updateOps.$inc = { advancePaid: total, advanceCashAmount: cashAmount, advanceBankAmount: bankAmount };
+                updateOps.$push = { payments: { $each: entries } };
+            }
         }
 
         const booking = await AdvanceBooking.findByIdAndUpdate(id, updateOps, { new: true });

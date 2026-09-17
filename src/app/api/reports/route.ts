@@ -155,8 +155,16 @@ export async function GET(request: NextRequest) {
             .filter((p: any) => p.paymentMode === 'BANK_TRANSFER')
             .reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
 
-        const rangeAdvanceCash = filteredAdvanceBookings.reduce((s: number, b: any) => b.advancePaymentMode === 'BANK_TRANSFER' ? s : s + Number(b.advancePaid || 0), 0) + advancePaymentsCashInRange;
-        const rangeAdvanceBankTransfer = filteredAdvanceBookings.reduce((s: number, b: any) => b.advancePaymentMode === 'BANK_TRANSFER' ? s + Number(b.advancePaid || 0) : s, 0) + advancePaymentsBankInRange;
+        // Prefer the cash/bank split when present (bookings created after that field existed);
+        // fall back to the old all-or-nothing advancePaymentMode for bookings that predate it.
+        const rangeAdvanceCash = filteredAdvanceBookings.reduce((s: number, b: any) => {
+            if (b.advanceCashAmount !== undefined || b.advanceBankAmount !== undefined) return s + Number(b.advanceCashAmount || 0);
+            return b.advancePaymentMode === 'BANK_TRANSFER' ? s : s + Number(b.advancePaid || 0);
+        }, 0) + advancePaymentsCashInRange;
+        const rangeAdvanceBankTransfer = filteredAdvanceBookings.reduce((s: number, b: any) => {
+            if (b.advanceCashAmount !== undefined || b.advanceBankAmount !== undefined) return s + Number(b.advanceBankAmount || 0);
+            return b.advancePaymentMode === 'BANK_TRANSFER' ? s + Number(b.advancePaid || 0) : s;
+        }, 0) + advancePaymentsBankInRange;
         const rangeAdvanceMargin = filteredAdvanceBookings.reduce((s: number, b: any) => s + calcAdvanceMargin(b).bikeProfit, 0);
 
         // Attach customer info to credit sales
@@ -432,14 +440,17 @@ export async function GET(request: NextRequest) {
             }),
             ...filteredAdvanceBookings.map((b: any) => {
                 const am = calcAdvanceMargin(b);
+                const hasSplit = b.advanceCashAmount !== undefined || b.advanceBankAmount !== undefined;
                 const isBank = b.advancePaymentMode === 'BANK_TRANSFER';
+                const receivedCash = hasSplit ? Number(b.advanceCashAmount || 0) : (isBank ? 0 : Number(b.advancePaid || 0));
+                const bankTransferAmount = hasSplit ? Number(b.advanceBankAmount || 0) : (isBank ? Number(b.advancePaid || 0) : 0);
                 return {
                     saleDate: b.date,
                     bikeModel: b.bikeModel || 'Advance',
                     paymentMode: 'ADVANCE',
                     price: Number(b.totalPrice || 0),
-                    receivedCash: isBank ? 0 : Number(b.advancePaid || 0),
-                    bankTransferAmount: isBank ? Number(b.advancePaid || 0) : 0,
+                    receivedCash,
+                    bankTransferAmount,
                     counted: Number(b.advancePaid || 0),
                     bikeProfit: am.bikeProfit,
                     regProfit: 0,

@@ -18,6 +18,8 @@ interface AdvanceBooking {
     bikeColor?: string;
     careOf?: string;
     advancePaid: number;
+    advanceCashAmount?: number;
+    advanceBankAmount?: number;
     advancePaymentMode?: 'CASH' | 'BANK_TRANSFER';
     totalPrice?: number;
     registrationFee?: number;
@@ -50,8 +52,8 @@ const emptyForm = {
     bikeModel: '',
     bikeColor: '',
     careOf: '',
-    advancePaid: '',
-    advancePaymentMode: 'CASH' as 'CASH' | 'BANK_TRANSFER',
+    advanceCashAmount: '',
+    advanceBankAmount: '',
     totalPrice: '',
     registrationFee: '',
     notes: '',
@@ -88,8 +90,8 @@ export default function AdvanceBookingsPage() {
     const [bikeSearch, setBikeSearch] = useState('');
     const [linkingBikeId, setLinkingBikeId] = useState<string | null>(null);
     const [selectedBike, setSelectedBike] = useState<AvailableBike | null>(null);
-    const [remainingAmount, setRemainingAmount] = useState('');
-    const [remainingMode, setRemainingMode] = useState<'CASH' | 'BANK_TRANSFER'>('CASH');
+    const [remainingCash, setRemainingCash] = useState('');
+    const [remainingBank, setRemainingBank] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editForm, setEditForm] = useState<EditForm>({ customerName: '', cnic: '', engineNumber: '', chassisNumber: '', totalPrice: '', expectedDeliveryDate: '', deliveredAt: '' });
     const [savingEdit, setSavingEdit] = useState(false);
@@ -108,6 +110,10 @@ export default function AdvanceBookingsPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if ((Number(form.advanceCashAmount) || 0) + (Number(form.advanceBankAmount) || 0) <= 0) {
+            showToast('Enter at least one advance amount (cash or bank)', 'error');
+            return;
+        }
         setSubmitting(true);
         try {
             const res = await fetch('/api/advance-bookings', {
@@ -115,7 +121,8 @@ export default function AdvanceBookingsPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...form,
-                    advancePaid: Number(form.advancePaid),
+                    advanceCashAmount: form.advanceCashAmount ? Number(form.advanceCashAmount) : 0,
+                    advanceBankAmount: form.advanceBankAmount ? Number(form.advanceBankAmount) : 0,
                     totalPrice: form.totalPrice ? Number(form.totalPrice) : undefined,
                     registrationFee: form.registrationFee ? Number(form.registrationFee) : 0,
                     expectedDeliveryDate: form.expectedDeliveryDate || undefined,
@@ -139,8 +146,8 @@ export default function AdvanceBookingsPage() {
         setDeliveringId(booking._id);
         setBikeSearch('');
         setSelectedBike(null);
-        setRemainingAmount('');
-        setRemainingMode('CASH');
+        setRemainingCash('');
+        setRemainingBank('');
         setLoadingBikes(true);
         try {
             const res = await fetch('/api/bikes');
@@ -161,14 +168,16 @@ export default function AdvanceBookingsPage() {
     const selectBikeForDelivery = (booking: AdvanceBooking, bike: AvailableBike) => {
         setSelectedBike(bike);
         const remaining = remainingForBooking(booking);
-        setRemainingAmount(remaining > 0 ? String(remaining) : '');
+        setRemainingCash(remaining > 0 ? String(remaining) : '');
+        setRemainingBank('');
     };
 
     const confirmDeliver = async (booking: AdvanceBooking) => {
         if (!selectedBike) return;
         setLinkingBikeId(selectedBike.id);
         try {
-            const amount = parseFloat(remainingAmount) || 0;
+            const cashAmount = parseFloat(remainingCash) || 0;
+            const bankAmount = parseFloat(remainingBank) || 0;
             const res = await fetch(`/api/advance-bookings/${booking._id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -181,7 +190,7 @@ export default function AdvanceBookingsPage() {
                     // (customer may have booked a CD125 but received a different model at delivery)
                     bikeModel: selectedBike.model,
                     bikeColor: selectedBike.color,
-                    ...(amount > 0 ? { deliveryPayment: { amount, paymentMode: remainingMode } } : {}),
+                    ...(cashAmount + bankAmount > 0 ? { deliveryPayment: { cashAmount, bankAmount } } : {}),
                 }),
             });
             if (res.ok) {
@@ -318,15 +327,12 @@ export default function AdvanceBookingsPage() {
                                     <input type="text" inputMode="decimal" className="input" value={form.totalPrice} onChange={e => setForm({ ...form, totalPrice: e.target.value })} placeholder="238500" />
                                 </div>
                                 <div className="form-group">
-                                    <label className="label">Advance Paid (PKR) *</label>
-                                    <input type="text" inputMode="decimal" className="input" value={form.advancePaid} onChange={e => setForm({ ...form, advancePaid: e.target.value })} required placeholder="5000" />
+                                    <label className="label">Advance — Cash (PKR)</label>
+                                    <input type="text" inputMode="decimal" className="input" value={form.advanceCashAmount} onChange={e => setForm({ ...form, advanceCashAmount: e.target.value })} placeholder="5000" />
                                 </div>
                                 <div className="form-group">
-                                    <label className="label">Payment Method *</label>
-                                    <select className="select" value={form.advancePaymentMode} onChange={e => setForm({ ...form, advancePaymentMode: e.target.value as 'CASH' | 'BANK_TRANSFER' })}>
-                                        <option value="CASH">Cash</option>
-                                        <option value="BANK_TRANSFER">Bank Transfer</option>
-                                    </select>
+                                    <label className="label">Advance — Bank Transfer (PKR)</label>
+                                    <input type="text" inputMode="decimal" className="input" value={form.advanceBankAmount} onChange={e => setForm({ ...form, advanceBankAmount: e.target.value })} placeholder="0" />
                                 </div>
                                 <div className="form-group">
                                     <label className="label">Registration Fees (PKR)</label>
@@ -399,9 +405,21 @@ export default function AdvanceBookingsPage() {
                                             </div>
                                             <div style={{ marginTop: '0.35rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.85rem' }}>
                                                 <span>Advance: <strong style={{ color: 'var(--color-success)' }}>Rs. {b.advancePaid.toLocaleString()}</strong>{' '}
-                                                    <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, background: b.advancePaymentMode === 'BANK_TRANSFER' ? 'rgba(59,130,246,0.12)' : 'rgba(16,185,129,0.12)', color: b.advancePaymentMode === 'BANK_TRANSFER' ? '#3b82f6' : '#10b981' }}>
-                                                        {b.advancePaymentMode === 'BANK_TRANSFER' ? 'BANK' : 'CASH'}
-                                                    </span>
+                                                    {(b.advanceCashAmount ?? 0) > 0 && (
+                                                        <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, background: 'rgba(16,185,129,0.12)', color: '#10b981' }}>
+                                                            CASH Rs. {(b.advanceCashAmount ?? 0).toLocaleString()}
+                                                        </span>
+                                                    )}
+                                                    {(b.advanceBankAmount ?? 0) > 0 && (
+                                                        <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, background: 'rgba(59,130,246,0.12)', color: '#3b82f6', marginLeft: '0.25rem' }}>
+                                                            BANK Rs. {(b.advanceBankAmount ?? 0).toLocaleString()}
+                                                        </span>
+                                                    )}
+                                                    {!(b.advanceCashAmount || b.advanceBankAmount) && (
+                                                        <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, background: b.advancePaymentMode === 'BANK_TRANSFER' ? 'rgba(59,130,246,0.12)' : 'rgba(16,185,129,0.12)', color: b.advancePaymentMode === 'BANK_TRANSFER' ? '#3b82f6' : '#10b981' }}>
+                                                            {b.advancePaymentMode === 'BANK_TRANSFER' ? 'BANK' : 'CASH'}
+                                                        </span>
+                                                    )}
                                                 </span>
                                                 {b.totalPrice && <span>Total: <strong>Rs. {b.totalPrice.toLocaleString()}</strong></span>}
                                                 {remaining !== null && <span>Remaining: <strong style={{ color: '#ef4444' }}>Rs. {remaining.toLocaleString()}</strong></span>}
@@ -552,19 +570,18 @@ export default function AdvanceBookingsPage() {
                                                             className="input"
                                                             type="number"
                                                             style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem', maxWidth: '160px' }}
-                                                            value={remainingAmount}
-                                                            onChange={e => setRemainingAmount(e.target.value)}
-                                                            placeholder="Amount received"
+                                                            value={remainingCash}
+                                                            onChange={e => setRemainingCash(e.target.value)}
+                                                            placeholder="Cash received"
                                                         />
-                                                        <select
-                                                            className="select"
+                                                        <input
+                                                            className="input"
+                                                            type="number"
                                                             style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem', maxWidth: '160px' }}
-                                                            value={remainingMode}
-                                                            onChange={e => setRemainingMode(e.target.value as 'CASH' | 'BANK_TRANSFER')}
-                                                        >
-                                                            <option value="CASH">Cash</option>
-                                                            <option value="BANK_TRANSFER">Bank Transfer</option>
-                                                        </select>
+                                                            value={remainingBank}
+                                                            onChange={e => setRemainingBank(e.target.value)}
+                                                            placeholder="Bank transfer received"
+                                                        />
                                                     </div>
                                                 </div>
                                             )}
