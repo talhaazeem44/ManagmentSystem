@@ -18,7 +18,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     try {
         await dbConnect();
         const { id } = await context.params;
-        const { deliveryPayment, ...body } = await request.json();
+        const { deliveryPayment: payment, ...body } = await request.json();
 
         // Linking an inventory bike at delivery time — mark it SOLD so it's no
         // longer available elsewhere, without needing a separate Sale record.
@@ -39,20 +39,22 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
 
         const updateOps: any = { $set: body };
 
-        // Remaining balance collected at delivery — add to advancePaid (split by cash/bank,
-        // same as the initial advance) and record each as a dated payment (today), same
-        // mechanism as Sale.payments, so Reports counts this cash on the day it was actually
-        // collected, not the booking's original date. Split across both modes if the customer
-        // paid part cash, part bank transfer.
-        if (deliveryPayment) {
-            const cashAmount = Number(deliveryPayment.cashAmount) || 0;
-            const bankAmount = Number(deliveryPayment.bankAmount) || 0;
+        // Extra money received against this booking — either the remaining balance collected
+        // at delivery, or an additional advance payment made while still pending. Either way:
+        // add to advancePaid (split by cash/bank, same as the initial advance) and record each
+        // as a dated payment (today), same mechanism as Sale.payments, so Reports counts this
+        // cash on the day it was actually collected, not the booking's original date. Split
+        // across both modes if the customer paid part cash, part bank transfer.
+        if (payment) {
+            const cashAmount = Number(payment.cashAmount) || 0;
+            const bankAmount = Number(payment.bankAmount) || 0;
             const total = cashAmount + bankAmount;
             if (total > 0) {
                 const now = new Date();
+                const note = body.status === 'DELIVERED' ? 'Collected at delivery' : 'Additional advance payment';
                 const entries: any[] = [];
-                if (cashAmount > 0) entries.push({ amount: cashAmount, date: now, paymentMode: 'CASH', note: 'Collected at delivery' });
-                if (bankAmount > 0) entries.push({ amount: bankAmount, date: now, paymentMode: 'BANK_TRANSFER', note: 'Collected at delivery' });
+                if (cashAmount > 0) entries.push({ amount: cashAmount, date: now, paymentMode: 'CASH', note });
+                if (bankAmount > 0) entries.push({ amount: bankAmount, date: now, paymentMode: 'BANK_TRANSFER', note });
                 updateOps.$inc = { advancePaid: total, advanceCashAmount: cashAmount, advanceBankAmount: bankAmount };
                 updateOps.$push = { payments: { $each: entries } };
             }

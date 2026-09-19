@@ -95,6 +95,10 @@ export default function AdvanceBookingsPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editForm, setEditForm] = useState<EditForm>({ customerName: '', cnic: '', engineNumber: '', chassisNumber: '', totalPrice: '', expectedDeliveryDate: '', deliveredAt: '' });
     const [savingEdit, setSavingEdit] = useState(false);
+    const [addingPaymentId, setAddingPaymentId] = useState<string | null>(null);
+    const [paymentCash, setPaymentCash] = useState('');
+    const [paymentBank, setPaymentBank] = useState('');
+    const [savingPayment, setSavingPayment] = useState(false);
 
     const fetchBookings = async () => {
         setLoading(true);
@@ -244,6 +248,38 @@ export default function AdvanceBookingsPage() {
             }
         } finally {
             setSavingEdit(false);
+        }
+    };
+
+    const openAddPayment = (id: string) => {
+        setAddingPaymentId(id);
+        setPaymentCash('');
+        setPaymentBank('');
+    };
+
+    const handleAddPayment = async (id: string) => {
+        const cashAmount = parseFloat(paymentCash) || 0;
+        const bankAmount = parseFloat(paymentBank) || 0;
+        if (cashAmount + bankAmount <= 0) return;
+        setSavingPayment(true);
+        try {
+            // No `status`/date fields sent — this only records money received, everything
+            // else about the booking (its date, expected delivery, etc.) stays untouched.
+            const res = await fetch(`/api/advance-bookings/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ deliveryPayment: { cashAmount, bankAmount } }),
+            });
+            if (res.ok) {
+                showToast('Payment recorded', 'success');
+                setAddingPaymentId(null);
+                fetchBookings();
+            } else {
+                const err = await res.json().catch(() => ({ message: 'Failed to record payment' }));
+                showToast(err.message || 'Failed to record payment', 'error');
+            }
+        } finally {
+            setSavingPayment(false);
         }
     };
 
@@ -443,6 +479,11 @@ export default function AdvanceBookingsPage() {
                                                     <button className="btn btn-primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => handleSaveEdit(b._id)} disabled={savingEdit}>{savingEdit ? 'Saving...' : '💾 Save'}</button>
                                                     <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => setEditingId(null)}>Cancel</button>
                                                 </>
+                                            ) : addingPaymentId === b._id ? (
+                                                <>
+                                                    <button className="btn btn-primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => handleAddPayment(b._id)} disabled={savingPayment}>{savingPayment ? 'Saving...' : '💾 Save Payment'}</button>
+                                                    <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => setAddingPaymentId(null)}>Cancel</button>
+                                                </>
                                             ) : (
                                                 <>
                                                     {b.status === 'PENDING' && (
@@ -451,6 +492,9 @@ export default function AdvanceBookingsPage() {
                                                         ) : (
                                                             <button className="btn btn-success" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => openDeliverPicker(b)}>✅ Delivered</button>
                                                         )
+                                                    )}
+                                                    {b.status === 'PENDING' && !isDelivering && (
+                                                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => openAddPayment(b._id)}>➕ Payment</button>
                                                     )}
                                                     <button className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }} onClick={() => openEdit(b)}>✏️</button>
                                                     <button className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }} onClick={() => printBooking(b)}>🖨️</button>
@@ -514,6 +558,32 @@ export default function AdvanceBookingsPage() {
                                                             onChange={e => setEditForm({ ...editForm, deliveredAt: e.target.value })} />
                                                     </div>
                                                 )}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {addingPaymentId === b._id && (
+                                        <div style={{ borderTop: '1px solid rgba(16,185,129,0.25)', paddingTop: '0.6rem' }}>
+                                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', marginBottom: '0.5rem' }}>
+                                                Record additional advance payment — booking date and everything else stays unchanged
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                <input
+                                                    className="input"
+                                                    type="number"
+                                                    style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem', maxWidth: '160px' }}
+                                                    value={paymentCash}
+                                                    onChange={e => setPaymentCash(e.target.value)}
+                                                    placeholder="Cash received"
+                                                    autoFocus
+                                                />
+                                                <input
+                                                    className="input"
+                                                    type="number"
+                                                    style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem', maxWidth: '160px' }}
+                                                    value={paymentBank}
+                                                    onChange={e => setPaymentBank(e.target.value)}
+                                                    placeholder="Bank transfer received"
+                                                />
                                             </div>
                                         </div>
                                     )}
