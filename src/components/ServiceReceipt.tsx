@@ -145,9 +145,7 @@ html,body {
                     {/* The receipt content — this exact HTML is copied into the print window */}
                     <div ref={receiptRef} style={s.wrap}>
                         <div style={s.center}>
-                            <div style={s.shopName}>NAEEM AUTOS</div>
-                            <div style={s.sub}>Honda Authorized Dealer</div>
-                            <div style={s.small}>1.5 Km Daska Road, Sambrial</div>
+                            <div style={s.shopName}>Honda Authorized Dealer</div>
                             <div style={s.small}>Contact: 0331-8800216</div>
                         </div>
 
@@ -228,7 +226,7 @@ html,body {
                         </div>
                         <div style={s.divider} />
                         <div style={{ ...s.center, fontSize: '7.5pt' }}>
-                            <div style={{ fontWeight: 900 }}>Thank you for visiting Naeem Autos!</div>
+                            <div style={{ fontWeight: 900 }}>Thank you for your visit!</div>
                             <div>Honda Authorized Dealer</div>
                         </div>
 

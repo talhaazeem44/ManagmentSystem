@@ -101,10 +101,8 @@ export function buildServiceReceiptBytes(service: ThermalReceiptData): Uint8Arra
 
     b.align('center');
     b.doubleSize(true).bold(true);
-    b.text('NAEEM AUTOS\n');
-    b.doubleSize(false).bold(false);
     b.text('Honda Authorized Dealer\n');
-    b.text('1.5 Km Daska Road, Sambrial\n');
+    b.doubleSize(false).bold(false);
     b.text('Contact: 0331-8800216\n');
     b.text(divider());
     b.bold(true).text('JOB CARD\n').bold(false);
@@ -155,7 +153,7 @@ export function buildServiceReceiptBytes(service: ThermalReceiptData): Uint8Arra
     b.text('non-refundable & non-exchangeable.\n');
     b.text('For complaints: 0331-8800216\n');
     b.text(divider());
-    b.bold(true).text('Thank you for visiting Naeem Autos!\n').bold(false);
+    b.bold(true).text('Thank you for your visit!\n').bold(false);
     b.text('Honda Authorized Dealer\n');
 
     b.feed(4);
