@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
             Expense.find({ date: { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
             Sale.find({ saleDate: { $gte: sevenDaysAgo } }).populate('bikeId').lean(),
             // Credit payments recorded in this date range (for sales whose saleDate is outside the range)
-            Sale.find({ 'payments.date': { $gte: filterStartDate, $lt: filterEndDate } }).lean(),
+            Sale.find({ 'payments.date': { $gte: filterStartDate, $lt: filterEndDate } }).populate('bikeId').populate('customerId').lean(),
             KhataParty.find({}).lean(),
             UsedBike.find({ status: 'SOLD' }).lean(),
             // Delivery-time (remaining balance) payments recorded in this date range
@@ -155,6 +155,18 @@ export async function GET(request: NextRequest) {
             .filter((p: any) => p.paymentMode === 'BANK_TRANSFER')
             .reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
 
+        // Same cross-boundary advance payments, but keeping each one tied to its booking so it can
+        // show up as its own row in the Cash Breakdown table (with a name attached) — otherwise a
+        // payment collected on a booking whose original `date` is outside this range would silently
+        // disappear from the day-by-day breakdown even though it's counted in the totals above.
+        const crossBoundaryAdvancePaymentRows = (advancePaymentBookings as any[]).flatMap((b: any) => {
+            const alreadyCounted = (filteredAdvanceBookings as any[]).some((fb: any) => fb._id.toString() === b._id.toString());
+            if (alreadyCounted) return [];
+            return (b.payments || [])
+                .filter((p: any) => { const pd = new Date(p.date); return pd >= filterStartDate && pd < filterEndDate; })
+                .map((p: any) => ({ ...p, booking: b }));
+        });
+
         // Prefer the cash/bank split when present (bookings created after that field existed);
         // fall back to the old all-or-nothing advancePaymentMode for bookings that predate it.
         const rangeAdvanceCash = filteredAdvanceBookings.reduce((s: number, b: any) => {
@@ -214,6 +226,18 @@ export async function GET(request: NextRequest) {
                 const pd = new Date(p.date);
                 return pd >= filterStartDate && pd < filterEndDate;
             });
+        });
+
+        // Same cross-boundary payments, but keeping each one tied to its sale so it can show up as
+        // its own row in the Cash Breakdown table (with buyer/model attached) — otherwise a credit
+        // installment, or a correction made on the Sales list page, would silently disappear from
+        // the day-by-day breakdown even though it's already counted in the totals above.
+        const crossBoundaryPaymentRows = (creditPaymentSales as any[]).flatMap(sale => {
+            const alreadyCounted = (filteredSales as any[]).some((fs: any) => fs._id.toString() === sale._id.toString());
+            if (alreadyCounted) return [];
+            return (sale.payments || [])
+                .filter((p: any) => { const pd = new Date(p.date); return pd >= filterStartDate && pd < filterEndDate; })
+                .map((p: any) => ({ ...p, sale }));
         });
         const creditPaymentsInRange = crossBoundaryPayments
             .filter((p: any) => p.paymentMode !== 'BANK_TRANSFER')
@@ -459,6 +483,50 @@ export async function GET(request: NextRequest) {
                     baseMargin: am.baseMargin,
                     buyerName: b.customerName || '',
                     quantity: 1,
+                };
+            }),
+            // Credit installments (or corrections made on the Sales list page) collected on a day
+            // other than the sale's own date — margin was already counted on the original sale, so
+            // these carry zero profit here; they exist purely to show the cash/bank movement for the
+            // day it actually happened.
+            ...crossBoundaryPaymentRows.map((p: any) => {
+                const isBank = p.paymentMode === 'BANK_TRANSFER';
+                return {
+                    saleDate: p.date,
+                    bikeModel: p.sale?.bikeId?.model || '?',
+                    paymentMode: isBank ? 'CREDIT PAYMENT (BANK)' : 'CREDIT PAYMENT',
+                    price: Number(p.amount || 0),
+                    receivedCash: isBank ? 0 : Number(p.amount || 0),
+                    bankTransferAmount: isBank ? Number(p.amount || 0) : 0,
+                    counted: Number(p.amount || 0),
+                    bikeProfit: 0,
+                    regProfit: 0,
+                    totalProfit: 0,
+                    standardPrice: 0,
+                    baseMargin: 0,
+                    buyerName: p.sale?.customerId?.name || '',
+                    quantity: 0,
+                };
+            }),
+            // Same idea for advance-booking payments (remaining balance or extra installment)
+            // collected on a day other than the booking's own date.
+            ...crossBoundaryAdvancePaymentRows.map((p: any) => {
+                const isBank = p.paymentMode === 'BANK_TRANSFER';
+                return {
+                    saleDate: p.date,
+                    bikeModel: p.booking?.bikeModel || 'Advance',
+                    paymentMode: isBank ? 'ADVANCE PAYMENT (BANK)' : 'ADVANCE PAYMENT',
+                    price: Number(p.amount || 0),
+                    receivedCash: isBank ? 0 : Number(p.amount || 0),
+                    bankTransferAmount: isBank ? Number(p.amount || 0) : 0,
+                    counted: Number(p.amount || 0),
+                    bikeProfit: 0,
+                    regProfit: 0,
+                    totalProfit: 0,
+                    standardPrice: 0,
+                    baseMargin: 0,
+                    buyerName: p.booking?.customerName || '',
+                    quantity: 0,
                 };
             }),
             ...khataBreakdownRows,

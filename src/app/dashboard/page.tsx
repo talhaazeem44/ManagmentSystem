@@ -657,8 +657,8 @@ export default function DashboardPage() {
                                 <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
                                     <thead>
                                         <tr style={{ background: 'var(--color-bg-elevated)' }}>
-                                            {['#', 'Model', 'Mode', 'Sale Price', 'Std Price', 'Rcvd Cash', 'Bank Xfer', 'Base Margin', 'Extra', 'Bike Profit', 'Reg Profit', 'Total Profit'].map(h => (
-                                                <th key={h} style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 700, color: 'var(--color-text-muted)', whiteSpace: 'nowrap', borderBottom: '1px solid var(--color-border)' }}>{h}</th>
+                                            {['#', 'Buyer', 'Model', 'Mode', 'Sale Price', 'Std Price', 'Rcvd Cash', 'Bank Xfer', 'Base Margin', 'Extra', 'Bike Profit', 'Reg Profit', 'Total Profit'].map(h => (
+                                                <th key={h} style={{ padding: '0.4rem 0.6rem', textAlign: h === 'Buyer' ? 'left' : 'right', fontWeight: 700, color: 'var(--color-text-muted)', whiteSpace: 'nowrap', borderBottom: '1px solid var(--color-border)' }}>{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
@@ -671,6 +671,7 @@ export default function DashboardPage() {
                                             return (
                                                 <tr key={i} style={{ borderBottom: '1px solid var(--color-border)', background: i % 2 === 0 ? 'transparent' : 'var(--color-bg-elevated)' }}>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-text-muted)' }}>{i + 1}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'left', fontWeight: 600, whiteSpace: 'nowrap' }}>{row.buyerName || '—'}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 600 }}>{row.bikeModel}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right' }}>
                                                         <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px',
@@ -696,7 +697,7 @@ export default function DashboardPage() {
                                     </tbody>
                                     <tfoot>
                                         <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 700, background: 'var(--color-bg-elevated)' }}>
-                                            <td colSpan={5} style={{ padding: '0.5rem 0.6rem', textAlign: 'right', fontSize: '0.8rem' }}>TOTALS</td>
+                                            <td colSpan={6} style={{ padding: '0.5rem 0.6rem', textAlign: 'right', fontSize: '0.8rem' }}>TOTALS</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#10b981' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.receivedCash, 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#3b82f6' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.bankTransferAmount, 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.baseMargin, 0).toLocaleString()}</td>
