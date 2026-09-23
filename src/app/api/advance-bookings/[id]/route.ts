@@ -19,10 +19,32 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     try {
         await dbConnect();
         const { id } = await context.params;
-        const { deliveryPayment: payment, ...body } = await request.json();
+        const { deliveryPayment: payment, fixPaymentIndex, ...body } = await request.json();
 
         const existing = await AdvanceBooking.findById(id);
         if (!existing) return NextResponse.json({ message: 'Not found' }, { status: 404 });
+
+        // Correcting a payment recorded with the wrong mode (e.g. it was actually a bank transfer
+        // but got logged as cash) — the amount stays the same, only CASH/BANK_TRANSFER flips, and
+        // advanceCashAmount/advanceBankAmount move by that amount to match.
+        if (fixPaymentIndex !== undefined) {
+            const payments = [...(existing.payments || [])];
+            const idx = Number(fixPaymentIndex);
+            if (idx < 0 || idx >= payments.length) {
+                return NextResponse.json({ message: 'Invalid payment index' }, { status: 400 });
+            }
+            const target = payments[idx];
+            const amount = Number(target.amount || 0);
+            const wasBank = target.paymentMode === 'BANK_TRANSFER';
+            payments[idx] = { ...target, paymentMode: wasBank ? 'CASH' : 'BANK_TRANSFER' };
+            const updated = await AdvanceBooking.findByIdAndUpdate(id, {
+                $set: { payments },
+                $inc: wasBank
+                    ? { advanceBankAmount: -amount, advanceCashAmount: amount }
+                    : { advanceCashAmount: -amount, advanceBankAmount: amount },
+            }, { new: true });
+            return NextResponse.json(updated);
+        }
 
         // Linking an inventory bike at delivery time — mark it SOLD so it's no
         // longer available elsewhere, without needing a separate Sale record.

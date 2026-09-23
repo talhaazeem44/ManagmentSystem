@@ -8,6 +8,13 @@ import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 import Loader from '@/components/Loader';
 
+interface BookingPayment {
+    amount: number;
+    date: string;
+    paymentMode?: 'CASH' | 'BANK_TRANSFER';
+    note?: string;
+}
+
 interface AdvanceBooking {
     _id: string;
     customerName: string;
@@ -31,6 +38,7 @@ interface AdvanceBooking {
     status: 'PENDING' | 'DELIVERED';
     date: string;
     deliveredAt?: string;
+    payments?: BookingPayment[];
 }
 
 interface AvailableBike {
@@ -101,6 +109,8 @@ export default function AdvanceBookingsPage() {
     const [paymentCash, setPaymentCash] = useState('');
     const [paymentBank, setPaymentBank] = useState('');
     const [savingPayment, setSavingPayment] = useState(false);
+    const [historyId, setHistoryId] = useState<string | null>(null);
+    const [fixingPayment, setFixingPayment] = useState<string | null>(null);
 
     const fetchBookings = async () => {
         setLoading(true);
@@ -286,6 +296,26 @@ export default function AdvanceBookingsPage() {
             }
         } finally {
             setSavingPayment(false);
+        }
+    };
+
+    const handleFixPaymentMode = async (bookingId: string, index: number) => {
+        setFixingPayment(`${bookingId}-${index}`);
+        try {
+            const res = await fetch(`/api/advance-bookings/${bookingId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fixPaymentIndex: index }),
+            });
+            if (res.ok) {
+                showToast('Payment mode corrected', 'success');
+                fetchBookings();
+            } else {
+                const err = await res.json().catch(() => ({ message: 'Failed to correct payment' }));
+                showToast(err.message || 'Failed to correct payment', 'error');
+            }
+        } finally {
+            setFixingPayment(null);
         }
     };
 
@@ -502,6 +532,11 @@ export default function AdvanceBookingsPage() {
                                                     {b.status === 'PENDING' && !isDelivering && (
                                                         <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => openAddPayment(b._id)}>➕ Payment</button>
                                                     )}
+                                                    {(b.payments?.length ?? 0) > 0 && (
+                                                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => setHistoryId(historyId === b._id ? null : b._id)}>
+                                                            {historyId === b._id ? '▲ History' : '▼ History'}
+                                                        </button>
+                                                    )}
                                                     <button className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }} onClick={() => openEdit(b)}>✏️</button>
                                                     <button className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }} onClick={() => printBooking(b)}>🖨️</button>
                                                     <button className="btn" style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }} onClick={() => setConfirmDeleteId(b._id)}>🗑️</button>
@@ -610,6 +645,41 @@ export default function AdvanceBookingsPage() {
                                                     onChange={e => setPaymentBank(e.target.value)}
                                                     placeholder="Bank transfer received"
                                                 />
+                                            </div>
+                                        </div>
+                                    )}
+                                    {historyId === b._id && (b.payments?.length ?? 0) > 0 && (
+                                        <div style={{ borderTop: '1px solid rgba(99,102,241,0.25)', paddingTop: '0.6rem' }}>
+                                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', marginBottom: '0.5rem' }}>
+                                                Payment History — if a payment was logged as the wrong mode (cash/bank), fix it here
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                                {b.payments!.map((p, idx) => {
+                                                    const isBank = p.paymentMode === 'BANK_TRANSFER';
+                                                    const key = `${b._id}-${idx}`;
+                                                    return (
+                                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.6rem', border: '1px solid var(--color-border)', borderRadius: '6px', fontSize: '0.78rem', flexWrap: 'wrap' }}>
+                                                            <span>
+                                                                {new Date(p.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                                {p.note ? ` — ${p.note}` : ''}
+                                                            </span>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <strong>Rs. {Number(p.amount).toLocaleString()}</strong>
+                                                                <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, background: isBank ? 'rgba(59,130,246,0.12)' : 'rgba(16,185,129,0.12)', color: isBank ? '#3b82f6' : '#10b981' }}>
+                                                                    {isBank ? 'BANK' : 'CASH'}
+                                                                </span>
+                                                                <button
+                                                                    className="btn btn-secondary"
+                                                                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
+                                                                    disabled={fixingPayment === key}
+                                                                    onClick={() => handleFixPaymentMode(b._id, idx)}
+                                                                >
+                                                                    {fixingPayment === key ? '...' : `Switch to ${isBank ? 'Cash' : 'Bank'}`}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}
