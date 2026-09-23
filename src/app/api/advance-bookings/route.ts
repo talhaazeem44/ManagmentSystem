@@ -1,27 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { AdvanceBooking } from '@/models';
-import {
-    BIKE_STANDARD_PRICES,
-    BIKE_UNIT_MARGINS,
-    REGISTRATION_ACTUAL_COST,
-    REGISTRATION_ACTUAL_COST_BY_MODEL,
-} from '@/lib/constants';
+import { calcAdvanceMargin } from '@/lib/constants';
 import { resolveTransactionDate } from '@/lib/dates';
 
 // This GET handler takes no request-specific input, which Next.js would otherwise treat as
 // static and cache — serving a stale list to some clients even after the DB changes.
 export const dynamic = 'force-dynamic';
-
-function calcAdvanceMargin(bikeModel: string, totalPrice: number, registrationFee: number) {
-    const standard = BIKE_STANDARD_PRICES[bikeModel] || totalPrice;
-    const base = BIKE_UNIT_MARGINS[bikeModel] || 0;
-    const extra = Math.max(0, totalPrice - standard);
-    const bikeProfit = base + extra;
-    const actualReg = REGISTRATION_ACTUAL_COST_BY_MODEL[bikeModel] ?? REGISTRATION_ACTUAL_COST;
-    const regProfit = registrationFee > 0 ? registrationFee - actualReg : 0;
-    return bikeProfit + regProfit;
-}
 
 export async function GET() {
     try {

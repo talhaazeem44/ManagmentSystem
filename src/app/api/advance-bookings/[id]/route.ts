@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { AdvanceBooking, Bike } from '@/models';
+import { calcAdvanceMargin } from '@/lib/constants';
 
 export async function GET(_: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
@@ -20,6 +21,9 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
         const { id } = await context.params;
         const { deliveryPayment: payment, ...body } = await request.json();
 
+        const existing = await AdvanceBooking.findById(id);
+        if (!existing) return NextResponse.json({ message: 'Not found' }, { status: 404 });
+
         // Linking an inventory bike at delivery time — mark it SOLD so it's no
         // longer available elsewhere, without needing a separate Sale record.
         if (body.bikeId) {
@@ -35,6 +39,16 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
             body.deliveredAt = new Date(body.deliveredAt);
         } else if (body.status === 'DELIVERED') {
             body.deliveredAt = new Date();
+        }
+
+        // Recompute margin whenever the bike model, sale price, or registration fee changes —
+        // e.g. the customer swaps to a different bike before delivery — so margin never goes
+        // stale relative to whatever is actually on the booking now.
+        if (body.bikeModel !== undefined || body.totalPrice !== undefined || body.registrationFee !== undefined) {
+            const bikeModel = body.bikeModel !== undefined ? body.bikeModel : existing.bikeModel;
+            const totalPrice = body.totalPrice !== undefined ? Number(body.totalPrice) : Number(existing.totalPrice || 0);
+            const registrationFee = body.registrationFee !== undefined ? Number(body.registrationFee) : Number(existing.registrationFee || 0);
+            body.margin = bikeModel && totalPrice ? calcAdvanceMargin(bikeModel, totalPrice, registrationFee) : 0;
         }
 
         const updateOps: any = { $set: body };

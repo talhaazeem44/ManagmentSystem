@@ -68,6 +68,8 @@ function printBooking(b: AdvanceBooking) {
 interface EditForm {
     customerName: string;
     cnic: string;
+    bikeModel: string;
+    bikeColor: string;
     engineNumber: string;
     chassisNumber: string;
     totalPrice: string;
@@ -93,7 +95,7 @@ export default function AdvanceBookingsPage() {
     const [remainingCash, setRemainingCash] = useState('');
     const [remainingBank, setRemainingBank] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [editForm, setEditForm] = useState<EditForm>({ customerName: '', cnic: '', engineNumber: '', chassisNumber: '', totalPrice: '', expectedDeliveryDate: '', deliveredAt: '' });
+    const [editForm, setEditForm] = useState<EditForm>({ customerName: '', cnic: '', bikeModel: '', bikeColor: '', engineNumber: '', chassisNumber: '', totalPrice: '', expectedDeliveryDate: '', deliveredAt: '' });
     const [savingEdit, setSavingEdit] = useState(false);
     const [addingPaymentId, setAddingPaymentId] = useState<string | null>(null);
     const [paymentCash, setPaymentCash] = useState('');
@@ -214,6 +216,8 @@ export default function AdvanceBookingsPage() {
         setEditForm({
             customerName: b.customerName || '',
             cnic: b.cnic || '',
+            bikeModel: b.bikeModel || '',
+            bikeColor: b.bikeColor || '',
             engineNumber: b.engineNumber || '',
             chassisNumber: b.chassisNumber || '',
             totalPrice: b.totalPrice ? String(b.totalPrice) : '',
@@ -231,6 +235,8 @@ export default function AdvanceBookingsPage() {
                 body: JSON.stringify({
                     customerName: editForm.customerName,
                     cnic: editForm.cnic,
+                    bikeModel: editForm.bikeModel || undefined,
+                    bikeColor: editForm.bikeColor,
                     engineNumber: editForm.engineNumber,
                     chassisNumber: editForm.chassisNumber,
                     totalPrice: editForm.totalPrice ? Number(editForm.totalPrice) : undefined,
@@ -521,6 +527,26 @@ export default function AdvanceBookingsPage() {
                                                         onChange={e => setEditForm({ ...editForm, cnic: e.target.value })}
                                                         placeholder="34601-XXXXXXX-X" />
                                                 </div>
+                                                {b.status === 'PENDING' && (
+                                                    <>
+                                                        <div className="form-group" style={{ margin: 0 }}>
+                                                            <label className="label" style={{ fontSize: '0.72rem' }}>Bike Model</label>
+                                                            <select className="select" style={{ fontSize: '0.82rem', padding: '0.4rem 0.6rem' }}
+                                                                value={editForm.bikeModel}
+                                                                onChange={e => setEditForm({ ...editForm, bikeModel: e.target.value })}>
+                                                                <option value="">Select model</option>
+                                                                {HONDA_BIKE_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
+                                                            </select>
+                                                        </div>
+                                                        <div className="form-group" style={{ margin: 0 }}>
+                                                            <label className="label" style={{ fontSize: '0.72rem' }}>Bike Color</label>
+                                                            <input className="input" style={{ fontSize: '0.82rem', padding: '0.4rem 0.6rem' }}
+                                                                value={editForm.bikeColor}
+                                                                onChange={e => setEditForm({ ...editForm, bikeColor: e.target.value })}
+                                                                placeholder="Red / Black..." />
+                                                        </div>
+                                                    </>
+                                                )}
                                                 <div className="form-group" style={{ margin: 0 }}>
                                                     <label className="label" style={{ fontSize: '0.72rem' }}>Engine #</label>
                                                     <input className="input" style={{ fontSize: '0.82rem', padding: '0.4rem 0.6rem' }}

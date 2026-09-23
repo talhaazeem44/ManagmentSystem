@@ -89,6 +89,20 @@ export function getKhataMargin(model: string, pricePerUnit: number): { reference
     return { referencePrice: standardPrice, baseMargin, margin: baseMargin + (pricePerUnit - standardPrice) };
 }
 
+// Advance booking margin: same formula as a regular sale — base margin + extra above standard
+// price, plus registration profit. Shared between creating a booking and editing one later
+// (e.g. the customer swaps to a different bike model before delivery), so margin never drifts
+// out of sync with whatever model/price is currently on the booking.
+export function calcAdvanceMargin(bikeModel: string, totalPrice: number, registrationFee: number) {
+    const standard = BIKE_STANDARD_PRICES[bikeModel] || totalPrice;
+    const base = BIKE_UNIT_MARGINS[bikeModel] || 0;
+    const extra = Math.max(0, totalPrice - standard);
+    const bikeProfit = base + extra;
+    const actualReg = REGISTRATION_ACTUAL_COST_BY_MODEL[bikeModel] ?? REGISTRATION_ACTUAL_COST;
+    const regProfit = registrationFee > 0 ? registrationFee - actualReg : 0;
+    return bikeProfit + regProfit;
+}
+
 // Password to unlock margin section on dashboard
 export const MARGIN_PASSWORD = '786';
 

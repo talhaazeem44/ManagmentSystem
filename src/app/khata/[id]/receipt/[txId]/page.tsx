@@ -170,8 +170,6 @@ export default function KhataStockReceiptPage() {
 
                     <div className={styles.footer}>
                         <div className={styles.dealerInfo}>
-                            <strong>NAEEM AUTOS</strong>
-                            <p>📍 1.5 Km Daska Road, Sambrial</p>
                             <p>📞 Ph: 052-6525001-2 Cell: 0331-8800216, 0334-8179775</p>
                         </div>
                         <div className={styles.signature}>
