@@ -299,20 +299,20 @@ export default function AdvanceBookingsPage() {
         }
     };
 
-    const handleFixPaymentMode = async (bookingId: string, index: number) => {
+    const handleFixPaymentMode = async (bookingId: string, index: number, mode: 'CASH' | 'BANK_TRANSFER') => {
         setFixingPayment(`${bookingId}-${index}`);
         try {
             const res = await fetch(`/api/advance-bookings/${bookingId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fixPaymentIndex: index }),
+                body: JSON.stringify({ fixPaymentIndex: index, fixPaymentMode: mode }),
             });
             if (res.ok) {
-                showToast('Payment mode corrected', 'success');
+                showToast('Payment mode updated', 'success');
                 fetchBookings();
             } else {
-                const err = await res.json().catch(() => ({ message: 'Failed to correct payment' }));
-                showToast(err.message || 'Failed to correct payment', 'error');
+                const err = await res.json().catch(() => ({ message: 'Failed to update payment' }));
+                showToast(err.message || 'Failed to update payment', 'error');
             }
         } finally {
             setFixingPayment(null);
@@ -665,17 +665,17 @@ export default function AdvanceBookingsPage() {
                                                             </span>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                                 <strong>Rs. {Number(p.amount).toLocaleString()}</strong>
-                                                                <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, background: isBank ? 'rgba(59,130,246,0.12)' : 'rgba(16,185,129,0.12)', color: isBank ? '#3b82f6' : '#10b981' }}>
-                                                                    {isBank ? 'BANK' : 'CASH'}
-                                                                </span>
-                                                                <button
-                                                                    className="btn btn-secondary"
-                                                                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
+                                                                <select
+                                                                    className="select"
+                                                                    style={{ fontSize: '0.72rem', padding: '0.2rem 0.4rem', fontWeight: 700, color: isBank ? '#3b82f6' : '#10b981' }}
+                                                                    value={isBank ? 'BANK_TRANSFER' : 'CASH'}
                                                                     disabled={fixingPayment === key}
-                                                                    onClick={() => handleFixPaymentMode(b._id, idx)}
+                                                                    onChange={e => handleFixPaymentMode(b._id, idx, e.target.value as 'CASH' | 'BANK_TRANSFER')}
                                                                 >
-                                                                    {fixingPayment === key ? '...' : `Switch to ${isBank ? 'Cash' : 'Bank'}`}
-                                                                </button>
+                                                                    <option value="CASH">CASH</option>
+                                                                    <option value="BANK_TRANSFER">BANK</option>
+                                                                </select>
+                                                                {fixingPayment === key && <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Saving...</span>}
                                                             </div>
                                                         </div>
                                                     );

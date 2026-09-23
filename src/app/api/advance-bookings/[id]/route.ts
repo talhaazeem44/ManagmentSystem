@@ -19,13 +19,16 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     try {
         await dbConnect();
         const { id } = await context.params;
-        const { deliveryPayment: payment, fixPaymentIndex, ...body } = await request.json();
+        const { deliveryPayment: payment, fixPaymentIndex, fixPaymentMode, ...body } = await request.json();
 
-        const existing = await AdvanceBooking.findById(id);
+        // .lean() here on purpose — this branch only ever reads `existing`, never calls .save()
+        // on it, and a live Mongoose document's subdocuments don't survive a plain object spread
+        // cleanly (getters/internal state), which was silently corrupting the write below.
+        const existing = await AdvanceBooking.findById(id).lean();
         if (!existing) return NextResponse.json({ message: 'Not found' }, { status: 404 });
 
         // Correcting a payment recorded with the wrong mode (e.g. it was actually a bank transfer
-        // but got logged as cash) — the amount stays the same, only CASH/BANK_TRANSFER flips, and
+        // but got logged as cash) — the amount stays the same, only CASH/BANK_TRANSFER changes, and
         // advanceCashAmount/advanceBankAmount move by that amount to match.
         if (fixPaymentIndex !== undefined) {
             const payments = [...(existing.payments || [])];
@@ -33,15 +36,22 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
             if (idx < 0 || idx >= payments.length) {
                 return NextResponse.json({ message: 'Invalid payment index' }, { status: 400 });
             }
-            const target = payments[idx];
+            const target = payments[idx] as any;
             const amount = Number(target.amount || 0);
             const wasBank = target.paymentMode === 'BANK_TRANSFER';
-            payments[idx] = { ...target, paymentMode: wasBank ? 'CASH' : 'BANK_TRANSFER' };
+            const newMode: 'CASH' | 'BANK_TRANSFER' = fixPaymentMode === 'CASH' || fixPaymentMode === 'BANK_TRANSFER'
+                ? fixPaymentMode
+                : (wasBank ? 'CASH' : 'BANK_TRANSFER');
+            if (newMode === target.paymentMode) {
+                return NextResponse.json(existing);
+            }
+            const nowBank = newMode === 'BANK_TRANSFER';
+            payments[idx] = { ...target, paymentMode: newMode };
             const updated = await AdvanceBooking.findByIdAndUpdate(id, {
                 $set: { payments },
-                $inc: wasBank
-                    ? { advanceBankAmount: -amount, advanceCashAmount: amount }
-                    : { advanceCashAmount: -amount, advanceBankAmount: amount },
+                $inc: nowBank
+                    ? { advanceCashAmount: -amount, advanceBankAmount: amount }
+                    : { advanceBankAmount: -amount, advanceCashAmount: amount },
             }, { new: true });
             return NextResponse.json(updated);
         }
