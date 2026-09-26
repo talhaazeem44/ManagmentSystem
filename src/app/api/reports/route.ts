@@ -452,6 +452,8 @@ export async function GET(request: NextRequest) {
                     price: Number(sale.price || 0),
                     receivedCash: Number(sale.receivedCash || 0),
                     bankTransferAmount: Number(sale.bankTransferAmount || 0),
+                    registrationCost: Number(sale.registrationCost || 0),
+                    registrationPaymentMode: sale.registrationPaymentMode || 'CASH',
                     counted: Number(sale.receivedCash || 0),
                     bikeProfit: m.bikeProfit,
                     regProfit: m.regProfit,

@@ -33,11 +33,19 @@ interface BreakdownItem {
     price: number;
     receivedCash: number;
     bankTransferAmount: number;
+    registrationCost?: number;
+    registrationPaymentMode?: string;
     bikeProfit: number;
     regProfit: number;
     totalProfit: number;
     standardPrice: number;
     baseMargin: number;
+}
+
+interface CashTopUpItem {
+    amount: number;
+    date: string;
+    note?: string;
 }
 
 interface LedgerRow {
@@ -92,6 +100,18 @@ export default function ProfitPage() {
     const [collectingCash, setCollectingCash] = useState(false);
     const [topUpAmount, setTopUpAmount] = useState('');
     const [addingTopUp, setAddingTopUp] = useState(false);
+
+    // full cash history (all-time, month-wise, spans every deposit)
+    const [fullCashBreakdown, setFullCashBreakdown] = useState<BreakdownItem[]>([]);
+    const [fullCashExpenseList, setFullCashExpenseList] = useState<ExpenseItem[]>([]);
+    const [fullCashTopUps, setFullCashTopUps] = useState<CashTopUpItem[]>([]);
+    const [showFullCashHistory, setShowFullCashHistory] = useState(false);
+    const [fullCashHistoryLoaded, setFullCashHistoryLoaded] = useState(false);
+    const [loadingFullCashHistory, setLoadingFullCashHistory] = useState(false);
+    const [selectedCashHistoryMonth, setSelectedCashHistoryMonth] = useState(() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    });
 
     const [monthBreakdown, setMonthBreakdown] = useState<BreakdownItem[]>([]);
     const [monthExpenseList, setMonthExpenseList] = useState<ExpenseItem[]>([]);
@@ -228,6 +248,26 @@ export default function ProfitPage() {
         } finally { setAddingTopUp(false); }
     };
 
+    const toggleFullCashHistory = async () => {
+        if (fullCashHistoryLoaded) { setShowFullCashHistory(v => !v); return; }
+        setLoadingFullCashHistory(true);
+        try {
+            const epoch = new Date(0).toISOString();
+            const nowISO = new Date().toISOString();
+            const res = await fetch(`/api/reports?startDate=${epoch}&endDate=${nowISO}`);
+            if (res.ok) {
+                const d = await res.json();
+                setFullCashBreakdown(d.cashBreakdown ?? []);
+                setFullCashExpenseList(d.range?.expenseList ?? []);
+                setFullCashTopUps(d.range?.cashTopUpList ?? []);
+            }
+            setFullCashHistoryLoaded(true);
+            setShowFullCashHistory(true);
+        } finally {
+            setLoadingFullCashHistory(false);
+        }
+    };
+
     const rs = stats?.range;
 
     const marginSinceDate = lastMarginCol ? new Date(lastMarginCol.collectedAt) : (() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; })();
@@ -267,6 +307,97 @@ export default function ProfitPage() {
             return { date: ev.date, label: ev.label, amount: ev.amount, balance, isExpense: ev.amount < 0 };
         });
     }, [sinceBreakdown, sinceExpenseList]);
+
+    // Full all-time cash ledger — every cash-affecting transaction (with buyer name), plus cash
+    // top-ups and every past "Deposited to Bank" checkpoint shown inline in chronological order,
+    // so nothing before your last deposit ever disappears from view.
+    const fullCashLedger = useMemo<LedgerRow[]>(() => {
+        const events: { date: string; label: string; amount: number; isCollection?: boolean }[] = [];
+        for (const row of fullCashBreakdown) {
+            const who = row.buyerName ? ` — ${row.buyerName}` : '';
+            if (row.receivedCash > 0) {
+                events.push({
+                    date: row.saleDate || '',
+                    label: `${row.bikeModel} · ${row.paymentMode}${who}`,
+                    amount: row.receivedCash,
+                });
+            }
+            if ((row.registrationCost ?? 0) > 0 && row.registrationPaymentMode !== 'BANK_TRANSFER') {
+                events.push({
+                    date: row.saleDate || '',
+                    label: `Registration Fee${who}`,
+                    amount: row.registrationCost!,
+                });
+            }
+        }
+        for (const e of fullCashExpenseList) {
+            if (e.deductFrom !== 'CASH') continue;
+            events.push({
+                date: e.date,
+                label: e.description || e.category,
+                amount: -Number(e.amount || 0),
+            });
+        }
+        for (const t of fullCashTopUps) {
+            events.push({
+                date: t.date,
+                label: `Cash Top-up (withdrawn from bank)${t.note ? ` — ${t.note}` : ''}`,
+                amount: Number(t.amount || 0),
+            });
+        }
+        for (const c of allCashCollections) {
+            events.push({
+                date: c.collectedAt,
+                label: '✅ Deposited to Bank',
+                amount: -Number(c.amount || 0),
+                isCollection: true,
+            });
+        }
+        events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        let balance = 0;
+        return events.map(ev => {
+            balance += ev.amount;
+            return { date: ev.date, label: ev.label, amount: ev.amount, balance, isExpense: ev.amount < 0, isCollection: ev.isCollection };
+        });
+    }, [fullCashBreakdown, fullCashExpenseList, fullCashTopUps, allCashCollections]);
+
+    const cashHistoryMonthOptions = useMemo(() => {
+        const monthValueOf = (dateStr: string) => {
+            const d = new Date(dateStr);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        };
+        const map = new Map<string, { value: string; label: string; year: number; month: number }>();
+        const addMonth = (dateStr: string) => {
+            const d = new Date(dateStr);
+            const value = monthValueOf(dateStr);
+            if (!map.has(value)) {
+                map.set(value, { value, label: d.toLocaleDateString('en-PK', { month: 'long', year: 'numeric' }), year: d.getFullYear(), month: d.getMonth() });
+            }
+        };
+        for (const row of fullCashLedger) { if (row.date) addMonth(row.date); }
+        addMonth(new Date().toISOString());
+        return Array.from(map.values()).sort((a, b) => (b.year - a.year) || (b.month - a.month));
+    }, [fullCashLedger]);
+
+    const filteredCashHistoryLedger = useMemo(() => {
+        const monthValueOf = (dateStr: string) => {
+            const d = new Date(dateStr);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        };
+        return fullCashLedger.filter(row => row.date && monthValueOf(row.date) === selectedCashHistoryMonth);
+    }, [fullCashLedger, selectedCashHistoryMonth]);
+
+    const cashHistoryMonthEndBalance = useMemo(() => {
+        const monthValueOf = (dateStr: string) => {
+            const d = new Date(dateStr);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        };
+        let balance = 0;
+        for (const row of fullCashLedger) {
+            if (row.date && monthValueOf(row.date) <= selectedCashHistoryMonth) balance = row.balance;
+        }
+        return balance;
+    }, [fullCashLedger, selectedCashHistoryMonth]);
 
     // Same ledger shape, but for month-start → the last collection date, ending with that collection
     // as its own line — lets you see exactly what led up to it and confirm when it happened.
@@ -657,8 +788,12 @@ export default function ProfitPage() {
                                     </button>
                                 </div>
                                 <button onClick={handleCollectCash} disabled={collectingCash || !hasCashToDeposit}
-                                    className="btn btn-primary" style={{ fontSize: '0.82rem', padding: '0.45rem 1.1rem', width: '100%', background: '#f59e0b', borderColor: '#f59e0b' }}>
+                                    className="btn btn-primary" style={{ fontSize: '0.82rem', padding: '0.45rem 1.1rem', width: '100%', background: '#f59e0b', borderColor: '#f59e0b', marginBottom: '0.5rem' }}>
                                     {collectingCash ? '⏳ Saving...' : '💰 Mark as Deposited'}
+                                </button>
+                                <button onClick={toggleFullCashHistory} disabled={loadingFullCashHistory}
+                                    style={{ fontSize: '0.75rem', fontWeight: 700, color: '#f59e0b', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '6px', padding: '0.3rem 0.75rem', cursor: 'pointer', width: '100%' }}>
+                                    {loadingFullCashHistory ? '⏳ Loading...' : showFullCashHistory ? '▲ Hide full cash history' : '▼ See full cash history (month-wise)'}
                                 </button>
                             </div>
                             <div className="card" style={{ padding: '1.5rem', borderLeft: '4px solid #8b5cf6' }}>
@@ -673,27 +808,59 @@ export default function ProfitPage() {
                                 </div>
                             </div>
                         </div>
-                        {allCashCollections.length > 0 && (
-                            <div style={{ marginBottom: '1.5rem', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '8px', overflow: 'hidden' }}>
-                                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.35rem 0.7rem', background: 'rgba(245,158,11,0.12)' }}>
-                                    Bank Deposit History — which sales each deposit covers
+                        {showFullCashHistory && (
+                            <div className="card" style={{ marginBottom: '1.5rem', padding: '1.25rem', border: '1px solid rgba(245,158,11,0.25)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        Full Cash History
+                                    </div>
+                                    <select value={selectedCashHistoryMonth} onChange={e => setSelectedCashHistoryMonth(e.target.value)}
+                                        className="input" style={{ fontSize: '0.8rem', padding: '0.25rem 0.6rem', width: 'auto' }}>
+                                        {cashHistoryMonthOptions.map(m => (
+                                            <option key={m.value} value={m.value}>{m.label}</option>
+                                        ))}
+                                    </select>
                                 </div>
-                                {allCashCollections.map((c, i) => {
-                                    const periodStart = i === 0 ? null : new Date(allCashCollections[i - 1].collectedAt);
-                                    const periodEnd = new Date(c.collectedAt);
-                                    const isLatest = i === allCashCollections.length - 1;
-                                    return (
-                                        <div key={c._id} style={{ fontSize: '0.75rem', fontWeight: isLatest ? 700 : 500, color: isLatest ? '#f59e0b' : 'var(--color-text-muted)', background: isLatest ? 'rgba(245,158,11,0.08)' : undefined, padding: '0.35rem 0.7rem', display: 'flex', justifyContent: 'space-between', borderTop: i > 0 ? '1px solid var(--color-border-light)' : undefined }}>
-                                            <span>
-                                                {periodStart ? periodStart.toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Start'}
-                                                {' → '}
-                                                {periodEnd.toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                {isLatest ? ' · latest' : ''}
-                                            </span>
-                                            <span>Rs. {c.amount.toLocaleString()}</span>
-                                        </div>
-                                    );
-                                })}
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+                                    Every cash-affecting transaction for the selected month, with buyer names, plus each bank deposit marked inline right after the transactions it covers.
+                                </div>
+                                {filteredCashHistoryLedger.length === 0 ? (
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', padding: '0.75rem 0' }}>No cash-affecting entries in this month.</div>
+                                ) : (
+                                    <div style={{ overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                                            <thead>
+                                                <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                                    {['Date', 'Entry', 'Amount', 'Running Balance'].map(h => (
+                                                        <th key={h} style={{ padding: '5px 8px', textAlign: h === 'Date' || h === 'Entry' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {filteredCashHistoryLedger.map((row, i) => (
+                                                    <tr key={i} style={{ borderBottom: '1px solid var(--color-border-light)', background: row.isCollection ? 'rgba(245,158,11,0.1)' : undefined }}>
+                                                        <td style={{ padding: '5px 8px', whiteSpace: 'nowrap', color: 'var(--color-text-muted)' }}>{row.date ? new Date(row.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</td>
+                                                        <td style={{ padding: '5px 8px', fontWeight: row.isCollection ? 700 : 400, color: row.isCollection ? '#f59e0b' : undefined }}>{row.label}</td>
+                                                        <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 700, color: row.isCollection ? '#f59e0b' : row.isExpense ? '#ef4444' : '#10b981' }}>
+                                                            {row.amount >= 0 ? '+' : ''}Rs. {row.amount.toLocaleString()}
+                                                        </td>
+                                                        <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 800, color: row.balance < 0 ? '#ef4444' : '#10b981' }}>
+                                                            Rs. {row.balance.toLocaleString()}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                            <tfoot>
+                                                <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 800, background: 'var(--color-bg-elevated)' }}>
+                                                    <td colSpan={3} style={{ padding: '6px 8px' }}>Balance at end of {cashHistoryMonthOptions.find(m => m.value === selectedCashHistoryMonth)?.label}</td>
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right', color: cashHistoryMonthEndBalance < 0 ? '#ef4444' : '#10b981' }}>
+                                                        Rs. {cashHistoryMonthEndBalance.toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                )}
                             </div>
                         )}
 
