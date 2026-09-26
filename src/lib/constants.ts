@@ -9,6 +9,7 @@ export const HONDA_BIKE_MODELS = [
     'CB150F',
     'CB150FSE',
     'CG150 2-Tone',
+    'CG 150',
     'ICON EV'
 ] as const;
 
@@ -24,6 +25,7 @@ export const BIKE_BOOK_PRICES: Record<string, number> = {
     'CB150F': 474000,
     'CB150FSE': 478000,
     'CG150 2-Tone': 438000,
+    'CG 150': 428000,
     'CB125F.SE': 376000,
     'DREAM': 160000,
     'ICON EV': 400000,
@@ -41,6 +43,7 @@ export const BIKE_STANDARD_PRICES: Record<string, number> = {
     'CB150F': 499900,
     'CB150FSE': 503900,
     'CG150 2-Tone': 459900,
+    'CG 150': 449900,
     'ICON EV': 419900,
 };
 
@@ -56,6 +59,7 @@ export const BIKE_UNIT_MARGINS: Record<string, number> = {
     'CB150F': 20000,
     'CB150FSE': 20000,
     'CG150 2-Tone': 20000,
+    'CG 150': 20000,
     'ICON EV': 20000,
 };
 
@@ -70,6 +74,7 @@ export const REGISTRATION_ACTUAL_COST_BY_MODEL: Record<string, number> = {
     'CB150F': 7000,
     'CB150FSE': 7000,
     'CG150 2-Tone': 7000,
+    'CG 150': 7000,
 };
 
 // Models where Khata stock is sometimes given to non-dealers at plain

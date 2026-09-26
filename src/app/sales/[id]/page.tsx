@@ -363,7 +363,8 @@ export default function ReceiptPage() {
                                 { label: 'CB125F.SE', match: 'CB125F.SE' },
                                 { label: 'CB150F', match: 'CB150F' },
                                 { label: 'CB150FSE', match: 'CB150FSE' },
-                                { label: 'CG 150', match: 'CG150 2-Tone' },
+                                { label: 'CG150-2T', match: 'CG150 2-Tone' },
+                                { label: 'CG 150', match: 'CG 150' },
                                 { label: 'ICON EV', match: 'ICON EV' },
                             ].map(({ label, match }) => {
                                 const isChecked = sale.bike.model === match;
