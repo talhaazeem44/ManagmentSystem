@@ -668,10 +668,11 @@ export default function DashboardPage() {
                                             const extra = row.paymentMode === 'ADVANCE'
                                                 ? row.price - row.receivedCash
                                                 : effectiveReceived - (row.standardPrice ?? 0);
+                                            const isBankRow = (row.bankTransferAmount ?? 0) > 0;
                                             return (
-                                                <tr key={i} style={{ borderBottom: '1px solid var(--color-border)', background: i % 2 === 0 ? 'transparent' : 'var(--color-bg-elevated)' }}>
+                                                <tr key={i} style={{ borderBottom: '1px solid var(--color-border)', background: isBankRow ? 'rgba(59,130,246,0.07)' : i % 2 === 0 ? 'transparent' : 'var(--color-bg-elevated)' }}>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-text-muted)' }}>{i + 1}</td>
-                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'left', fontWeight: 600, whiteSpace: 'nowrap' }}>{row.buyerName || '—'}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'left', fontWeight: 600, whiteSpace: 'nowrap' }}>{row.buyerName || '—'}{isBankRow && <span title="Includes bank transfer" style={{ marginLeft: '0.3rem' }}>🏦</span>}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 600 }}>{row.bikeModel}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right' }}>
                                                         <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px',
@@ -743,10 +744,11 @@ export default function DashboardPage() {
                                             const extra = row.paymentMode === 'KHATA' || row.paymentMode === 'ADVANCE'
                                                 ? 0
                                                 : effectiveReceived - (row.standardPrice ?? 0);
+                                            const isBankRow = (row.bankTransferAmount ?? 0) > 0;
                                             return (
-                                                <tr key={i} style={{ borderBottom: '1px solid var(--color-border)', background: row.paymentMode === 'KHATA' ? 'rgba(139,92,246,0.04)' : i % 2 === 0 ? 'transparent' : 'var(--color-bg-elevated)' }}>
+                                                <tr key={i} style={{ borderBottom: '1px solid var(--color-border)', background: isBankRow ? 'rgba(59,130,246,0.07)' : row.paymentMode === 'KHATA' ? 'rgba(139,92,246,0.04)' : i % 2 === 0 ? 'transparent' : 'var(--color-bg-elevated)' }}>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-text-muted)' }}>{i + 1}</td>
-                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'left', fontWeight: 600, whiteSpace: 'nowrap' }}>{row.buyerName || '—'}</td>
+                                                    <td style={{ padding: '0.4rem 0.6rem', textAlign: 'left', fontWeight: 600, whiteSpace: 'nowrap' }}>{row.buyerName || '—'}{isBankRow && <span title="Includes bank transfer" style={{ marginLeft: '0.3rem' }}>🏦</span>}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 600 }}>{row.bikeModel}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-text-muted)' }}>{row.quantity ?? 1}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right' }}>
