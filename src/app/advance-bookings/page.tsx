@@ -102,6 +102,7 @@ export default function AdvanceBookingsPage() {
     const [selectedBike, setSelectedBike] = useState<AvailableBike | null>(null);
     const [remainingCash, setRemainingCash] = useState('');
     const [remainingBank, setRemainingBank] = useState('');
+    const [deliveryAddress, setDeliveryAddress] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editForm, setEditForm] = useState<EditForm>({ customerName: '', cnic: '', bikeModel: '', bikeColor: '', engineNumber: '', chassisNumber: '', totalPrice: '', expectedDeliveryDate: '', deliveredAt: '' });
     const [savingEdit, setSavingEdit] = useState(false);
@@ -164,6 +165,7 @@ export default function AdvanceBookingsPage() {
         setSelectedBike(null);
         setRemainingCash('');
         setRemainingBank('');
+        setDeliveryAddress(booking.address || '');
         setLoadingBikes(true);
         try {
             const res = await fetch('/api/bikes');
@@ -190,6 +192,10 @@ export default function AdvanceBookingsPage() {
 
     const confirmDeliver = async (booking: AdvanceBooking) => {
         if (!selectedBike) return;
+        if (!booking.address && !deliveryAddress.trim()) {
+            showToast('Address is required before delivery', 'error');
+            return;
+        }
         setLinkingBikeId(selectedBike.id);
         try {
             const cashAmount = parseFloat(remainingCash) || 0;
@@ -206,6 +212,7 @@ export default function AdvanceBookingsPage() {
                     // (customer may have booked a CD125 but received a different model at delivery)
                     bikeModel: selectedBike.model,
                     bikeColor: selectedBike.color,
+                    ...(!booking.address && deliveryAddress.trim() ? { address: deliveryAddress.trim() } : {}),
                     ...(cashAmount + bankAmount > 0 ? { deliveryPayment: { cashAmount, bankAmount } } : {}),
                 }),
             });
@@ -751,10 +758,25 @@ export default function AdvanceBookingsPage() {
                                                     </div>
                                                 </div>
                                             )}
+                                            {!b.address && (
+                                                <div style={{ marginBottom: '0.6rem' }}>
+                                                    <div style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 700, marginBottom: '0.3rem' }}>
+                                                        ⚠️ No address on file — required before delivery
+                                                    </div>
+                                                    <input
+                                                        className="input"
+                                                        style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem', width: '100%', maxWidth: '340px' }}
+                                                        value={deliveryAddress}
+                                                        onChange={e => setDeliveryAddress(e.target.value)}
+                                                        placeholder="Street, City"
+                                                        autoFocus
+                                                    />
+                                                </div>
+                                            )}
                                             <button
                                                 className="btn btn-success"
                                                 style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }}
-                                                disabled={linkingBikeId === selectedBike.id}
+                                                disabled={linkingBikeId === selectedBike.id || (!b.address && !deliveryAddress.trim())}
                                                 onClick={() => confirmDeliver(b)}
                                             >
                                                 {linkingBikeId === selectedBike.id ? 'Confirming...' : '✅ Confirm Delivery'}
