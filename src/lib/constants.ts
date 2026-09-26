@@ -32,16 +32,16 @@ export const BIKE_BOOK_PRICES: Record<string, number> = {
 // Standard selling price to customer
 export const BIKE_STANDARD_PRICES: Record<string, number> = {
     'CD70': 159900,
-    'DREAM': 171000,
-    'PRIDOR': 212000,
+    'DREAM': 170900,
+    'PRIDOR': 211900,
     'CG 125': 238500,
-    'CG125GOLD': 297000,
-    'CG125S.SE': 287000,
-    'CB125F.SE': 397000,
-    'CB150F': 500000,
-    'CB150FSE': 504000,
-    'CG150 2-Tone': 460000,
-    'ICON EV': 420000,
+    'CG125GOLD': 296900,
+    'CG125S.SE': 286900,
+    'CB125F.SE': 396900,
+    'CB150F': 499900,
+    'CB150FSE': 503900,
+    'CG150 2-Tone': 459900,
+    'ICON EV': 419900,
 };
 
 // Unit margin = standard price - book price
