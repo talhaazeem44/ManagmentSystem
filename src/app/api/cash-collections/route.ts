@@ -9,8 +9,9 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
     try {
         await dbConnect();
-        const last = await CashCollection.findOne().sort({ collectedAt: -1 }).lean();
-        return NextResponse.json({ last: last || null });
+        const all = await CashCollection.find().sort({ collectedAt: 1 }).lean();
+        const last = all.length ? all[all.length - 1] : null;
+        return NextResponse.json({ last: last || null, all });
     } catch (error: any) {
         return NextResponse.json({ message: 'Failed to fetch', error: error.message }, { status: 500 });
     }

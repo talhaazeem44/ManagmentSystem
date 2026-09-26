@@ -88,6 +88,7 @@ export default function ProfitPage() {
     const [sinceCashStats, setSinceCashStats] = useState<RangeStats | null>(null);
     const [monthCashStats, setMonthCashStats] = useState<RangeStats | null>(null);
     const [lastCashCol, setLastCashCol] = useState<CollectionRecord | null>(null);
+    const [allCashCollections, setAllCashCollections] = useState<CollectionRecord[]>([]);
     const [collectingCash, setCollectingCash] = useState(false);
     const [topUpAmount, setTopUpAmount] = useState('');
     const [addingTopUp, setAddingTopUp] = useState(false);
@@ -137,8 +138,9 @@ export default function ProfitPage() {
             setLastMarginCol(marginColData.last);
             setAllMarginCollections(marginColData.all ?? []);
 
-            const cashColData = cashColRes.ok ? await cashColRes.json() : { last: null };
+            const cashColData = cashColRes.ok ? await cashColRes.json() : { last: null, all: [] };
             setLastCashCol(cashColData.last);
+            setAllCashCollections(cashColData.all ?? []);
 
             const marginSince = marginColData.last ? new Date(marginColData.last.collectedAt).toISOString() : monthStart;
             const cashSince = cashColData.last ? new Date(cashColData.last.collectedAt).toISOString() : monthStart;
@@ -671,10 +673,27 @@ export default function ProfitPage() {
                                 </div>
                             </div>
                         </div>
-                        {lastCashCol && (
-                            <div style={{ padding: '0.6rem 1rem', background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', justifyContent: 'space-between' }}>
-                                <span>Last cash deposited · {new Date(lastCashCol.collectedAt).toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                                <strong style={{ color: '#f59e0b' }}>Rs. {lastCashCol.amount.toLocaleString()}</strong>
+                        {allCashCollections.length > 0 && (
+                            <div style={{ marginBottom: '1.5rem', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '8px', overflow: 'hidden' }}>
+                                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.35rem 0.7rem', background: 'rgba(245,158,11,0.12)' }}>
+                                    Bank Deposit History — which sales each deposit covers
+                                </div>
+                                {allCashCollections.map((c, i) => {
+                                    const periodStart = i === 0 ? null : new Date(allCashCollections[i - 1].collectedAt);
+                                    const periodEnd = new Date(c.collectedAt);
+                                    const isLatest = i === allCashCollections.length - 1;
+                                    return (
+                                        <div key={c._id} style={{ fontSize: '0.75rem', fontWeight: isLatest ? 700 : 500, color: isLatest ? '#f59e0b' : 'var(--color-text-muted)', background: isLatest ? 'rgba(245,158,11,0.08)' : undefined, padding: '0.35rem 0.7rem', display: 'flex', justifyContent: 'space-between', borderTop: i > 0 ? '1px solid var(--color-border-light)' : undefined }}>
+                                            <span>
+                                                {periodStart ? periodStart.toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Start'}
+                                                {' → '}
+                                                {periodEnd.toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                {isLatest ? ' · latest' : ''}
+                                            </span>
+                                            <span>Rs. {c.amount.toLocaleString()}</span>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
 
