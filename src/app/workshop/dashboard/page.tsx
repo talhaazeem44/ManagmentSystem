@@ -84,7 +84,7 @@ function rangeToDates(range: RangeKey): { startDate?: string; endDate?: string }
 }
 
 export default function WorkshopDashboardPage() {
-    const [range, setRange] = useState<RangeKey>('month');
+    const [range, setRange] = useState<RangeKey>('today');
     const [stats, setStats] = useState<WorkshopStats | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -143,6 +143,39 @@ export default function WorkshopDashboardPage() {
                                 </div>
                             </div>
                         )}
+
+                        {/* ── Net Margin — the take-home number after expenses, day-wise or month-wise via the buttons above ── */}
+                        <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem', border: '2px solid rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.04)' }}>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+                                💰 Workshop Net Margin — {rangeLabel}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1rem', maxWidth: '420px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.4rem 0.7rem', background: 'var(--color-bg-elevated)', borderRadius: '6px' }}>
+                                    <span style={{ color: 'var(--color-text-muted)' }}>Labour Charges Margin</span>
+                                    <strong>Rs. {Math.round(stats.totalLabour).toLocaleString()}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.4rem 0.7rem', background: 'var(--color-bg-elevated)', borderRadius: '6px' }}>
+                                    <span style={{ color: 'var(--color-text-muted)' }}>Parts Margin</span>
+                                    <strong>Rs. {Math.round(stats.totalMargin - stats.totalLabour).toLocaleString()}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.4rem 0.7rem', borderTop: '1px solid var(--color-border)', fontWeight: 700 }}>
+                                    <span>Gross Margin</span>
+                                    <span>Rs. {Math.round(stats.totalMargin).toLocaleString()}</span>
+                                </div>
+                                {stats.workshopExpenseTotal > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.4rem 0.7rem', background: 'rgba(239,68,68,0.07)', borderRadius: '6px' }}>
+                                        <span style={{ color: '#ef4444' }}>Less: Expenses</span>
+                                        <strong style={{ color: '#ef4444' }}>− Rs. {Math.round(stats.workshopExpenseTotal).toLocaleString()}</strong>
+                                    </div>
+                                )}
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.9rem 1.1rem', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '8px', maxWidth: '420px' }}>
+                                <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Net Margin (Take-Home)</span>
+                                <span style={{ fontWeight: 800, fontSize: '1.5rem', color: (stats.totalMargin - stats.workshopExpenseTotal) < 0 ? '#ef4444' : '#10b981' }}>
+                                    Rs. {Math.round(stats.totalMargin - stats.workshopExpenseTotal).toLocaleString()}
+                                </span>
+                            </div>
+                        </div>
 
                         <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
                             <Card label="Total Earned (Margin)" value={`Rs. ${Math.round(stats.totalMargin).toLocaleString()}`} color="#10b981" sub={`${stats.jobCount} jobs`} />
