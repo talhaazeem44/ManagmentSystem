@@ -114,11 +114,10 @@ export async function PATCH(
 
             if (settleFinal) {
                 // Final settlement can land above or below the calculated remaining balance (extra
-                // charged, or a discount given at closeout) — that difference is real profit/loss,
-                // not an error, so fold it into the sale's own price. Margin for CREDIT sales is
-                // based on price, so this is what makes the over/underpayment show up as margin.
-                const priceDelta = paymentAmount - currentBalance;
-                set.price = Number(existing.price || 0) + priceDelta;
+                // charged, or a discount given at closeout). Margin for CREDIT sales is derived from
+                // receivedCash + bankTransferAmount + balance, so simply zeroing the balance here (with
+                // the actual amount already flowing into receivedCash/bankTransferAmount above) makes
+                // the over/underpayment show up as margin automatically — no need to touch price.
                 set.balance = 0;
             } else {
                 // Normal partial payment — never allow it to overshoot the known balance.

@@ -29,9 +29,12 @@ const calcSaleMargin = (sale: any) => {
     const model = sale.bikeId?.model || '';
     const standardPrice = BIKE_STANDARD_PRICES[model] || Number(sale.price || 0);
     const baseMargin = BIKE_UNIT_MARGINS[model] || 0;
-    // For CREDIT sales use the agreed price (balance collected later); for cash/bank use actual received
+    // For CREDIT sales, count the still-outstanding balance as expected revenue too (received + balance
+    // normally equals price exactly) — but balance is a manually editable field, so if it's been adjusted
+    // away from the auto-calculated remainder (a discount or extra charged at settlement), that adjustment
+    // flows straight into margin instead of being silently ignored. For cash/bank sales use actual received.
     const totalReceived = sale.paymentMode === 'CREDIT'
-        ? Number(sale.price || 0)
+        ? Number(sale.receivedCash || 0) + Number(sale.bankTransferAmount || 0) + Number(sale.balance || 0)
         : (Number(sale.receivedCash || 0) + Number(sale.bankTransferAmount || 0)) || Number(sale.price || 0);
     // Positive diff = extra earned above standard; negative diff = loss below standard (reduces base margin)
     const bikeProfit = baseMargin + (totalReceived - standardPrice);
@@ -346,7 +349,7 @@ export async function GET(request: NextRequest) {
             const model = sale.bikeId?.model || '';
             const standardPrice = BIKE_STANDARD_PRICES[model] || Number(sale.price || 0);
             const totalReceived = sale.paymentMode === 'CREDIT'
-                ? Number(sale.price || 0)
+                ? Number(sale.receivedCash || 0) + Number(sale.bankTransferAmount || 0) + Number(sale.balance || 0)
                 : (Number(sale.receivedCash || 0) + Number(sale.bankTransferAmount || 0)) || Number(sale.price || 0);
             return s + Math.max(0, totalReceived - standardPrice);
         }, 0);
@@ -450,6 +453,7 @@ export async function GET(request: NextRequest) {
                     bikeModel: sale.bikeId?.model || '?',
                     paymentMode: sale.paymentMode || 'CASH',
                     price: Number(sale.price || 0),
+                    balance: Number(sale.balance || 0),
                     receivedCash: Number(sale.receivedCash || 0),
                     bankTransferAmount: Number(sale.bankTransferAmount || 0),
                     registrationCost: Number(sale.registrationCost || 0),

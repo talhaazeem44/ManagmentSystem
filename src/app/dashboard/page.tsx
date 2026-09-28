@@ -28,7 +28,7 @@ interface CreditSale {
 }
 
 interface CashBreakdownItem {
-    bikeModel: string; paymentMode: string; price: number;
+    bikeModel: string; paymentMode: string; price: number; balance?: number;
     receivedCash: number; bankTransferAmount: number; counted: number;
     bikeProfit: number; regProfit: number; totalProfit: number;
     standardPrice: number; baseMargin: number;
@@ -664,7 +664,7 @@ export default function DashboardPage() {
                                     </thead>
                                     <tbody>
                                         {customDateStats!.cashBreakdown.map((row, i) => {
-                                            const effectiveReceived = row.paymentMode === 'CREDIT' ? row.price : (row.receivedCash ?? 0) + (row.bankTransferAmount ?? 0);
+                                            const effectiveReceived = row.paymentMode === 'CREDIT' ? (row.receivedCash ?? 0) + (row.bankTransferAmount ?? 0) + (row.balance ?? 0) : (row.receivedCash ?? 0) + (row.bankTransferAmount ?? 0);
                                             const extra = row.paymentMode === 'ADVANCE'
                                                 ? row.price - row.receivedCash
                                                 : effectiveReceived - (row.standardPrice ?? 0);
@@ -702,7 +702,7 @@ export default function DashboardPage() {
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#10b981' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.receivedCash, 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#3b82f6' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.bankTransferAmount, 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.baseMargin, 0).toLocaleString()}</td>
-                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + (r.paymentMode === 'ADVANCE' ? r.price - r.receivedCash : (r.paymentMode === 'CREDIT' ? r.price : r.receivedCash + r.bankTransferAmount) - r.standardPrice), 0).toLocaleString()}</td>
+                                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + (r.paymentMode === 'ADVANCE' ? r.price - r.receivedCash : (r.paymentMode === 'CREDIT' ? r.receivedCash + r.bankTransferAmount + (r.balance ?? 0) : r.receivedCash + r.bankTransferAmount) - r.standardPrice), 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: 'var(--color-success)' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.bikeProfit, 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: 'var(--color-primary)' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.regProfit, 0).toLocaleString()}</td>
                                             <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', color: '#10b981' }}>{customDateStats!.cashBreakdown.reduce((s, r) => s + r.totalProfit, 0).toLocaleString()}</td>
@@ -740,7 +740,7 @@ export default function DashboardPage() {
                                     </thead>
                                     <tbody>
                                         {data!.map((row, i) => {
-                                            const effectiveReceived = row.paymentMode === 'CREDIT' ? row.price : (row.receivedCash ?? 0) + (row.bankTransferAmount ?? 0);
+                                            const effectiveReceived = row.paymentMode === 'CREDIT' ? (row.receivedCash ?? 0) + (row.bankTransferAmount ?? 0) + (row.balance ?? 0) : (row.receivedCash ?? 0) + (row.bankTransferAmount ?? 0);
                                             const extra = row.paymentMode === 'KHATA' || row.paymentMode === 'ADVANCE'
                                                 ? 0
                                                 : effectiveReceived - (row.standardPrice ?? 0);
