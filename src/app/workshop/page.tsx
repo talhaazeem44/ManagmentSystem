@@ -188,7 +188,7 @@ export default function WorkshopPage() {
             name:          editManualItem.name,
             productCode:   editManualItem.productCode,
             quantity:      Number(editManualItem.qty) || 1,
-            retailPrice:   editManualItem.stockId ? (Number(editManualItem.retailPrice) || 0) : (editManualItem.noCost ? 0 : Number(editManualItem.price)),
+            retailPrice:   editManualItem.noCost ? 0 : (Number(editManualItem.retailPrice) || 0),
             customerPrice: Number(editManualItem.price),
         }]);
         setEditManualItem({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1', noCost: false });
@@ -222,6 +222,7 @@ export default function WorkshopPage() {
 
     const serviceCharges = Number(formData.serviceCharges) || 0;
     const itemsTotal = billItems.reduce((s, i) => s + i.customerPrice * i.quantity, 0);
+    const itemsMargin = billItems.reduce((s, i) => s + (i.customerPrice - i.retailPrice) * i.quantity, 0);
     const totalAmount = serviceCharges + itemsTotal;
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -456,11 +457,13 @@ export default function WorkshopPage() {
                                                 value={manualItem.price}
                                                 onChange={e => setManualItem({ ...manualItem, price: e.target.value })} />
                                         </div>
-                                        {manualItem.stockId && (
+                                        {!manualItem.noCost && (
                                             <div style={{ flex: 1 }}>
-                                                <div style={{ fontSize: '0.68rem', color: '#f59e0b', marginBottom: '2px' }}>Purchase Cost ✎</div>
+                                                <div style={{ fontSize: '0.68rem', color: '#f59e0b', marginBottom: '2px' }}>
+                                                    Purchase Cost {manualItem.stockId ? '✎' : ''}
+                                                </div>
                                                 <input type="text" inputMode="decimal" className="input"
-                                                    placeholder="Cost price"
+                                                    placeholder="What you paid for it"
                                                     value={manualItem.retailPrice}
                                                     style={{ borderColor: 'rgba(245,158,11,0.4)' }}
                                                     onChange={e => setManualItem({ ...manualItem, retailPrice: e.target.value })} />
@@ -481,16 +484,15 @@ export default function WorkshopPage() {
                                                         name: manualItem.name,
                                                         productCode: manualItem.productCode,
                                                         quantity: Number(manualItem.qty) || 1,
-                                                        // Stock items: use the (possibly overridden) purchase cost for correct margin.
-                                                        // Manual items: if "no cost" ticked, treat as pure profit; otherwise cost = price (zero margin).
-                                                        retailPrice: manualItem.stockId
-                                                            ? (Number(manualItem.retailPrice) || 0)
-                                                            : (manualItem.noCost ? 0 : Number(manualItem.price)),
+                                                        // "No cost" (bundled labour, not a real part) = pure profit. Otherwise use whatever
+                                                        // was actually paid for it — from stock (possibly overridden) or typed in by hand
+                                                        // for a part bought from outside — so margin is never silently guessed at.
+                                                        retailPrice: manualItem.noCost ? 0 : (Number(manualItem.retailPrice) || 0),
                                                         customerPrice: Number(manualItem.price),
                                                     }]);
                                                     setManualItem({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1', noCost: false });
                                                 }}
-                                                disabled={!manualItem.name || !manualItem.price}>Add</button>
+                                                disabled={!manualItem.name || !manualItem.price || (!manualItem.noCost && manualItem.retailPrice.trim() === '')}>Add</button>
                                         </div>
                                     </div>
                                     {!manualItem.stockId && (
@@ -546,6 +548,12 @@ export default function WorkshopPage() {
                                     <span style={{ color: 'var(--color-text-muted)' }}>Parts Total</span>
                                     <span>Rs. {itemsTotal.toLocaleString()}</span>
                                 </div>
+                                {billItems.length > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                        <span style={{ color: 'var(--color-text-muted)' }}>Parts Margin (earned)</span>
+                                        <span style={{ color: itemsMargin >= 0 ? 'var(--color-success)' : '#ef4444', fontWeight: 600 }}>Rs. {itemsMargin.toLocaleString()}</span>
+                                    </div>
+                                )}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '6px' }}>
                                     <span>Total Bill</span>
                                     <span>Rs. {totalAmount.toLocaleString()}</span>
@@ -750,6 +758,14 @@ export default function WorkshopPage() {
                                                     value={editManualItem.price} placeholder="Price"
                                                     onChange={e => setEditManualItem({ ...editManualItem, price: e.target.value })} />
                                             </div>
+                                            {!editManualItem.noCost && (
+                                                <div style={{ width: '72px' }}>
+                                                    <div style={{ fontSize: '0.68rem', color: '#f59e0b', marginBottom: '2px' }}>Cost {editManualItem.stockId ? '✎' : ''}</div>
+                                                    <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.78rem', padding: '0.3rem 0.5rem', borderColor: 'rgba(245,158,11,0.4)' }}
+                                                        value={editManualItem.retailPrice} placeholder="What you paid"
+                                                        onChange={e => setEditManualItem({ ...editManualItem, retailPrice: e.target.value })} />
+                                                </div>
+                                            )}
                                             <div style={{ width: '48px' }}>
                                                 <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginBottom: '2px' }}>Qty</div>
                                                 <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.78rem', padding: '0.3rem 0.5rem' }}
@@ -757,19 +773,35 @@ export default function WorkshopPage() {
                                                     onChange={e => setEditManualItem({ ...editManualItem, qty: e.target.value })} />
                                             </div>
                                             <button type="button" className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.35rem 0.6rem' }}
-                                                disabled={!editManualItem.name || !editManualItem.price}
+                                                disabled={!editManualItem.name || !editManualItem.price || (!editManualItem.noCost && editManualItem.retailPrice.trim() === '')}
                                                 onClick={addEditItem}>+ Add</button>
+                                            {!editManualItem.stockId && (
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.7rem', color: 'var(--color-text-muted)', paddingBottom: '0.35rem' }}>
+                                                    <input type="checkbox" checked={editManualItem.noCost}
+                                                        onChange={e => setEditManualItem({ ...editManualItem, noCost: e.target.checked })} />
+                                                    No Cost
+                                                </label>
+                                            )}
                                         </div>
 
                                         {/* Edit summary */}
                                         {(() => {
                                             const sc = Number(editFields.serviceCharges) || 0;
                                             const pt = editBillItems.reduce((s, i) => s + i.customerPrice * i.quantity, 0);
+                                            const pm = editBillItems.reduce((s, i) => s + (i.customerPrice - i.retailPrice) * i.quantity, 0);
                                             return (
+                                                <>
+                                                {editBillItems.length > 0 && (
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', padding: '0.2rem 0.6rem', color: pm >= 0 ? 'var(--color-success)' : '#ef4444' }}>
+                                                        <span>Parts Margin</span>
+                                                        <span>Rs. {pm.toLocaleString()}</span>
+                                                    </div>
+                                                )}
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: 700, padding: '0.4rem 0.6rem', background: 'rgba(245,158,11,0.07)', borderRadius: '6px', marginBottom: '0.75rem' }}>
                                                     <span>New Total</span>
                                                     <span style={{ color: '#f59e0b' }}>Rs. {(sc + pt).toLocaleString()}</span>
                                                 </div>
+                                                </>
                                             );
                                         })()}
 

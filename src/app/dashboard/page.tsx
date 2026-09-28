@@ -50,7 +50,7 @@ interface Stats {
     creditSales: CreditSale[];
     advanceBookings: {
         pendingCount: number; pendingMargin: number;
-        overdueBookings: { _id: string; customerName: string; customerMobile: string; bikeModel: string; expectedDeliveryDate: string; advancePaid: number }[];
+        overdueBookings: { _id: string; customerName: string; customerMobile: string; bikeModel: string; expectedDeliveryDate: string; advancePaid: number; isOverdue: boolean }[];
     };
     chartData: { day: string; date: string; sales: number; revenue: number }[];
     cashBreakdown: CashBreakdownItem[];
@@ -90,6 +90,55 @@ export default function DashboardPage() {
     const [editTargets, setEditTargets] = useState<Record<string, string>>({});
     const [savingPlan, setSavingPlan] = useState(false);
     const currentMonth = new Date().toISOString().slice(0, 7);
+
+    // Quick "Receive Payment" on a credit sale, right from the dashboard — avoids having to
+    // go find the sale in the Sales section just to record a collection.
+    const [payingCreditId, setPayingCreditId] = useState<string | null>(null);
+    const [creditPayAmount, setCreditPayAmount] = useState('');
+    const [creditPayMode, setCreditPayMode] = useState<'CASH' | 'BANK_TRANSFER'>('CASH');
+    const [creditSettleFinal, setCreditSettleFinal] = useState(false);
+    const [creditPaySubmitting, setCreditPaySubmitting] = useState(false);
+
+    const openCreditPay = (id: string) => {
+        setPayingCreditId(id);
+        setCreditPayAmount('');
+        setCreditPayMode('CASH');
+        setCreditSettleFinal(false);
+    };
+
+    const handleCreditPayment = async (cs: CreditSale) => {
+        const amount = Number(creditPayAmount);
+        if (!amount || amount <= 0) { showToast('Enter a valid amount', 'error'); return; }
+        if (!creditSettleFinal && amount > cs.balance) { showToast('Amount exceeds remaining balance — tick "Settle in full" to allow this', 'error'); return; }
+        setCreditPaySubmitting(true);
+        try {
+            const res = await fetch(`/api/sales/${cs.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    addPayment: {
+                        amount,
+                        date: todayDateInputValue(),
+                        note: '',
+                        paymentMode: creditPayMode,
+                        settleFinal: creditSettleFinal,
+                    },
+                }),
+            });
+            if (res.ok) {
+                showToast('Payment recorded', 'success');
+                setPayingCreditId(null);
+                fetchData();
+            } else {
+                const e = await res.json();
+                showToast(`Failed: ${e.message}`, 'error');
+            }
+        } catch {
+            showToast('Error recording payment', 'error');
+        } finally {
+            setCreditPaySubmitting(false);
+        }
+    };
 
     const fetchPlan = async () => {
         try {
@@ -258,28 +307,32 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                {/* ── Overdue Advance Bookings Alert ── */}
+                {/* ── Overdue / Due-Soon Advance Bookings Alert ── */}
                 {(stats?.advanceBookings?.overdueBookings?.length ?? 0) > 0 && (
                     <div style={{ marginBottom: '1.25rem', padding: '1rem 1.25rem', background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '10px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                             <span style={{ fontSize: '1.1rem' }}>⚠️</span>
                             <strong style={{ color: '#ef4444', fontSize: '0.9rem' }}>
-                                {stats!.advanceBookings.overdueBookings.length} Advance Booking{stats!.advanceBookings.overdueBookings.length > 1 ? 's' : ''} Overdue
+                                {stats!.advanceBookings.overdueBookings.length} Advance Booking{stats!.advanceBookings.overdueBookings.length > 1 ? 's' : ''} Overdue / Due Soon
                             </strong>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                            {stats!.advanceBookings.overdueBookings.map(b => (
-                                <div key={b._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.82rem' }}>
-                                    <span>
-                                        <strong>{b.customerName}</strong>
-                                        {b.bikeModel && <span style={{ color: 'var(--color-text-muted)', marginLeft: '0.4rem' }}>🏍️ {b.bikeModel}</span>}
-                                        {b.customerMobile && <span style={{ color: 'var(--color-text-muted)', marginLeft: '0.4rem' }}>📞 {b.customerMobile}</span>}
-                                    </span>
-                                    <span style={{ color: '#ef4444', fontWeight: 600 }}>
-                                        Due: {new Date(b.expectedDeliveryDate).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                    </span>
-                                </div>
-                            ))}
+                            {stats!.advanceBookings.overdueBookings.map(b => {
+                                const daysUntil = Math.ceil((new Date(b.expectedDeliveryDate).getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+                                return (
+                                    <div key={b._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.82rem' }}>
+                                        <span>
+                                            <strong>{b.customerName}</strong>
+                                            {b.bikeModel && <span style={{ color: 'var(--color-text-muted)', marginLeft: '0.4rem' }}>🏍️ {b.bikeModel}</span>}
+                                            {b.customerMobile && <span style={{ color: 'var(--color-text-muted)', marginLeft: '0.4rem' }}>📞 {b.customerMobile}</span>}
+                                        </span>
+                                        <span style={{ color: '#ef4444', fontWeight: 600 }}>
+                                            {b.isOverdue ? '⚠️ OVERDUE — ' : daysUntil === 0 ? '⏰ Due today — ' : `⏰ Due in ${daysUntil}d — `}
+                                            {new Date(b.expectedDeliveryDate).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 )}
@@ -605,13 +658,62 @@ export default function DashboardPage() {
                         <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: '#ef4444', marginBottom: '0.75rem' }}>Credit Customers</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                             {stats!.creditSales.map(cs => (
-                                <div key={cs.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'rgba(239,68,68,0.05)', borderRadius: '8px', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                    <div>
-                                        <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{cs.customerName}</span>
-                                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>🏍️ {cs.bikeModel}</span>
-                                        {cs.customerMobile && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>📞 {cs.customerMobile}</span>}
+                                <div key={cs.id} style={{ padding: '0.5rem 0.75rem', background: 'rgba(239,68,68,0.05)', borderRadius: '8px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                        <div>
+                                            <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{cs.customerName}</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>🏍️ {cs.bikeModel}</span>
+                                            {cs.customerMobile && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>📞 {cs.customerMobile}</span>}
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                            <span style={{ fontWeight: 700, color: '#ef4444', fontSize: '0.9rem' }}>Rs. {cs.balance.toLocaleString()} left</span>
+                                            <button
+                                                onClick={() => payingCreditId === cs.id ? setPayingCreditId(null) : openCreditPay(cs.id)}
+                                                className="btn"
+                                                style={{ fontSize: '0.72rem', padding: '0.3rem 0.6rem', background: payingCreditId === cs.id ? 'var(--color-bg-elevated)' : '#10b981', color: payingCreditId === cs.id ? 'var(--color-text-muted)' : '#fff', border: 'none', borderRadius: '6px', fontWeight: 700, cursor: 'pointer' }}>
+                                                {payingCreditId === cs.id ? 'Cancel' : '💰 Receive'}
+                                            </button>
+                                        </div>
                                     </div>
-                                    <span style={{ fontWeight: 700, color: '#ef4444', fontSize: '0.9rem' }}>Rs. {cs.balance.toLocaleString()} left</span>
+
+                                    {payingCreditId === cs.id && (
+                                        <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(239,68,68,0.2)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'flex-end' }}>
+                                            <div className="form-group" style={{ margin: 0 }}>
+                                                <label className="label" style={{ fontSize: '0.7rem' }}>Amount</label>
+                                                <input
+                                                    type="text" inputMode="decimal" className="input"
+                                                    style={{ width: '140px' }}
+                                                    value={creditPayAmount}
+                                                    onChange={e => setCreditPayAmount(e.target.value)}
+                                                    placeholder={String(cs.balance)}
+                                                    autoFocus
+                                                />
+                                            </div>
+                                            <div className="form-group" style={{ margin: 0 }}>
+                                                <label className="label" style={{ fontSize: '0.7rem' }}>Mode</label>
+                                                <select className="select" style={{ width: '130px' }} value={creditPayMode} onChange={e => setCreditPayMode(e.target.value as 'CASH' | 'BANK_TRANSFER')}>
+                                                    <option value="CASH">Cash</option>
+                                                    <option value="BANK_TRANSFER">Bank Transfer</option>
+                                                </select>
+                                            </div>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: 'var(--color-text-muted)', cursor: 'pointer', paddingBottom: '0.5rem' }}>
+                                                <input type="checkbox" checked={creditSettleFinal} onChange={e => setCreditSettleFinal(e.target.checked)} />
+                                                Settle in full (adjusts margin if amount differs)
+                                            </label>
+                                            <button
+                                                onClick={() => handleCreditPayment(cs)}
+                                                disabled={creditPaySubmitting}
+                                                className="btn"
+                                                style={{ fontSize: '0.78rem', padding: '0.4rem 0.9rem', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 700, cursor: creditPaySubmitting ? 'not-allowed' : 'pointer' }}>
+                                                {creditPaySubmitting ? 'Saving...' : '✓ Record'}
+                                            </button>
+                                            {creditSettleFinal && Number(creditPayAmount) > 0 && Number(creditPayAmount) !== cs.balance && (
+                                                <span style={{ fontSize: '0.72rem', color: Number(creditPayAmount) > cs.balance ? '#10b981' : '#ef4444' }}>
+                                                    {Number(creditPayAmount) > cs.balance ? '+' : ''}Rs. {(Number(creditPayAmount) - cs.balance).toLocaleString()} to margin
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>

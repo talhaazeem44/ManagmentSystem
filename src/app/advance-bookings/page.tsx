@@ -459,6 +459,7 @@ export default function AdvanceBookingsPage() {
                                 const isConfirming = confirmDeleteId === b._id;
                                 const isDelivering = deliveringId === b._id;
                                 const isOverdue = b.status === 'PENDING' && b.expectedDeliveryDate && new Date(b.expectedDeliveryDate) < new Date();
+                                const isDueSoon = !isOverdue && b.status === 'PENDING' && b.expectedDeliveryDate && new Date(b.expectedDeliveryDate) < new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
                                 const matchingBikes = availableBikes.filter(bike => {
                                     if (b.bikeModel && bike.model !== b.bikeModel) return false;
                                     const q = bikeSearch.trim().toLowerCase();
@@ -466,7 +467,7 @@ export default function AdvanceBookingsPage() {
                                     return bike.engineNumber?.toLowerCase().includes(q) || bike.chassisNumber?.toLowerCase().includes(q) || bike.model?.toLowerCase().includes(q);
                                 });
                                 return (
-                                    <div key={b._id} style={{ padding: '0.9rem 1rem', border: `1px solid ${isConfirming ? 'rgba(239,68,68,0.4)' : isDelivering ? 'rgba(16,185,129,0.4)' : isOverdue ? 'rgba(239,68,68,0.35)' : 'var(--color-border)'}`, borderRadius: 'var(--radius-lg)', background: isConfirming ? 'rgba(239,68,68,0.04)' : isDelivering ? 'rgba(16,185,129,0.04)' : isOverdue ? 'rgba(239,68,68,0.04)' : 'var(--color-bg-elevated)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <div key={b._id} style={{ padding: '0.9rem 1rem', border: `1px solid ${isConfirming ? 'rgba(239,68,68,0.4)' : isDelivering ? 'rgba(16,185,129,0.4)' : isOverdue ? 'rgba(239,68,68,0.35)' : isDueSoon ? 'rgba(245,158,11,0.4)' : 'var(--color-border)'}`, borderRadius: 'var(--radius-lg)', background: isConfirming ? 'rgba(239,68,68,0.04)' : isDelivering ? 'rgba(16,185,129,0.04)' : isOverdue ? 'rgba(239,68,68,0.04)' : isDueSoon ? 'rgba(245,158,11,0.05)' : 'var(--color-bg-elevated)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
                                         <div style={{ flex: '1 1 200px' }}>
                                             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
@@ -474,12 +475,13 @@ export default function AdvanceBookingsPage() {
                                                 {b.status === 'PENDING' && <span style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>PENDING</span>}
                                                 {b.status === 'DELIVERED' && <span style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>DELIVERED</span>}
                                                 {isOverdue && <span style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>⚠️ OVERDUE</span>}
+                                                {isDueSoon && <span style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>⏰ DUE SOON</span>}
                                             </div>
                                             <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                                 {b.customerMobile && <span>📞 {b.customerMobile}</span>}
                                                 {b.bikeModel && <span>🏍️ {b.bikeModel}{b.bikeColor ? ` · ${b.bikeColor}` : ''}</span>}
                                                 <span>📅 {new Date(b.date).toLocaleDateString()}</span>
-                                                {b.expectedDeliveryDate && <span style={{ color: isOverdue ? '#ef4444' : 'var(--color-text-muted)', fontWeight: isOverdue ? 700 : 400 }}>🚚 By {new Date(b.expectedDeliveryDate).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}</span>}
+                                                {b.expectedDeliveryDate && <span style={{ color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : 'var(--color-text-muted)', fontWeight: isOverdue || isDueSoon ? 700 : 400 }}>🚚 By {new Date(b.expectedDeliveryDate).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}</span>}
                                                 {b.status === 'DELIVERED' && b.deliveredAt && <span>✅ Delivered {new Date(b.deliveredAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })} · {new Date(b.deliveredAt).toLocaleTimeString('en-PK', { hour: 'numeric', minute: '2-digit' })}</span>}
                                             </div>
                                             <div style={{ marginTop: '0.35rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.85rem' }}>

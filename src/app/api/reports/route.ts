@@ -127,8 +127,11 @@ export async function GET(request: NextRequest) {
         const advancePendingCount = pendingAdvanceBookings.length;
         const advancePendingMargin = pendingAdvanceBookings.reduce((s: number, b: any) => s + calcAdvanceMargin(b).bikeProfit, 0);
         const now = new Date();
+        // Surface a delivery 2 days before it's due, not only once it's already overdue — gives
+        // enough lead time to actually prepare the bike instead of finding out the same day.
+        const dueSoonCutoff = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
         const overdueBookings = (pendingAdvanceBookings as any[])
-            .filter(b => b.expectedDeliveryDate && new Date(b.expectedDeliveryDate) < now)
+            .filter(b => b.expectedDeliveryDate && new Date(b.expectedDeliveryDate) < dueSoonCutoff)
             .map(b => ({
                 _id: b._id.toString(),
                 customerName: b.customerName,
@@ -136,6 +139,7 @@ export async function GET(request: NextRequest) {
                 bikeModel: b.bikeModel || '',
                 expectedDeliveryDate: b.expectedDeliveryDate,
                 advancePaid: b.advancePaid,
+                isOverdue: new Date(b.expectedDeliveryDate) < now,
             }));
 
         // Today's advance bookings cash and margin — only CASH-mode advances count as physical cash;
