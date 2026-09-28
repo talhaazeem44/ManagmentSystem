@@ -82,7 +82,7 @@ export default function ReceiptPage() {
     const params = useParams();
     const [sale, setSale] = useState<Sale | null>(null);
     const [loading, setLoading] = useState(true);
-    const [payForm, setPayForm] = useState({ amount: '', date: today(), note: '', paymentMode: 'CASH' });
+    const [payForm, setPayForm] = useState({ amount: '', date: today(), note: '', paymentMode: 'CASH', settleFinal: false });
     const [paying, setPaying] = useState(false);
     const [payError, setPayError] = useState('');
     const [deletingPayment, setDeletingPayment] = useState<number | null>(null);
@@ -123,16 +123,18 @@ export default function ReceiptPage() {
         if (!sale) return;
         const amt = Number(payForm.amount);
         if (!amt || amt <= 0) { setPayError('Enter a valid amount'); return; }
-        if (amt > (sale.balance ?? 0)) { setPayError(`Amount exceeds balance (Rs. ${(sale.balance ?? 0).toLocaleString()})`); return; }
+        // The balance cap only applies to a normal partial payment — settling in full is allowed to
+        // land above or below the calculated balance on purpose (extra charged, or a discount given).
+        if (!payForm.settleFinal && amt > (sale.balance ?? 0)) { setPayError(`Amount exceeds balance (Rs. ${(sale.balance ?? 0).toLocaleString()}). Check "Settle in full" if this is a final payment for a different amount.`); return; }
         setPaying(true); setPayError('');
         try {
             const res = await fetch(`/api/sales/${sale.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ addPayment: { amount: amt, date: payForm.date, note: payForm.note, paymentMode: payForm.paymentMode } }),
+                body: JSON.stringify({ addPayment: { amount: amt, date: payForm.date, note: payForm.note, paymentMode: payForm.paymentMode, settleFinal: payForm.settleFinal } }),
             });
             if (res.ok) {
-                setPayForm({ amount: '', date: today(), note: '', paymentMode: 'CASH' });
+                setPayForm({ amount: '', date: today(), note: '', paymentMode: 'CASH', settleFinal: false });
                 await fetchSale(sale.id);
             } else {
                 const err = await res.json();
@@ -160,6 +162,19 @@ export default function ReceiptPage() {
 
     const isCreditWithBalance = sale.paymentMode === 'CREDIT' && (sale.balance ?? 0) > 0;
     const payments = sale.payments ?? [];
+
+    // The printed receipt always shows the standard/invoice rate as "Cash Price" — never the real
+    // agreed price — so any extra charged above standard (margin) never appears on paper. Balance
+    // must be derived from that same standard rate, not sale.balance (the real amount owed), or the
+    // two printed numbers wouldn't add up and would give away that a different price was agreed.
+    // Once the account is genuinely settled (sale.balance === 0, e.g. via "Settle in full"), trust
+    // that over the standard-price approximation — otherwise a discount settlement could still show
+    // a leftover balance on paper even though nothing is actually owed.
+    // The real sale.balance is still used everywhere else (credit tracking, payment collection).
+    const displayStandardPrice = BIKE_STANDARD_PRICES[sale.bike.model] || Number(sale.price);
+    const displayBalance = (sale.balance ?? 0) === 0
+        ? 0
+        : Math.max(0, displayStandardPrice - Number(sale.receivedCash || 0) - Number(sale.bankTransferAmount || 0));
 
     const handleExportPDF = async () => {
         if (!receiptRef.current) return;
@@ -250,6 +265,16 @@ export default function ReceiptPage() {
                                     {paying ? 'Saving...' : '✓ Record'}
                                 </button>
                             </div>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.75rem', cursor: 'pointer' }}>
+                                <input type="checkbox" checked={payForm.settleFinal}
+                                    onChange={e => setPayForm({ ...payForm, settleFinal: e.target.checked })} />
+                                Settle in full — this closes the balance even if the amount is more or less than Rs. {(sale.balance ?? 0).toLocaleString()}, and the difference adjusts the margin
+                            </label>
+                            {payForm.settleFinal && Number(payForm.amount) > 0 && Number(payForm.amount) !== (sale.balance ?? 0) && (
+                                <div style={{ fontSize: '0.78rem', marginTop: '0.3rem', color: Number(payForm.amount) > (sale.balance ?? 0) ? '#10b981' : '#ef4444' }}>
+                                    {Number(payForm.amount) > (sale.balance ?? 0) ? '+' : ''}Rs. {(Number(payForm.amount) - (sale.balance ?? 0)).toLocaleString()} will be added to this sale&apos;s margin
+                                </div>
+                            )}
                             {payError && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem' }}>{payError}</p>}
                         </form>
                     </div>
@@ -428,7 +453,7 @@ export default function ReceiptPage() {
                         <div className={styles.field}>
                             <span className={styles.label}>Cash Price:</span>
                             <span className={styles.value}>
-                                {(BIKE_STANDARD_PRICES[sale.bike.model] || Number(sale.price)).toLocaleString()}
+                                {displayStandardPrice.toLocaleString()}
                             </span>
                         </div>
                         <div className={styles.field}>
@@ -439,7 +464,7 @@ export default function ReceiptPage() {
                             <span className={styles.label}>Received Cash:</span>
                             <span className={styles.value}>
                                 {sale.paymentMode === 'CASH' || sale.paymentMode === 'ONLINE'
-                                    ? (BIKE_STANDARD_PRICES[sale.bike.model] || Number(sale.price)).toLocaleString()
+                                    ? displayStandardPrice.toLocaleString()
                                     : Number(sale.receivedCash || 0).toLocaleString()}
                             </span>
                         </div>
@@ -448,7 +473,7 @@ export default function ReceiptPage() {
                                 <span className={styles.label}>Bank Transfer:</span>
                                 <span className={styles.value}>
                                     {sale.paymentMode === 'BANK_TRANSFER'
-                                        ? (BIKE_STANDARD_PRICES[sale.bike.model] || Number(sale.price)).toLocaleString()
+                                        ? displayStandardPrice.toLocaleString()
                                         : Number(sale.bankTransferAmount).toLocaleString()}
                                 </span>
                             </div>
@@ -456,7 +481,7 @@ export default function ReceiptPage() {
                         <div className={styles.field}>
                             <span className={styles.label}>Balance:</span>
                             <span className={styles.value}>
-                                {sale.balance ? Number(sale.balance).toLocaleString() : ''}
+                                {displayBalance ? displayBalance.toLocaleString() : ''}
                             </span>
                         </div>
                         <div className={styles.field}>

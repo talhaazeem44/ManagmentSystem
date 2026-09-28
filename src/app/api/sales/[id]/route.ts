@@ -99,22 +99,38 @@ export async function PATCH(
 
         // Special handler: record a payment against a credit sale
         if (body.addPayment) {
-            const { amount, date, note, paymentMode } = body.addPayment;
+            const { amount, date, note, paymentMode, settleFinal } = body.addPayment;
             const mode: 'CASH' | 'BANK_TRANSFER' = paymentMode === 'BANK_TRANSFER' ? 'BANK_TRANSFER' : 'CASH';
             const paymentAmount = Number(amount);
             const existing = await Sale.findById(id);
             if (!existing) return NextResponse.json({ message: 'Sale not found' }, { status: 404 });
 
-            const newBalance = Math.max(0, Number(existing.balance ?? 0) - paymentAmount);
+            const currentBalance = Number(existing.balance ?? 0);
             // Route the amount to receivedCash or bankTransferAmount based on how it actually came in,
             // so cash-in-hand only ever reflects physical cash, never bank transfers.
             const incField = mode === 'BANK_TRANSFER' ? 'bankTransferAmount' : 'receivedCash';
+            const set: any = {};
+            const inc: any = { [incField]: paymentAmount };
+
+            if (settleFinal) {
+                // Final settlement can land above or below the calculated remaining balance (extra
+                // charged, or a discount given at closeout) — that difference is real profit/loss,
+                // not an error, so fold it into the sale's own price. Margin for CREDIT sales is
+                // based on price, so this is what makes the over/underpayment show up as margin.
+                const priceDelta = paymentAmount - currentBalance;
+                set.price = Number(existing.price || 0) + priceDelta;
+                set.balance = 0;
+            } else {
+                // Normal partial payment — never allow it to overshoot the known balance.
+                set.balance = Math.max(0, currentBalance - paymentAmount);
+            }
+
             const sale = await Sale.findByIdAndUpdate(
                 id,
                 {
                     $push: { payments: { amount: paymentAmount, date: resolveTransactionDate(date), note: note || '', paymentMode: mode } },
-                    $inc: { [incField]: paymentAmount },
-                    $set: { balance: newBalance },
+                    $inc: inc,
+                    $set: set,
                 },
                 { new: true }
             );
