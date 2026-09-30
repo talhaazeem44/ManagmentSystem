@@ -34,6 +34,8 @@ interface ServiceRecord {
     description: string;
     serviceCharges: number;
     paymentMode?: string;
+    receivedCash?: number;
+    bankTransferAmount?: number;
     balance?: number;
     items: BillItem[];
     totalAmount: number;
@@ -62,6 +64,8 @@ export default function WorkshopPage() {
         paymentMode: 'CASH',
         receivedNow: '',
         receivedNowMode: 'CASH',
+        receivedCash: '',
+        bankTransferAmount: '',
     });
 
     const [mechanics, setMechanics] = useState<{ _id: string; name: string }[]>([]);
@@ -237,7 +241,7 @@ export default function WorkshopPage() {
             if (res.ok) {
                 const newRecord = await res.json();
                 setHistory([newRecord, ...history]);
-                setFormData({ customerName: '', customerMobile: '', bikeNumber: '', mechanicName: '', serviceType: 'Tuning', description: '', serviceCharges: '', paymentMode: 'CASH', receivedNow: '', receivedNowMode: 'CASH' });
+                setFormData({ customerName: '', customerMobile: '', bikeNumber: '', mechanicName: '', serviceType: 'Tuning', description: '', serviceCharges: '', paymentMode: 'CASH', receivedNow: '', receivedNowMode: 'CASH', receivedCash: '', bankTransferAmount: '' });
                 setBillItems([]);
                 setPrintingService(newRecord);
             } else {
@@ -383,6 +387,22 @@ export default function WorkshopPage() {
                                     </div>
                                     <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
                                         Counted in Cash/Bank Received on the dashboard. Whatever's left of the total goes on Workshop Credit as pending.
+                                    </div>
+                                </div>
+                            )}
+                            {formData.paymentMode !== 'CREDIT' && (
+                                <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                    <label className="label">Split Cash / Bank — optional</label>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <input type="text" inputMode="decimal" className="input" placeholder="Cash portion"
+                                            value={formData.receivedCash}
+                                            onChange={e => setFormData({ ...formData, receivedCash: e.target.value })} />
+                                        <input type="text" inputMode="decimal" className="input" placeholder="Bank portion"
+                                            value={formData.bankTransferAmount}
+                                            onChange={e => setFormData({ ...formData, bankTransferAmount: e.target.value })} />
+                                    </div>
+                                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
+                                        Leave both blank to count the whole bill as {formData.paymentMode === 'BANK_TRANSFER' ? 'Bank Transfer' : 'Cash'}. Fill both in only if the customer split the payment — e.g. paid some cash, transferred the rest to your bank.
                                     </div>
                                 </div>
                             )}
@@ -615,6 +635,11 @@ export default function WorkshopPage() {
                                             {record.paymentMode === 'CREDIT' && (
                                                 <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, background: (record.balance ?? 0) > 0 ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)', color: (record.balance ?? 0) > 0 ? '#ef4444' : '#10b981' }}>
                                                     {(record.balance ?? 0) > 0 ? `Credit: Rs. ${(record.balance ?? 0).toLocaleString()} pending` : 'Credit: Paid off'}
+                                                </span>
+                                            )}
+                                            {record.paymentMode !== 'CREDIT' && Number(record.receivedCash) > 0 && Number(record.bankTransferAmount) > 0 && (
+                                                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
+                                                    (💵 {Number(record.receivedCash).toLocaleString()} + 🏦 {Number(record.bankTransferAmount).toLocaleString()})
                                                 </span>
                                             )}
                                         </div>

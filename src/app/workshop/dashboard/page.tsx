@@ -30,6 +30,14 @@ interface LowStockItem {
     quantity: number;
 }
 
+interface WorkshopExpenseItem {
+    _id: string;
+    date: string;
+    description: string;
+    amount: number;
+    paymentMode: string;
+}
+
 interface WorkshopStats {
     totalRevenue: number;
     totalCollected: number;
@@ -39,6 +47,7 @@ interface WorkshopStats {
     totalCashReceived: number;
     totalBankReceived: number;
     workshopExpenseTotal: number;
+    expenseList: WorkshopExpenseItem[];
     netCashReceived: number;
     jobCount: number;
     avgTicket: number;
@@ -108,7 +117,7 @@ export default function WorkshopDashboardPage() {
                         <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Workshop Dashboard</h1>
                         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Earnings and job stats — {rangeLabel}</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
                         {(['today', 'yesterday', 'week', 'month', 'all'] as RangeKey[]).map(r => (
                             <button key={r} onClick={() => setRange(r)}
                                 className={r === range ? 'btn btn-primary' : 'btn btn-secondary'}
@@ -116,6 +125,9 @@ export default function WorkshopDashboardPage() {
                                 {r === 'today' ? 'Today' : r === 'yesterday' ? 'Yesterday' : r === 'week' ? '7 Days' : r === 'month' ? 'Month' : 'All Time'}
                             </button>
                         ))}
+                        <a href="/workshop/tracker" className="btn" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700 }}>
+                            − Add / View Expenses
+                        </a>
                     </div>
                 </div>
 
@@ -163,9 +175,22 @@ export default function WorkshopDashboardPage() {
                                     <span>Rs. {Math.round(stats.totalMargin).toLocaleString()}</span>
                                 </div>
                                 {stats.workshopExpenseTotal > 0 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.4rem 0.7rem', background: 'rgba(239,68,68,0.07)', borderRadius: '6px' }}>
-                                        <span style={{ color: '#ef4444' }}>Less: Expenses</span>
-                                        <strong style={{ color: '#ef4444' }}>− Rs. {Math.round(stats.workshopExpenseTotal).toLocaleString()}</strong>
+                                    <div style={{ padding: '0.4rem 0.7rem', background: 'rgba(239,68,68,0.07)', borderRadius: '6px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                                            <span style={{ color: '#ef4444' }}>Less: Expenses ({stats.expenseList.length})</span>
+                                            <strong style={{ color: '#ef4444' }}>− Rs. {Math.round(stats.workshopExpenseTotal).toLocaleString()}</strong>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '0.4rem', paddingTop: '0.4rem', borderTop: '1px solid rgba(239,68,68,0.15)' }}>
+                                            {stats.expenseList.map(e => (
+                                                <div key={e._id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
+                                                    <span>
+                                                        {new Date(e.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })} · {e.description}
+                                                        {' '}{e.paymentMode === 'BANK_TRANSFER' ? '🏦' : '💵'}
+                                                    </span>
+                                                    <span>Rs. {Math.round(e.amount).toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>

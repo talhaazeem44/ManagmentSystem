@@ -35,8 +35,19 @@ export async function GET(request: NextRequest) {
         // CREDIT job counts nothing up front (its upfront amount's mode isn't tracked), but
         // later payments against it count on the day the cash actually came in, not the
         // job's original date — same cross-boundary logic used for bike Sales/Khata.
-        const directCashReceived = sales.reduce((s, r: any) => s + (r.paymentMode === 'CASH' ? Number(r.totalAmount || 0) : 0), 0);
-        const directBankReceived = sales.reduce((s, r: any) => s + (r.paymentMode === 'BANK_TRANSFER' ? Number(r.totalAmount || 0) : 0), 0);
+        // Bills saved before the cash/bank split existed only have paymentMode — fall back to
+        // counting the whole bill under that mode. Bills with an explicit split (even a pure
+        // one-mode split saved as 0/full) use the real receivedCash/bankTransferAmount instead.
+        const directCashReceived = sales.reduce((s, r: any) => {
+            if (r.paymentMode === 'CREDIT') return s;
+            if (r.receivedCash !== undefined || r.bankTransferAmount !== undefined) return s + Number(r.receivedCash || 0);
+            return s + (r.paymentMode === 'CASH' ? Number(r.totalAmount || 0) : 0);
+        }, 0);
+        const directBankReceived = sales.reduce((s, r: any) => {
+            if (r.paymentMode === 'CREDIT') return s;
+            if (r.receivedCash !== undefined || r.bankTransferAmount !== undefined) return s + Number(r.bankTransferAmount || 0);
+            return s + (r.paymentMode === 'BANK_TRANSFER' ? Number(r.totalAmount || 0) : 0);
+        }, 0);
 
         let creditPaymentsCash = 0;
         let creditPaymentsBank = 0;
@@ -126,6 +137,15 @@ export async function GET(request: NextRequest) {
             totalCashReceived,
             totalBankReceived,
             workshopExpenseTotal,
+            expenseList: workshopExpenses
+                .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                .map((e: any) => ({
+                    _id: e._id.toString(),
+                    date: e.date,
+                    description: e.description,
+                    amount: e.amount,
+                    paymentMode: e.paymentMode || 'CASH',
+                })),
             netCashReceived,
             jobCount,
             avgTicket,

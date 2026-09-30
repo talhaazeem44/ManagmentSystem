@@ -58,6 +58,24 @@ export async function POST(request: NextRequest) {
             ? [{ amount: receivedNow, date: resolveTransactionDate(body.date), note: 'Received at billing', paymentMode: receivedNowMode }]
             : [];
 
+        // Non-credit bills are usually paid entirely in whatever mode was selected, but
+        // sometimes the customer splits it — part cash, part straight to the bank. If a
+        // split was actually entered, trust it; otherwise fall back to the whole bill
+        // counting under the selected mode, exactly as before.
+        let receivedCash: number | undefined;
+        let bankTransferAmount: number | undefined;
+        if (body.paymentMode !== 'CREDIT') {
+            const splitCash = Number(body.receivedCash) || 0;
+            const splitBank = Number(body.bankTransferAmount) || 0;
+            if (splitCash > 0 || splitBank > 0) {
+                receivedCash = splitCash;
+                bankTransferAmount = splitBank;
+            } else {
+                receivedCash = body.paymentMode === 'BANK_TRANSFER' ? 0 : totalAmount;
+                bankTransferAmount = body.paymentMode === 'BANK_TRANSFER' ? totalAmount : 0;
+            }
+        }
+
         // Deduct stock quantities — manually-typed items (not picked from stock) have no
         // stockId, so there's nothing to deduct; passing an empty string to findByIdAndUpdate
         // throws a CastError and fails the whole save.
@@ -79,6 +97,8 @@ export async function POST(request: NextRequest) {
             margin,
             balance,
             payments,
+            receivedCash,
+            bankTransferAmount,
         });
 
         return NextResponse.json(service, { status: 201 });
