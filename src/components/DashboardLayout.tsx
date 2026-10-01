@@ -49,8 +49,10 @@ export default function DashboardLayout({
     let navItems;
     if (role === 'workshop') {
         navItems = workshopNavItems;
-    } else if (role === 'admin') {
+    } else if (role === 'superadmin') {
         navItems = [...mainNavItems, ...workshopNavItems, ...adminNavItems];
+    } else if (role === 'admin') {
+        navItems = [...mainNavItems, ...workshopNavItems];
     } else {
         navItems = visibleMainNavItems;
     }

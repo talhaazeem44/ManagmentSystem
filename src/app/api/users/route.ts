@@ -9,16 +9,16 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 // static and cache — serving a stale value to some clients even after the DB changes.
 export const dynamic = 'force-dynamic';
 
-async function requireAdmin() {
+async function requireSuperAdmin() {
     const session = await getServerSession(authOptions);
-    if (!session || (session.user as any)?.role !== 'admin') {
+    if (!session || (session.user as any)?.role !== 'superadmin') {
         return null;
     }
     return session;
 }
 
 export async function GET() {
-    const session = await requireAdmin();
+    const session = await requireSuperAdmin();
     if (!session) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
 
     try {
@@ -31,12 +31,12 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-    // Bootstrapping the very first admin account (before anyone can be logged in yet) still
-    // goes through /api/setup, which self-guards by only working while the User collection is
-    // empty. Every other account creation from here on requires an already-logged-in admin —
-    // this endpoint used to have no auth check at all, so anyone who found the URL could create
-    // their own admin login.
-    const session = await requireAdmin();
+    // Bootstrapping the very first superadmin account (before anyone can be logged in yet)
+    // still goes through /api/setup, which self-guards by only working while the User
+    // collection is empty. Every other account creation from here on requires an
+    // already-logged-in superadmin — this endpoint used to have no auth check at all, so
+    // anyone who found the URL could create their own admin login.
+    const session = await requireSuperAdmin();
     if (!session) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
 
     try {

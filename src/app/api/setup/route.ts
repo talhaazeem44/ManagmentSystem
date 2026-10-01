@@ -16,13 +16,15 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Create default admin user
+        // Create the first account as superadmin — only role that can manage staff
+        // logins (Staff & Access), so the very first account must be able to create
+        // everyone else.
         const hashedPassword = await bcrypt.hash('admin123', 10);
         const user = await User.create({
             email: 'admin@naeem-autos.com',
             password: hashedPassword,
             name: 'Admin User',
-            role: 'admin'
+            role: 'superadmin'
         });
 
         return NextResponse.json({

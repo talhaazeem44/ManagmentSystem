@@ -5,11 +5,13 @@ export interface IUser {
     email: string;
     password: string;
     name: string;
-    role: 'admin' | 'user' | 'workshop';
+    // 'superadmin' is the only role that can manage staff logins (Staff & Access) — it sits
+    // above 'admin', which otherwise has full day-to-day business access (same as before).
+    role: 'superadmin' | 'admin' | 'user' | 'workshop';
     // Only meaningful for role 'user'. undefined/missing = full access to every main-nav
     // section (the original, pre-permissions behavior — existing accounts keep working
     // unchanged). Once an admin sets this explicitly, the user is limited to exactly
-    // these sections. 'admin' and 'workshop' roles ignore this entirely.
+    // these sections. 'superadmin', 'admin', and 'workshop' roles ignore this entirely.
     permissions?: string[];
     createdAt?: Date;
     updatedAt?: Date;
@@ -19,7 +21,7 @@ const UserSchema = new Schema<IUser>({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     name: { type: String, required: true },
-    role: { type: String, enum: ['admin', 'user', 'workshop'], default: 'user' },
+    role: { type: String, enum: ['superadmin', 'admin', 'user', 'workshop'], default: 'user' },
     permissions: { type: [String] },
 }, {
     timestamps: true

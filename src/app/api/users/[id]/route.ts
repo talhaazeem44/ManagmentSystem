@@ -5,16 +5,16 @@ import dbConnect from '@/lib/mongodb';
 import { User } from '@/models';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
-async function requireAdmin() {
+async function requireSuperAdmin() {
     const session = await getServerSession(authOptions);
-    if (!session || (session.user as any)?.role !== 'admin') {
+    if (!session || (session.user as any)?.role !== 'superadmin') {
         return null;
     }
     return session;
 }
 
 export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
-    const session = await requireAdmin();
+    const session = await requireSuperAdmin();
     if (!session) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
 
     try {
@@ -22,11 +22,23 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
         const { id } = await context.params;
         const { name, role, permissions, password } = await request.json();
 
+        // Changing the last remaining superadmin's role away from superadmin would lock
+        // everyone out of Staff & Access, with no account left able to undo it.
+        if (role !== undefined && role !== 'superadmin') {
+            const target = await User.findById(id);
+            if (target?.role === 'superadmin') {
+                const superAdminCount = await User.countDocuments({ role: 'superadmin' });
+                if (superAdminCount <= 1) {
+                    return NextResponse.json({ message: 'Cannot change the role of the last remaining superadmin' }, { status: 400 });
+                }
+            }
+        }
+
         const set: any = {};
         if (name !== undefined) set.name = name;
         if (role !== undefined) set.role = role;
-        // permissions only makes sense for role 'user' — clear it for admin/workshop so a role
-        // change doesn't leave a stale, meaningless restriction sitting on the account.
+        // permissions only makes sense for role 'user' — clear it for admin/workshop/superadmin
+        // so a role change doesn't leave a stale, meaningless restriction sitting on the account.
         if (role === 'user' && Array.isArray(permissions)) {
             set.permissions = permissions;
         } else if (role !== undefined && role !== 'user') {
@@ -45,7 +57,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
 }
 
 export async function DELETE(_: NextRequest, context: { params: Promise<{ id: string }> }) {
-    const session = await requireAdmin();
+    const session = await requireSuperAdmin();
     if (!session) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
 
     try {
@@ -53,16 +65,16 @@ export async function DELETE(_: NextRequest, context: { params: Promise<{ id: st
         const { id } = await context.params;
 
         // Never allow deleting your own logged-in account (avoids accidentally locking
-        // yourself out), and never allow removing the last remaining admin.
+        // yourself out), and never allow removing the last remaining superadmin.
         if ((session.user as any)?.id === id) {
             return NextResponse.json({ message: "You can't delete your own account while logged in as it" }, { status: 400 });
         }
         const target = await User.findById(id);
         if (!target) return NextResponse.json({ message: 'User not found' }, { status: 404 });
-        if (target.role === 'admin') {
-            const adminCount = await User.countDocuments({ role: 'admin' });
-            if (adminCount <= 1) {
-                return NextResponse.json({ message: 'Cannot delete the last remaining admin account' }, { status: 400 });
+        if (target.role === 'superadmin') {
+            const superAdminCount = await User.countDocuments({ role: 'superadmin' });
+            if (superAdminCount <= 1) {
+                return NextResponse.json({ message: 'Cannot delete the last remaining superadmin account' }, { status: 400 });
             }
         }
 

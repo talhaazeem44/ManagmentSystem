@@ -10,7 +10,7 @@ interface StaffUser {
     _id: string;
     name: string;
     email: string;
-    role: 'admin' | 'user' | 'workshop';
+    role: 'superadmin' | 'admin' | 'user' | 'workshop';
     permissions?: string[];
     createdAt?: string;
 }
@@ -127,7 +127,8 @@ export default function AdminUsersPage() {
                                 onChange={e => setForm({ ...form, role: e.target.value as StaffUser['role'], permissions: [] })}>
                                 <option value="user">Staff (main system)</option>
                                 <option value="workshop">Workshop only</option>
-                                <option value="admin">Admin (full access)</option>
+                                <option value="admin">Admin (full business access)</option>
+                                <option value="superadmin">Superadmin (can manage staff logins)</option>
                             </select>
 
                             {form.role === 'user' && (
@@ -203,7 +204,7 @@ export default function AdminUsersPage() {
                                                     <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{u.name}</div>
                                                     <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{u.email}</div>
                                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.3rem' }}>
-                                                        <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, background: u.role === 'admin' ? 'rgba(239,68,68,0.12)' : u.role === 'workshop' ? 'rgba(59,130,246,0.12)' : 'rgba(16,185,129,0.12)', color: u.role === 'admin' ? '#ef4444' : u.role === 'workshop' ? '#3b82f6' : '#10b981' }}>
+                                                        <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, background: u.role === 'superadmin' ? 'rgba(168,85,247,0.15)' : u.role === 'admin' ? 'rgba(239,68,68,0.12)' : u.role === 'workshop' ? 'rgba(59,130,246,0.12)' : 'rgba(16,185,129,0.12)', color: u.role === 'superadmin' ? '#a855f7' : u.role === 'admin' ? '#ef4444' : u.role === 'workshop' ? '#3b82f6' : '#10b981' }}>
                                                             {u.role.toUpperCase()}
                                                         </span>
                                                         {u.role === 'user' && (u.permissions?.length ?? 0) > 0 && u.permissions!.map(p => (

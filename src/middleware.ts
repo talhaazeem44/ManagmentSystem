@@ -27,8 +27,8 @@ export async function middleware(request: NextRequest) {
     const isApiSeedStock = pathname.startsWith('/api/seed-stock');
     const isSetup = pathname === '/setup' || pathname.startsWith('/api/setup');
 
-    // /api/users is intentionally NOT bypassed here — it requires a logged-in admin. The
-    // route itself re-verifies the admin role server-side (via getServerSession, not just
+    // /api/users is intentionally NOT bypassed here — it requires a logged-in superadmin. The
+    // route itself re-verifies the superadmin role server-side (via getServerSession, not just
     // this JWT), since that's a stronger check than decoding the edge token alone.
     if (isApiAuth || isScratchPage || isApiSeedStock || isSetup) {
         return NextResponse.next();
@@ -65,8 +65,9 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(new URL('/dashboard', request.url));
         }
 
-        // Only admins manage staff accounts.
-        if (isAdminPage && role !== 'admin') {
+        // Only the superadmin manages staff accounts — regular 'admin' runs day-to-day
+        // business operations but can't create logins or change anyone's access.
+        if (isAdminPage && role !== 'superadmin') {
             return NextResponse.redirect(new URL('/dashboard', request.url));
         }
 

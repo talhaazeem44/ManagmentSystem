@@ -64,7 +64,7 @@ interface Sale {
         color: string;
         engineNumber: string;
         chassisNumber: string;
-        deliveryOrder: { doNumber: string };
+        deliveryOrder: { doNumber: string; dealerName?: string };
     };
     customer: {
         name: string;
@@ -417,6 +417,13 @@ export default function ReceiptPage() {
                             <span className={styles.value}>{sale.bike.chassisNumber}</span>
                         </div>
                     </div>
+
+                    {sale.bike.deliveryOrder?.dealerName && (
+                        <div className={styles.field}>
+                            <span className={styles.label}>Dealership:</span>
+                            <span className={styles.value}>{sale.bike.deliveryOrder.dealerName}</span>
+                        </div>
+                    )}
 
                     <div className={styles.colourPaymentRow}>
                         <div className={styles.colourText}>
