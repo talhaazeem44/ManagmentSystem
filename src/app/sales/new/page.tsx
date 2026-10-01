@@ -20,6 +20,15 @@ interface Bike {
     };
 }
 
+interface UsedBikeMatch {
+    _id: string;
+    model: string;
+    color?: string;
+    engineNumber?: string;
+    chassisNumber?: string;
+    sourceName?: string;
+}
+
 function getSuggestedPrice(model: string): number {
     // Direct lookup from constants (same source as reports/receipt)
     if (BIKE_STANDARD_PRICES[model]) return BIKE_STANDARD_PRICES[model];
@@ -34,6 +43,7 @@ export default function NewSalePage() {
     const router = useRouter();
     const { toasts, showToast, removeToast } = useToast();
     const [bikes, setBikes] = useState<Bike[]>([]);
+    const [usedBikes, setUsedBikes] = useState<UsedBikeMatch[]>([]);
     const [doFilter, setDoFilter] = useState('');
     const [bikeSearch, setBikeSearch] = useState('');
     const [selectedBikeId, setSelectedBikeId] = useState('');
@@ -77,6 +87,7 @@ export default function NewSalePage() {
     useEffect(() => {
         fetchAvailableBikes();
         fetchNextReceiptNumber();
+        fetchInStockUsedBikes();
     }, []);
 
     const fetchNextReceiptNumber = async () => {
@@ -118,6 +129,18 @@ export default function NewSalePage() {
         }
     };
 
+    // Bikes bought from an individual seller (not a dealer DO) are tracked separately
+    // on the Used Bikes page — surfaced here too so a search by engine/chassis finds a
+    // bike regardless of where it came from, instead of only ever matching dealer stock.
+    const fetchInStockUsedBikes = async () => {
+        try {
+            const response = await fetch('/api/used-bikes?status=IN_STOCK');
+            if (response.ok) setUsedBikes(await response.json());
+        } catch (error) {
+            console.error('Failed to fetch used bikes:', error);
+        }
+    };
+
     // Unique DO numbers from available bikes
     const uniqueDOs = Array.from(
         new Set(bikes.map(b => b.deliveryOrder?.doNumber).filter(Boolean))
@@ -137,10 +160,25 @@ export default function NewSalePage() {
         ).slice(0, 8)
         : [];
 
+    // Used bikes (bought from an individual seller) matching the same search — shown
+    // alongside dealer stock so one search box covers every bike regardless of source.
+    const usedBikeSearchMatches = bikeSearchQuery
+        ? usedBikes.filter(b =>
+            b.engineNumber?.toLowerCase().includes(bikeSearchQuery) ||
+            b.chassisNumber?.toLowerCase().includes(bikeSearchQuery)
+        ).slice(0, 8)
+        : [];
+
     const selectBikeFromSearch = (bike: Bike) => {
         setDoFilter('');
         setSelectedBikeId(bike.id);
         setBikeSearch('');
+    };
+
+    // A used bike is sold through its own page (different form — no DO, no registration
+    // split) rather than this form, since it was never part of regular dealer inventory.
+    const goToUsedBikeSale = (bike: UsedBikeMatch) => {
+        router.push(`/used-bikes?sell=${bike._id}`);
     };
 
     // When DO filter changes, reset bike selection if it no longer matches
@@ -246,7 +284,7 @@ export default function NewSalePage() {
                                 value={bikeSearch}
                                 onChange={(e) => setBikeSearch(e.target.value)}
                             />
-                            {searchMatches.length > 0 && (
+                            {(searchMatches.length > 0 || usedBikeSearchMatches.length > 0) && (
                                 <div style={{
                                     position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
                                     background: 'var(--color-bg-card)', border: '1px solid var(--color-border)',
@@ -259,6 +297,17 @@ export default function NewSalePage() {
                                             style={{ padding: '0.5rem 0.75rem', cursor: 'pointer', fontSize: '0.85rem', borderBottom: '1px solid var(--color-border)' }}
                                         >
                                             {bike.model} - {bike.color} | Engine: {bike.engineNumber} | Chassis: {bike.chassisNumber} | DO: {bike.deliveryOrder?.doNumber || 'N/A'}
+                                        </div>
+                                    ))}
+                                    {usedBikeSearchMatches.map(bike => (
+                                        <div
+                                            key={bike._id}
+                                            onClick={() => goToUsedBikeSale(bike)}
+                                            style={{ padding: '0.5rem 0.75rem', cursor: 'pointer', fontSize: '0.85rem', borderBottom: '1px solid var(--color-border)', background: 'rgba(245,158,11,0.06)' }}
+                                        >
+                                            <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', marginRight: '0.4rem' }}>🔁 USED BIKE</span>
+                                            {bike.model} {bike.color ? `- ${bike.color}` : ''} | Engine: {bike.engineNumber || 'N/A'} | Chassis: {bike.chassisNumber || 'N/A'}
+                                            {bike.sourceName ? ` | From: ${bike.sourceName}` : ''}
                                         </div>
                                     ))}
                                 </div>

@@ -6,6 +6,11 @@ export interface IUser {
     password: string;
     name: string;
     role: 'admin' | 'user' | 'workshop';
+    // Only meaningful for role 'user'. undefined/missing = full access to every main-nav
+    // section (the original, pre-permissions behavior — existing accounts keep working
+    // unchanged). Once an admin sets this explicitly, the user is limited to exactly
+    // these sections. 'admin' and 'workshop' roles ignore this entirely.
+    permissions?: string[];
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -15,6 +20,7 @@ const UserSchema = new Schema<IUser>({
     password: { type: String, required: true },
     name: { type: String, required: true },
     role: { type: String, enum: ['admin', 'user', 'workshop'], default: 'user' },
+    permissions: { type: [String] },
 }, {
     timestamps: true
 });

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import styles from './DashboardLayout.module.css';
+import ThemeToggle from './ThemeToggle';
 
 export default function DashboardLayout({
     children,
@@ -36,13 +37,22 @@ export default function DashboardLayout({
         { href: '/workshop/credit', label: 'W. Credit', icon: '💳' },
     ];
 
+    const adminNavItems = [
+        { href: '/admin/users', label: 'Staff & Access', icon: '👑' },
+    ];
+
+    const permissions = (session?.user as any)?.permissions as string[] | undefined;
+    const visibleMainNavItems = (role === 'user' && Array.isArray(permissions))
+        ? mainNavItems.filter(item => permissions.includes(item.href.split('/')[1]))
+        : mainNavItems;
+
     let navItems;
     if (role === 'workshop') {
         navItems = workshopNavItems;
     } else if (role === 'admin') {
-        navItems = [...mainNavItems, ...workshopNavItems];
+        navItems = [...mainNavItems, ...workshopNavItems, ...adminNavItems];
     } else {
-        navItems = mainNavItems;
+        navItems = visibleMainNavItems;
     }
 
     return (
@@ -68,6 +78,7 @@ export default function DashboardLayout({
                 </nav>
 
                 <div className={styles.sidebarFooter}>
+                    <ThemeToggle style={{ marginBottom: '0.5rem' }} />
                     <button
                         onClick={() => signOut({ callbackUrl: '/login' })}
                         style={{ width: '100%', padding: '0.5rem', marginBottom: '0.5rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
@@ -96,6 +107,7 @@ export default function DashboardLayout({
                         <span>{item.label}</span>
                     </Link>
                 ))}
+                <ThemeToggle compact className={styles.bottomNavTheme} />
                 <button
                     className={styles.bottomNavLogout}
                     onClick={() => signOut({ callbackUrl: '/login' })}

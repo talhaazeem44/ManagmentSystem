@@ -8,8 +8,8 @@ export async function middleware(request: NextRequest) {
 
     const isLoginPage = pathname === '/login';
     const isApiAuth = pathname.startsWith('/api/auth');
-    const isApiUsers = pathname.startsWith('/api/users');
     const isScratchPage = pathname.startsWith('/scratch');
+    const isAdminPage = pathname.startsWith('/admin');
     const isWorkshopPage = pathname.startsWith('/workshop');
     const isWorkshopApi = pathname.startsWith('/api/workshop');
     // The Workshop Tracker page (cash deposits/expenses) reads and writes through the
@@ -27,7 +27,10 @@ export async function middleware(request: NextRequest) {
     const isApiSeedStock = pathname.startsWith('/api/seed-stock');
     const isSetup = pathname === '/setup' || pathname.startsWith('/api/setup');
 
-    if (isApiAuth || isApiUsers || isScratchPage || isApiSeedStock || isSetup) {
+    // /api/users is intentionally NOT bypassed here — it requires a logged-in admin. The
+    // route itself re-verifies the admin role server-side (via getServerSession, not just
+    // this JWT), since that's a stronger check than decoding the edge token alone.
+    if (isApiAuth || isScratchPage || isApiSeedStock || isSetup) {
         return NextResponse.next();
     }
 
@@ -60,6 +63,23 @@ export async function middleware(request: NextRequest) {
                 });
             }
             return NextResponse.redirect(new URL('/dashboard', request.url));
+        }
+
+        // Only admins manage staff accounts.
+        if (isAdminPage && role !== 'admin') {
+            return NextResponse.redirect(new URL('/dashboard', request.url));
+        }
+
+        // A 'user' account an admin has explicitly restricted (token.permissions set) can only
+        // reach the main-nav pages listed there. Accounts with no permissions array at all keep
+        // the original full-access behavior — this is opt-in per account, not a new default.
+        if (role === 'user' && Array.isArray(token.permissions) && !isAdminPage) {
+            const topSegment = pathname.split('/')[1] || 'dashboard';
+            const isApiRoute = pathname.startsWith('/api/');
+            if (!isApiRoute && topSegment !== '' && !(token.permissions as string[]).includes(topSegment)) {
+                const firstAllowed = (token.permissions as string[])[0] || 'dashboard';
+                return NextResponse.redirect(new URL(`/${firstAllowed}`, request.url));
+            }
         }
     }
 

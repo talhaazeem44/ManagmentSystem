@@ -54,6 +54,42 @@
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(255, 255, 255, 0.5);
   --glass-blur: blur(12px);
+
+  color-scheme: light;
+}
+
+/* Dark Theme — toggled via data-theme on <html>, set before hydration (see layout.tsx)
+   to avoid a flash of the wrong theme. Only the palette changes; spacing/radius/shadows
+   stay shared since they're not theme-dependent. */
+:root[data-theme='dark'] {
+  --color-primary: hsl(0, 85%, 58%);
+  --color-primary-light: hsl(0, 85%, 66%);
+  --color-primary-dark: hsl(0, 85%, 48%);
+
+  --color-secondary: hsl(222, 18%, 16%);
+  --color-secondary-light: hsl(222, 18%, 20%);
+  --color-secondary-dark: hsl(222, 18%, 12%);
+
+  --color-accent: hsl(45, 100%, 58%);
+  --color-success: hsl(142, 65%, 50%);
+  --color-warning: hsl(40, 95%, 58%);
+  --color-error: hsl(0, 85%, 62%);
+
+  --color-bg: hsl(222, 22%, 9%);
+  --color-bg-elevated: hsl(222, 18%, 14%);
+  --color-bg-card: hsl(222, 18%, 14%);
+
+  --color-text: #f1f5f9;
+  --color-text-muted: #a0aec0;
+  --color-text-subtle: #718096;
+
+  --color-border: hsl(222, 15%, 26%);
+  --color-border-light: hsl(222, 15%, 21%);
+
+  --glass-bg: rgba(30, 32, 44, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.08);
+
+  color-scheme: dark;
 }
 
 * {

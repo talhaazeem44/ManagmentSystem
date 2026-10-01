@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
@@ -36,8 +37,9 @@ const emptyForm = {
 
 const emptySellForm = { soldPrice: '', soldDate: todayDateInputValue(), buyerName: '' };
 
-export default function UsedBikesPage() {
+function UsedBikesPageInner() {
     const { toasts, showToast, removeToast } = useToast();
+    const searchParams = useSearchParams();
     const [bikes, setBikes] = useState<UsedBike[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -60,6 +62,18 @@ export default function UsedBikesPage() {
     };
 
     useEffect(() => { fetchBikes(); }, []);
+
+    // Arriving from the Sales search (e.g. /used-bikes?sell=<id>) jumps straight to recording
+    // the sale for that specific bike, instead of landing on the plain list.
+    useEffect(() => {
+        const sellId = searchParams.get('sell');
+        if (!sellId || bikes.length === 0) return;
+        const bike = bikes.find(b => b._id === sellId);
+        if (bike && bike.status === 'IN_STOCK') {
+            setSellingId(bike._id);
+            setSellForm({ soldPrice: '', soldDate: todayDateInputValue(), buyerName: '' });
+        }
+    }, [searchParams, bikes]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -334,5 +348,13 @@ export default function UsedBikesPage() {
             </div>
             <Toast toasts={toasts} removeToast={removeToast} />
         </DashboardLayout>
+    );
+}
+
+export default function UsedBikesPage() {
+    return (
+        <Suspense fallback={<DashboardLayout><Loader size={160} text="Loading..." /></DashboardLayout>}>
+            <UsedBikesPageInner />
+        </Suspense>
     );
 }

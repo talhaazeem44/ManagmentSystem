@@ -111,6 +111,22 @@ export function calcAdvanceMargin(bikeModel: string, totalPrice: number, registr
 // Password to unlock margin section on dashboard
 export const MARGIN_PASSWORD = '786';
 
+// Main-nav sections a 'user'-role account can be individually granted/denied access to.
+// `key` is the first path segment of every page in that section (e.g. '/sales/new' and
+// '/sales/123' both belong to 'sales'). Admin and workshop roles ignore this entirely —
+// admin always has full access, workshop has its own separate fixed section.
+export const PERMISSION_SECTIONS: { key: string; label: string }[] = [
+    { key: 'dashboard', label: 'Dashboard' },
+    { key: 'sales', label: 'Sales' },
+    { key: 'advance-bookings', label: 'Advance Bookings' },
+    { key: 'inventory', label: 'Inventory' },
+    { key: 'reports', label: 'Reports' },
+    { key: 'profit', label: 'Profit' },
+    { key: 'expenses', label: 'Expenses' },
+    { key: 'khata', label: 'Khata' },
+    { key: 'used-bikes', label: 'Used Bikes' },
+];
+
 export const BIKE_COLORS = [
     'Red',
     'Black',

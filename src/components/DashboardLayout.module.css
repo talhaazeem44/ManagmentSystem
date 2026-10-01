@@ -204,4 +204,24 @@
     }
     .bottomNavLogout:hover { color: #f87171; }
     .bottomNavLogout svg   { width: 1.4rem; height: 1.4rem; margin-bottom: 1px; }
+
+    /* Theme toggle in mobile nav */
+    .bottomNavTheme {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        min-width: 64px;
+        padding: 0.25rem 0.5rem;
+        color: var(--color-text-muted);
+        font-size: 0.6rem;
+        font-weight: 500;
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: color var(--transition-fast);
+        flex-shrink: 0;
+    }
+    .bottomNavTheme:hover { color: var(--color-text); }
 }

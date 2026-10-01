@@ -22,6 +22,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Sets the theme attribute before React hydrates/paints, so there's no flash of the
+            wrong theme. Reads the user's saved choice, falling back to OS preference. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+          }}
+        />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <link rel="icon" href="/bike-icon.gif" type="image/gif" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
