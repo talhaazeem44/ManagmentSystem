@@ -59,7 +59,17 @@ interface WorkshopStats {
     lowStockItems: LowStockItem[];
 }
 
+interface CollectionRecord {
+    _id: string;
+    amount: number;
+    collectedAt: string;
+}
+
 type RangeKey = 'today' | 'yesterday' | 'week' | 'month' | 'all';
+
+function daysBetween(from: Date, to: Date) {
+    return Math.max(0, Math.floor((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)));
+}
 
 function Card({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
     return (
@@ -97,6 +107,12 @@ export default function WorkshopDashboardPage() {
     const [stats, setStats] = useState<WorkshopStats | null>(null);
     const [loading, setLoading] = useState(true);
 
+    // Workshop margin collection — its own running total, completely independent of the
+    // range buttons above (which just change what the rest of the dashboard displays).
+    const [sinceStats, setSinceStats] = useState<WorkshopStats | null>(null);
+    const [lastMarginCol, setLastMarginCol] = useState<CollectionRecord | null>(null);
+    const [collecting, setCollecting] = useState(false);
+
     useEffect(() => {
         setLoading(true);
         const { startDate, endDate } = rangeToDates(range);
@@ -106,6 +122,41 @@ export default function WorkshopDashboardPage() {
             .then(setStats)
             .finally(() => setLoading(false));
     }, [range]);
+
+    const fetchSinceCollection = async () => {
+        const colRes = await fetch('/api/margin-collections?type=WORKSHOP');
+        const colData = colRes.ok ? await colRes.json() : { last: null };
+        setLastMarginCol(colData.last);
+
+        const monthStart = new Date();
+        monthStart.setDate(1);
+        monthStart.setHours(0, 0, 0, 0);
+        const since = colData.last ? new Date(colData.last.collectedAt) : monthStart;
+        const statsRes = await fetch(`/api/workshop/stats?startDate=${since.toISOString()}&endDate=${new Date().toISOString()}`);
+        if (statsRes.ok) setSinceStats(await statsRes.json());
+    };
+
+    useEffect(() => { fetchSinceCollection(); }, []);
+
+    const marginSinceDate = lastMarginCol ? new Date(lastMarginCol.collectedAt) : (() => {
+        const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); return d;
+    })();
+    const uncollectedWorkshopMargin = sinceStats ? sinceStats.totalMargin - sinceStats.workshopExpenseTotal : 0;
+
+    const handleCollectWorkshopMargin = async () => {
+        if (!sinceStats) return;
+        if (!confirm(`Mark Rs. ${uncollectedWorkshopMargin.toLocaleString()} workshop margin as collected? Counter resets to zero.`)) return;
+        setCollecting(true);
+        try {
+            await fetch('/api/margin-collections', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: uncollectedWorkshopMargin, type: 'WORKSHOP' }),
+            });
+            await fetchSinceCollection();
+        } finally {
+            setCollecting(false);
+        }
+    };
 
     const rangeLabel = range === 'today' ? 'Today' : range === 'yesterday' ? 'Yesterday' : range === 'week' ? 'Last 7 Days' : range === 'month' ? 'This Month' : 'All Time';
 
@@ -155,6 +206,43 @@ export default function WorkshopDashboardPage() {
                                 </div>
                             </div>
                         )}
+
+                        {/* ── Workshop Margin — Since Last Collection (independent of the range buttons above) ── */}
+                        <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem', borderLeft: '4px solid #10b981' }}>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>
+                                Workshop Margin — Since Last Collection
+                            </div>
+                            <div style={{ fontSize: '2rem', fontWeight: 800, color: uncollectedWorkshopMargin < 0 ? '#ef4444' : '#10b981', marginBottom: '0.3rem' }}>
+                                Rs. {uncollectedWorkshopMargin.toLocaleString()}
+                            </div>
+                            {uncollectedWorkshopMargin < 0 && (
+                                <div style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 600, marginBottom: '0.5rem' }}>
+                                    ⚠️ Expenses are higher than margin earned in this period
+                                </div>
+                            )}
+                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+                                {daysBetween(marginSinceDate, new Date())} {daysBetween(marginSinceDate, new Date()) === 1 ? 'day' : 'days'} since last collection
+                                {lastMarginCol ? <span> · last collected Rs. {lastMarginCol.amount.toLocaleString()} on {new Date(lastMarginCol.collectedAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}</span> : <span> · no previous collection</span>}
+                            </div>
+                            {sinceStats && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginBottom: '1rem', maxWidth: '360px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', padding: '0.35rem 0.6rem', background: 'rgba(16,185,129,0.07)', borderRadius: '6px' }}>
+                                        <span style={{ color: 'var(--color-text-muted)' }}>Gross Margin (before exp.)</span>
+                                        <strong style={{ color: '#10b981' }}>Rs. {Math.round(sinceStats.totalMargin).toLocaleString()}</strong>
+                                    </div>
+                                    {sinceStats.workshopExpenseTotal > 0 && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', padding: '0.35rem 0.6rem', background: 'rgba(239,68,68,0.06)', borderRadius: '6px' }}>
+                                            <span style={{ color: '#ef4444' }}>Expenses</span>
+                                            <strong style={{ color: '#ef4444' }}>− Rs. {Math.round(sinceStats.workshopExpenseTotal).toLocaleString()}</strong>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            <button onClick={handleCollectWorkshopMargin} disabled={collecting || !sinceStats || uncollectedWorkshopMargin <= 0}
+                                className="btn btn-success" style={{ fontSize: '0.82rem', padding: '0.45rem 1.1rem', width: '100%', maxWidth: '360px' }}>
+                                {collecting ? '⏳ Saving...' : '✅ Collect Workshop Margin'}
+                            </button>
+                        </div>
 
                         {/* ── Net Margin — the take-home number after expenses, day-wise or month-wise via the buttons above ── */}
                         <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem', border: '2px solid rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.04)' }}>

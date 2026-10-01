@@ -358,12 +358,16 @@ export interface IMarginCollection {
     amount: number;
     collectedAt: Date;
     note?: string;
+    // Collections predate this field and are all bike-sales margin — BIKE stays the default
+    // so old records keep working unchanged. WORKSHOP is its own independent running total.
+    type?: 'BIKE' | 'WORKSHOP';
 }
 
 const MarginCollectionSchema = new Schema<IMarginCollection>({
     amount: { type: Number, required: true },
     collectedAt: { type: Date, default: Date.now },
     note: { type: String },
+    type: { type: String, enum: ['BIKE', 'WORKSHOP'], default: 'BIKE' },
 }, { timestamps: true });
 
 export const MarginCollection: Model<IMarginCollection> = models.MarginCollection || mongoose.model<IMarginCollection>('MarginCollection', MarginCollectionSchema);
