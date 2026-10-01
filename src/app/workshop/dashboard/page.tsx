@@ -66,6 +66,15 @@ interface CollectionRecord {
     collectedAt: string;
 }
 
+interface MonthlyReportRow {
+    month: string;
+    grossMargin: number;
+    revenue: number;
+    jobCount: number;
+    expenseTotal: number;
+    netMargin: number;
+}
+
 type RangeKey = 'today' | 'yesterday' | 'week' | 'month' | 'all' | 'custom';
 
 function daysBetween(from: Date, to: Date) {
@@ -121,6 +130,16 @@ export default function WorkshopDashboardPage() {
     const [sinceStats, setSinceStats] = useState<WorkshopStats | null>(null);
     const [lastMarginCol, setLastMarginCol] = useState<CollectionRecord | null>(null);
     const [collecting, setCollecting] = useState(false);
+
+    // Month-by-month history — always the full record, independent of the range buttons.
+    const [monthlyReport, setMonthlyReport] = useState<MonthlyReportRow[] | null>(null);
+    const [showMonthlyReport, setShowMonthlyReport] = useState(false);
+
+    useEffect(() => {
+        fetch('/api/workshop/monthly-report')
+            .then(r => r.ok ? r.json() : [])
+            .then(setMonthlyReport);
+    }, []);
 
     useEffect(() => {
         if (range === 'custom' && (!customStart || !customEnd)) return;
@@ -367,6 +386,52 @@ export default function WorkshopDashboardPage() {
                                     </LineChart>
                                 </ResponsiveContainer>
                             </div>
+                        </div>
+
+                        {/* ── Monthly Report — month-by-month, so a bad month (expenses above margin) is obvious ── */}
+                        <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
+                            <button onClick={() => setShowMonthlyReport(v => !v)}
+                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                                <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>📅 Monthly Report — Earned vs Expenses</span>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{showMonthlyReport ? '▲ Hide' : '▼ Show'}</span>
+                            </button>
+                            {showMonthlyReport && (
+                                !monthlyReport ? (
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '1rem' }}>Loading...</div>
+                                ) : monthlyReport.length === 0 ? (
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '1rem' }}>No workshop history yet.</div>
+                                ) : (
+                                    <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                            <thead>
+                                                <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                                                    {['Month', 'Jobs', 'Revenue', 'Gross Margin', 'Expenses', 'Net Margin'].map(h => (
+                                                        <th key={h} style={{ padding: '6px 8px', textAlign: h === 'Month' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {monthlyReport.map(row => (
+                                                    <tr key={row.month} style={{ borderBottom: '1px solid var(--color-border)', background: row.netMargin < 0 ? 'rgba(239,68,68,0.06)' : 'transparent' }}>
+                                                        <td style={{ padding: '6px 8px', fontWeight: 600 }}>
+                                                            {new Date(row.month + '-01').toLocaleDateString('en-PK', { month: 'long', year: 'numeric' })}
+                                                        </td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right' }}>{row.jobCount}</td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right' }}>Rs. {Math.round(row.revenue).toLocaleString()}</td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right', color: '#10b981' }}>Rs. {Math.round(row.grossMargin).toLocaleString()}</td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right', color: row.expenseTotal > 0 ? '#ef4444' : 'var(--color-text-muted)' }}>
+                                                            {row.expenseTotal > 0 ? `− Rs. ${Math.round(row.expenseTotal).toLocaleString()}` : '—'}
+                                                        </td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: row.netMargin < 0 ? '#ef4444' : '#10b981' }}>
+                                                            {row.netMargin < 0 ? '⚠️ ' : ''}Rs. {Math.round(row.netMargin).toLocaleString()}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )
+                            )}
                         </div>
 
                         {/* ── Breakdown by Service Type ── */}
