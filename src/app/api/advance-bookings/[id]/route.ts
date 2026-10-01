@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { AdvanceBooking, Bike } from '@/models';
+import { AdvanceBooking, Bike, DeliveryOrder } from '@/models';
 import { calcAdvanceMargin } from '@/lib/constants';
 
 export async function GET(_: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -9,7 +9,20 @@ export async function GET(_: NextRequest, context: { params: Promise<{ id: strin
         const { id } = await context.params;
         const booking = await AdvanceBooking.findById(id).lean();
         if (!booking) return NextResponse.json({ message: 'Not found' }, { status: 404 });
-        return NextResponse.json(booking);
+
+        // The dealer a delivered bike actually came from is already recorded on its Delivery
+        // Order (set when the stock was received) — surface it here so the receipt can print
+        // it when it's not the shop's own regular stock.
+        let dealerName: string | null = null;
+        if (booking.bikeId) {
+            const bike = await Bike.findById(booking.bikeId).lean();
+            if (bike?.deliveryOrderId) {
+                const deliveryOrder = await DeliveryOrder.findById(bike.deliveryOrderId).lean();
+                dealerName = deliveryOrder?.dealerName || null;
+            }
+        }
+
+        return NextResponse.json({ ...booking, dealerName });
     } catch (error: any) {
         return NextResponse.json({ message: error.message }, { status: 500 });
     }

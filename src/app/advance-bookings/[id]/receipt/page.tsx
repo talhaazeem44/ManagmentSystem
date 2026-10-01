@@ -69,6 +69,7 @@ interface Booking {
     payments?: Payment[];
     updatedAt?: string;
     deliveredAt?: string;
+    dealerName?: string | null;
 }
 
 const MODELS = ['CD70', 'DREAM', 'PRIDOR', 'CG 125', 'CG125S.SE', 'CB125F.SE', 'CB150F', 'ICON EV'];
@@ -267,6 +268,13 @@ export default function AdvanceBookingReceiptPage() {
                                 <span className={saleStyles.value}>{booking.chassisNumber || ''}</span>
                             </div>
                         </div>
+
+                        {booking.dealerName && (
+                            <div className={saleStyles.field}>
+                                <span className={saleStyles.label}>Dealership:</span>
+                                <span className={saleStyles.value}>{booking.dealerName}</span>
+                            </div>
+                        )}
 
                         <div className={saleStyles.colourPaymentRow}>
                             <div className={saleStyles.colourText}>
