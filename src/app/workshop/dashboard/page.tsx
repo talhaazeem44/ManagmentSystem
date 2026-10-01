@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Loader from '@/components/Loader';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line } from 'recharts';
+import { todayDateInputValue } from '@/lib/dates';
 
 interface ServiceTypeBreakdown {
     count: number;
@@ -65,7 +66,7 @@ interface CollectionRecord {
     collectedAt: string;
 }
 
-type RangeKey = 'today' | 'yesterday' | 'week' | 'month' | 'all';
+type RangeKey = 'today' | 'yesterday' | 'week' | 'month' | 'all' | 'custom';
 
 function daysBetween(from: Date, to: Date) {
     return Math.max(0, Math.floor((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)));
@@ -81,9 +82,15 @@ function Card({ label, value, sub, color }: { label: string; value: string; sub?
     );
 }
 
-function rangeToDates(range: RangeKey): { startDate?: string; endDate?: string } {
+function rangeToDates(range: RangeKey, customStart?: string, customEnd?: string): { startDate?: string; endDate?: string } {
     const now = new Date();
     if (range === 'all') return {};
+    if (range === 'custom') {
+        if (!customStart || !customEnd) return {};
+        const start = new Date(customStart); start.setHours(0, 0, 0, 0);
+        const end = new Date(customEnd); end.setHours(23, 59, 59, 999);
+        return { startDate: start.toISOString(), endDate: end.toISOString() };
+    }
     if (range === 'today') {
         const start = new Date(); start.setHours(0, 0, 0, 0);
         return { startDate: start.toISOString(), endDate: now.toISOString() };
@@ -106,6 +113,8 @@ export default function WorkshopDashboardPage() {
     const [range, setRange] = useState<RangeKey>('today');
     const [stats, setStats] = useState<WorkshopStats | null>(null);
     const [loading, setLoading] = useState(true);
+    const [customStart, setCustomStart] = useState(todayDateInputValue());
+    const [customEnd, setCustomEnd] = useState(todayDateInputValue());
 
     // Workshop margin collection — its own running total, completely independent of the
     // range buttons above (which just change what the rest of the dashboard displays).
@@ -114,14 +123,15 @@ export default function WorkshopDashboardPage() {
     const [collecting, setCollecting] = useState(false);
 
     useEffect(() => {
+        if (range === 'custom' && (!customStart || !customEnd)) return;
         setLoading(true);
-        const { startDate, endDate } = rangeToDates(range);
+        const { startDate, endDate } = rangeToDates(range, customStart, customEnd);
         const qs = startDate && endDate ? `?startDate=${startDate}&endDate=${endDate}` : '';
         fetch(`/api/workshop/stats${qs}`)
             .then(r => r.ok ? r.json() : null)
             .then(setStats)
             .finally(() => setLoading(false));
-    }, [range]);
+    }, [range, customStart, customEnd]);
 
     const fetchSinceCollection = async () => {
         const colRes = await fetch('/api/margin-collections?type=WORKSHOP');
@@ -158,7 +168,9 @@ export default function WorkshopDashboardPage() {
         }
     };
 
-    const rangeLabel = range === 'today' ? 'Today' : range === 'yesterday' ? 'Yesterday' : range === 'week' ? 'Last 7 Days' : range === 'month' ? 'This Month' : 'All Time';
+    const rangeLabel = range === 'today' ? 'Today' : range === 'yesterday' ? 'Yesterday' : range === 'week' ? 'Last 7 Days' : range === 'month' ? 'This Month'
+        : range === 'custom' ? `${new Date(customStart).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })} – ${new Date(customEnd).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}`
+        : 'All Time';
 
     return (
         <DashboardLayout>
@@ -176,6 +188,13 @@ export default function WorkshopDashboardPage() {
                                 {r === 'today' ? 'Today' : r === 'yesterday' ? 'Yesterday' : r === 'week' ? '7 Days' : r === 'month' ? 'Month' : 'All Time'}
                             </button>
                         ))}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.4rem', borderRadius: '8px', background: range === 'custom' ? 'rgba(16,185,129,0.1)' : 'transparent', border: range === 'custom' ? '1px solid rgba(16,185,129,0.3)' : '1px solid transparent' }}>
+                            <input type="date" className="input" style={{ fontSize: '0.78rem', padding: '0.3rem 0.5rem', maxWidth: '140px' }}
+                                value={customStart} onChange={e => { setCustomStart(e.target.value); setRange('custom'); }} />
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>to</span>
+                            <input type="date" className="input" style={{ fontSize: '0.78rem', padding: '0.3rem 0.5rem', maxWidth: '140px' }}
+                                value={customEnd} onChange={e => { setCustomEnd(e.target.value); setRange('custom'); }} />
+                        </div>
                         <a href="/workshop/tracker" className="btn" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700 }}>
                             − Add / View Expenses
                         </a>
