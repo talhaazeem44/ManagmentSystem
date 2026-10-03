@@ -46,18 +46,27 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
                 }
             }
 
-            const updated = await ServiceSale.findByIdAndUpdate(id, {
-                $set: {
-                    customerName:   editBill.customerName   ?? existing.customerName,
-                    customerMobile: editBill.customerMobile ?? existing.customerMobile,
-                    bikeNumber:     editBill.bikeNumber     ?? existing.bikeNumber,
-                    mechanicName:   editBill.mechanicName   ?? (existing as any).mechanicName,
-                    serviceType:    editBill.serviceType    ?? existing.serviceType,
-                    description:    editBill.description    ?? existing.description,
-                    paymentMode,
-                    serviceCharges, items, totalAmount, totalCost, margin, balance,
-                },
-            }, { new: true });
+            // Adding/removing items changes totalAmount, but nothing here knows whether the
+            // extra money came in as cash or bank — so receivedCash/bankTransferAmount must be
+            // whatever the edit form actually submitted, not silently left at the old amount
+            // (which is exactly what used to happen: the bill total went up but the cash/bank
+            // figures feeding the dashboard's Cash/Bank Received totals never moved).
+            const set: any = {
+                customerName:   editBill.customerName   ?? existing.customerName,
+                customerMobile: editBill.customerMobile ?? existing.customerMobile,
+                bikeNumber:     editBill.bikeNumber     ?? existing.bikeNumber,
+                mechanicName:   editBill.mechanicName   ?? (existing as any).mechanicName,
+                serviceType:    editBill.serviceType    ?? existing.serviceType,
+                description:    editBill.description    ?? existing.description,
+                paymentMode,
+                serviceCharges, items, totalAmount, totalCost, margin, balance,
+            };
+            if (paymentMode !== 'CREDIT') {
+                set.receivedCash = Number(editBill.receivedCash) || 0;
+                set.bankTransferAmount = Number(editBill.bankTransferAmount) || 0;
+            }
+
+            const updated = await ServiceSale.findByIdAndUpdate(id, { $set: set }, { new: true });
             return NextResponse.json(updated);
         }
 

@@ -74,7 +74,7 @@ export default function WorkshopPage() {
     const [addingMechanic, setAddingMechanic] = useState(false);
     const [editingRecord, setEditingRecord] = useState<ServiceRecord | null>(null);
     const [editBillItems, setEditBillItems] = useState<BillItem[]>([]);
-    const [editFields, setEditFields] = useState({ customerName: '', customerMobile: '', bikeNumber: '', mechanicName: '', serviceType: '', serviceCharges: '', description: '', paymentMode: 'CASH' });
+    const [editFields, setEditFields] = useState({ customerName: '', customerMobile: '', bikeNumber: '', mechanicName: '', serviceType: '', serviceCharges: '', description: '', paymentMode: 'CASH', receivedCash: '', bankTransferAmount: '' });
     const [editManualItem, setEditManualItem] = useState({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1', noCost: false });
     const [editSuggestions, setEditSuggestions] = useState<StockItem[]>([]);
     const [savingEdit, setSavingEdit] = useState(false);
@@ -173,6 +173,9 @@ export default function WorkshopPage() {
     const startEdit = (record: ServiceRecord) => {
         setEditingRecord(record);
         setEditBillItems(record.items ? [...record.items] : []);
+        // Bills saved before the cash/bank split existed have no receivedCash/bankTransferAmount
+        // at all — fall back to the old assumption (the whole bill under whatever mode it was).
+        const hasSplit = record.receivedCash !== undefined || record.bankTransferAmount !== undefined;
         setEditFields({
             customerName:   record.customerName || '',
             customerMobile: record.customerMobile || '',
@@ -182,6 +185,12 @@ export default function WorkshopPage() {
             serviceCharges: String(record.serviceCharges || ''),
             description:    record.description || '',
             paymentMode:    record.paymentMode || 'CASH',
+            receivedCash: hasSplit
+                ? String(record.receivedCash || 0)
+                : (record.paymentMode === 'BANK_TRANSFER' ? '0' : String(record.totalAmount || 0)),
+            bankTransferAmount: hasSplit
+                ? String(record.bankTransferAmount || 0)
+                : (record.paymentMode === 'BANK_TRANSFER' ? String(record.totalAmount || 0) : '0'),
         });
         setEditManualItem({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1', noCost: false });
     };
@@ -208,7 +217,13 @@ export default function WorkshopPage() {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    editBill: { ...editFields, serviceCharges: Number(editFields.serviceCharges) || 0, items: editBillItems },
+                    editBill: {
+                        ...editFields,
+                        serviceCharges: Number(editFields.serviceCharges) || 0,
+                        receivedCash: Number(editFields.receivedCash) || 0,
+                        bankTransferAmount: Number(editFields.bankTransferAmount) || 0,
+                        items: editBillItems,
+                    },
                 }),
             });
             if (res.ok) {
@@ -715,6 +730,38 @@ export default function WorkshopPage() {
                                                 </select>
                                             </div>
                                         </div>
+
+                                        {/* Cash/Bank split — must be updated by hand here when items change the
+                                            total, since there's no way to know which part the extra money came in. */}
+                                        {editFields.paymentMode !== 'CREDIT' && (
+                                            <div style={{ marginBottom: '0.75rem' }}>
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <div className="form-group" style={{ margin: 0, flex: 1 }}>
+                                                        <label className="label" style={{ fontSize: '0.7rem' }}>Cash Received (Rs.)</label>
+                                                        <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.8rem', padding: '0.35rem 0.5rem' }}
+                                                            value={editFields.receivedCash}
+                                                            onChange={e => setEditFields({ ...editFields, receivedCash: e.target.value })} />
+                                                    </div>
+                                                    <div className="form-group" style={{ margin: 0, flex: 1 }}>
+                                                        <label className="label" style={{ fontSize: '0.7rem' }}>Bank Transfer (Rs.)</label>
+                                                        <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.8rem', padding: '0.35rem 0.5rem' }}
+                                                            value={editFields.bankTransferAmount}
+                                                            onChange={e => setEditFields({ ...editFields, bankTransferAmount: e.target.value })} />
+                                                    </div>
+                                                </div>
+                                                {(() => {
+                                                    const sc = Number(editFields.serviceCharges) || 0;
+                                                    const pt = editBillItems.reduce((s, i) => s + i.customerPrice * i.quantity, 0);
+                                                    const newTotal = sc + pt;
+                                                    const enteredSplit = (Number(editFields.receivedCash) || 0) + (Number(editFields.bankTransferAmount) || 0);
+                                                    return enteredSplit !== newTotal ? (
+                                                        <div style={{ fontSize: '0.72rem', color: '#f59e0b', marginTop: '0.3rem' }}>
+                                                            ⚠️ Cash + Bank (Rs. {enteredSplit.toLocaleString()}) doesn&apos;t match the new bill total (Rs. {newTotal.toLocaleString()}) — update these to match what was actually received.
+                                                        </div>
+                                                    ) : null;
+                                                })()}
+                                            </div>
+                                        )}
 
                                         {/* Notes */}
                                         <div className="form-group" style={{ marginBottom: '0.75rem' }}>
