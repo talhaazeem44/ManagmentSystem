@@ -25,9 +25,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             const totalAmount = serviceCharges + itemsTotal;
             const margin      = totalAmount - totalCost;
 
-            // Recalculate balance: keep existing payments, subtract from new total
+            // Payment mode can be changed on edit too (e.g. it was marked CASH by mistake and
+            // should actually be CREDIT, or a credit job got paid off in full and should become
+            // CASH/BANK_TRANSFER) — recompute balance against whichever mode is now in effect,
+            // not always the mode the bill was originally created with.
+            const paymentMode = editBill.paymentMode ?? existing.paymentMode;
             const totalPaid = (existing.payments || []).reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
-            const balance = existing.paymentMode === 'CREDIT' ? Math.max(0, totalAmount - totalPaid) : 0;
+            const balance = paymentMode === 'CREDIT' ? Math.max(0, totalAmount - totalPaid) : 0;
 
             // Diff stock: restore old items qty, deduct new items qty
             const oldItems: any[] = existing.items || [];
@@ -50,6 +54,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
                     mechanicName:   editBill.mechanicName   ?? (existing as any).mechanicName,
                     serviceType:    editBill.serviceType    ?? existing.serviceType,
                     description:    editBill.description    ?? existing.description,
+                    paymentMode,
                     serviceCharges, items, totalAmount, totalCost, margin, balance,
                 },
             }, { new: true });

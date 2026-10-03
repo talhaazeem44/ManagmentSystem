@@ -74,7 +74,7 @@ export default function WorkshopPage() {
     const [addingMechanic, setAddingMechanic] = useState(false);
     const [editingRecord, setEditingRecord] = useState<ServiceRecord | null>(null);
     const [editBillItems, setEditBillItems] = useState<BillItem[]>([]);
-    const [editFields, setEditFields] = useState({ customerName: '', customerMobile: '', bikeNumber: '', mechanicName: '', serviceType: '', serviceCharges: '', description: '' });
+    const [editFields, setEditFields] = useState({ customerName: '', customerMobile: '', bikeNumber: '', mechanicName: '', serviceType: '', serviceCharges: '', description: '', paymentMode: 'CASH' });
     const [editManualItem, setEditManualItem] = useState({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1', noCost: false });
     const [editSuggestions, setEditSuggestions] = useState<StockItem[]>([]);
     const [savingEdit, setSavingEdit] = useState(false);
@@ -181,6 +181,7 @@ export default function WorkshopPage() {
             serviceType:    record.serviceType || '',
             serviceCharges: String(record.serviceCharges || ''),
             description:    record.description || '',
+            paymentMode:    record.paymentMode || 'CASH',
         });
         setEditManualItem({ stockId: '', name: '', productCode: '', price: '', retailPrice: '', qty: '1', noCost: false });
     };
@@ -702,6 +703,16 @@ export default function WorkshopPage() {
                                                 <input type="text" inputMode="decimal" className="input" style={{ fontSize: '0.8rem', padding: '0.35rem 0.5rem' }}
                                                     value={editFields.serviceCharges}
                                                     onChange={e => setEditFields({ ...editFields, serviceCharges: e.target.value })} />
+                                            </div>
+                                            <div className="form-group" style={{ margin: 0 }}>
+                                                <label className="label" style={{ fontSize: '0.7rem' }}>Payment Mode</label>
+                                                <select className="select" style={{ fontSize: '0.8rem', padding: '0.35rem 0.5rem' }}
+                                                    value={editFields.paymentMode}
+                                                    onChange={e => setEditFields({ ...editFields, paymentMode: e.target.value })}>
+                                                    <option value="CASH">Cash</option>
+                                                    <option value="BANK_TRANSFER">Bank Transfer</option>
+                                                    <option value="CREDIT">Credit</option>
+                                                </select>
                                             </div>
                                         </div>
 

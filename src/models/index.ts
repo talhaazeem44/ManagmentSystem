@@ -185,6 +185,49 @@ const WorkshopStockSchema = new Schema<IWorkshopStock>({
 
 export const WorkshopStock: Model<IWorkshopStock> = models.WorkshopStock || mongoose.model<IWorkshopStock>('WorkshopStock', WorkshopStockSchema);
 
+// ── Warranty Claim ───────────────────────────────────────────────────────────
+// A part pulled from stock and sent back to the supplier/Honda for a warranty claim —
+// it's no longer sellable, but it's not "used" in a bill either, so it needs its own
+// tracking separate from both WorkshopStock quantity and ServiceSale items.
+export interface IWarrantyClaim {
+    _id?: string;
+    stockId?: mongoose.Types.ObjectId | string;
+    itemName: string;
+    productCode?: string;
+    quantity: number;
+    reason?: string;
+    customerName?: string;
+    bikeNumber?: string;
+    status: 'PENDING' | 'RESOLVED';
+    claimDate: Date;
+    resolvedDate?: Date;
+    // Whether the supplier sent back a working replacement — if so, that quantity goes
+    // back into WorkshopStock when the claim is marked resolved.
+    replacementReceived?: boolean;
+    notes?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+const WarrantyClaimSchema = new Schema<IWarrantyClaim>({
+    stockId: { type: Schema.Types.ObjectId, ref: 'WorkshopStock' },
+    itemName: { type: String, required: true },
+    productCode: { type: String },
+    quantity: { type: Number, required: true, default: 1 },
+    reason: { type: String },
+    customerName: { type: String },
+    bikeNumber: { type: String },
+    status: { type: String, enum: ['PENDING', 'RESOLVED'], default: 'PENDING' },
+    claimDate: { type: Date, default: Date.now },
+    resolvedDate: { type: Date },
+    replacementReceived: { type: Boolean, default: false },
+    notes: { type: String },
+}, {
+    timestamps: true
+});
+
+export const WarrantyClaim: Model<IWarrantyClaim> = models.WarrantyClaim || mongoose.model<IWarrantyClaim>('WarrantyClaim', WarrantyClaimSchema);
+
 // ── Service Sale ──────────────────────────────────────────────────────────────
 export interface IServiceSaleItem {
     stockId: mongoose.Types.ObjectId | string;
