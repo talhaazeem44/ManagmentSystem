@@ -25,6 +25,23 @@ interface CollectionRecord {
     collectedAt: string;
 }
 
+interface MonthlyMarginRow {
+    month: string;
+    bikeMargin: number;
+    workshopMargin: number;
+    expenses: number;
+    netMargin: number;
+    salesCount: number;
+    jobCount: number;
+}
+
+interface AllTimeMargin {
+    bikeMargin: number;
+    workshopMargin: number;
+    expenses: number;
+    netMargin: number;
+}
+
 interface BreakdownItem {
     saleDate?: string;
     buyerName?: string;
@@ -91,6 +108,11 @@ export default function ProfitPage() {
     const [lastMarginCol, setLastMarginCol] = useState<CollectionRecord | null>(null);
     const [allMarginCollections, setAllMarginCollections] = useState<CollectionRecord[]>([]);
     const [collecting, setCollecting] = useState(false);
+    // Workshop expenses aren't in /api/reports (that only tracks MARGIN-category expenses) —
+    // pulled separately from /api/workshop/stats so the combined total actually nets out
+    // labour/parts margin against what was spent running the workshop, not just the gross.
+    const [sinceWorkshopExpense, setSinceWorkshopExpense] = useState(0);
+    const [monthWorkshopExpense, setMonthWorkshopExpense] = useState(0);
 
     // cash tracker
     const [sinceCashStats, setSinceCashStats] = useState<RangeStats | null>(null);
@@ -112,6 +134,13 @@ export default function ProfitPage() {
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     });
+
+    // month-wise + all-time combined margin history (bike + workshop together)
+    const [monthlyMarginHistory, setMonthlyMarginHistory] = useState<MonthlyMarginRow[]>([]);
+    const [allTimeMargin, setAllTimeMargin] = useState<AllTimeMargin | null>(null);
+    const [showMonthlyMarginHistory, setShowMonthlyMarginHistory] = useState(false);
+    const [monthlyMarginLoaded, setMonthlyMarginLoaded] = useState(false);
+    const [loadingMonthlyMargin, setLoadingMonthlyMargin] = useState(false);
 
     const [monthBreakdown, setMonthBreakdown] = useState<BreakdownItem[]>([]);
     const [monthExpenseList, setMonthExpenseList] = useState<ExpenseItem[]>([]);
@@ -168,12 +197,14 @@ export default function ProfitPage() {
             // Last collection fell inside this month → fetch what led up to it (month start → that collection)
             const lastCollectionInThisMonth = marginColData.last && new Date(marginColData.last.collectedAt) >= new Date(monthStart);
 
-            const [marginSinceRes, monthMarginRes, cashSinceRes, monthCashRes, preCollectionRes] = await Promise.all([
+            const [marginSinceRes, monthMarginRes, cashSinceRes, monthCashRes, preCollectionRes, workshopSinceRes, workshopMonthRes] = await Promise.all([
                 fetch(`/api/reports?startDate=${marginSince}&endDate=${nowISO}`),
                 fetch(`/api/reports?startDate=${monthStart}&endDate=${nowISO}`),
                 fetch(`/api/reports?startDate=${cashSince}&endDate=${nowISO}`),
                 fetch(`/api/reports?startDate=${monthStart}&endDate=${nowISO}`),
                 lastCollectionInThisMonth ? fetch(`/api/reports?startDate=${monthStart}&endDate=${marginSince}`) : Promise.resolve(null),
+                fetch(`/api/workshop/stats?startDate=${marginSince}&endDate=${nowISO}`),
+                fetch(`/api/workshop/stats?startDate=${monthStart}&endDate=${nowISO}`),
             ]);
 
             if (marginSinceRes.ok) {
@@ -190,6 +221,8 @@ export default function ProfitPage() {
             }
             if (cashSinceRes.ok)   { const d = await cashSinceRes.json();   setSinceCashStats(d.range); }
             if (monthCashRes.ok)   { const d = await monthCashRes.json();   setMonthCashStats(d.range); }
+            if (workshopSinceRes.ok) { const d = await workshopSinceRes.json(); setSinceWorkshopExpense(d.workshopExpenseTotal ?? 0); }
+            if (workshopMonthRes.ok) { const d = await workshopMonthRes.json(); setMonthWorkshopExpense(d.workshopExpenseTotal ?? 0); }
 
             if (lastCollectionInThisMonth && preCollectionRes?.ok) {
                 const d = await preCollectionRes.json();
@@ -208,7 +241,10 @@ export default function ProfitPage() {
 
     const handleCollectMargin = async () => {
         if (!sinceStats) return;
-        const net = sinceStats.bikeProfit - (sinceStats.expenseMargin ?? 0);
+        // One combined total — bike/advance/khata/used-bike margin plus workshop labour+parts
+        // margin, minus every expense that comes out of either side. A single number, a single
+        // collection, so nothing can ever be collected twice between two separate trackers.
+        const net = sinceStats.bikeProfit + (sinceStats.workshopProfit ?? 0) - (sinceStats.expenseMargin ?? 0) - sinceWorkshopExpense;
         if (!confirm(`Mark Rs. ${net.toLocaleString()} margin as collected? Counter resets to zero.`)) return;
         setCollecting(true);
         try {
@@ -265,6 +301,23 @@ export default function ProfitPage() {
             setShowFullCashHistory(true);
         } finally {
             setLoadingFullCashHistory(false);
+        }
+    };
+
+    const toggleMonthlyMarginHistory = async () => {
+        if (monthlyMarginLoaded) { setShowMonthlyMarginHistory(v => !v); return; }
+        setLoadingMonthlyMargin(true);
+        try {
+            const res = await fetch('/api/reports/monthly-margin');
+            if (res.ok) {
+                const d = await res.json();
+                setMonthlyMarginHistory(d.months ?? []);
+                setAllTimeMargin(d.allTime ?? null);
+            }
+            setMonthlyMarginLoaded(true);
+            setShowMonthlyMarginHistory(true);
+        } finally {
+            setLoadingMonthlyMargin(false);
         }
     };
 
@@ -440,8 +493,15 @@ export default function ProfitPage() {
         return -1;
     })();
 
-    const uncollectedMargin = sinceStats ? sinceStats.bikeProfit - (sinceStats.expenseMargin ?? 0) : 0;
-    const monthMargin       = monthStats  ? monthStats.bikeProfit  - (monthStats.expenseMargin  ?? 0) : 0;
+    // Combined total: bike-side margin + workshop labour/parts margin, minus bike-side
+    // ("MARGIN" category) expenses and workshop expenses — everything the business earned
+    // and spent, in one number.
+    const uncollectedMargin = sinceStats
+        ? sinceStats.bikeProfit + (sinceStats.workshopProfit ?? 0) - (sinceStats.expenseMargin ?? 0) - sinceWorkshopExpense
+        : 0;
+    const monthMargin = monthStats
+        ? monthStats.bikeProfit + (monthStats.workshopProfit ?? 0) - (monthStats.expenseMargin ?? 0) - monthWorkshopExpense
+        : 0;
     const uncollectedCash   = sinceCashStats?.cashReceived ?? 0;
     const hasCashToDeposit  = uncollectedCash > 0;
     const monthCash         = monthCashStats?.cashReceived ?? 0;
@@ -481,7 +541,7 @@ export default function ProfitPage() {
                         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Today — {new Date().toLocaleDateString('en-PK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                     </div>
                     <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }}
-                        onClick={() => { setUnlocked(false); setPassword(''); setStats(null); setSinceStats(null); setMonthStats(null); setLastMarginCol(null); setSinceCashStats(null); setMonthCashStats(null); setLastCashCol(null); }}>
+                        onClick={() => { setUnlocked(false); setPassword(''); setStats(null); setSinceStats(null); setMonthStats(null); setLastMarginCol(null); setSinceCashStats(null); setMonthCashStats(null); setLastCashCol(null); setSinceWorkshopExpense(0); setMonthWorkshopExpense(0); }}>
                         🔒 Lock
                     </button>
                 </div>
@@ -496,9 +556,25 @@ export default function ProfitPage() {
                             <div className="card" style={{ padding: '1.5rem', borderLeft: '4px solid #10b981' }}>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>Uncollected Margin</div>
                                 <div style={{ fontSize: '2rem', fontWeight: 800, color: '#10b981', marginBottom: '0.3rem' }}>Rs. {uncollectedMargin.toLocaleString()}</div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>
                                     {daysBetween(marginSinceDate, new Date())} {daysBetween(marginSinceDate, new Date()) === 1 ? 'day' : 'days'} since last collection
                                     {lastMarginCol ? <span> · {new Date(lastMarginCol.collectedAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}</span> : <span> · no previous collection</span>}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginBottom: '1rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', padding: '0.3rem 0.55rem', background: 'rgba(16,185,129,0.07)', borderRadius: '6px' }}>
+                                        <span style={{ color: 'var(--color-text-muted)' }}>Bike Margin</span>
+                                        <strong>Rs. {(sinceStats?.bikeProfit ?? 0).toLocaleString()}</strong>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', padding: '0.3rem 0.55rem', background: 'rgba(16,185,129,0.07)', borderRadius: '6px' }}>
+                                        <span style={{ color: 'var(--color-text-muted)' }}>Workshop Margin (Labour + Parts)</span>
+                                        <strong>Rs. {(sinceStats?.workshopProfit ?? 0).toLocaleString()}</strong>
+                                    </div>
+                                    {((sinceStats?.expenseMargin ?? 0) + sinceWorkshopExpense) > 0 && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', padding: '0.3rem 0.55rem', background: 'rgba(239,68,68,0.06)', borderRadius: '6px' }}>
+                                            <span style={{ color: '#ef4444' }}>All Expenses</span>
+                                            <strong style={{ color: '#ef4444' }}>− Rs. {((sinceStats?.expenseMargin ?? 0) + sinceWorkshopExpense).toLocaleString()}</strong>
+                                        </div>
+                                    )}
                                 </div>
                                 <button onClick={handleCollectMargin} disabled={collecting || uncollectedMargin <= 0}
                                     className="btn btn-success" style={{ fontSize: '0.82rem', padding: '0.45rem 1.1rem', width: '100%', marginBottom: '0.5rem' }}>
@@ -522,13 +598,17 @@ export default function ProfitPage() {
                                 {/* Gross vs Net breakdown */}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginBottom: '0.75rem' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', padding: '0.35rem 0.6rem', background: 'rgba(16,185,129,0.07)', borderRadius: '6px' }}>
-                                        <span style={{ color: 'var(--color-text-muted)' }}>Gross (before exp.)</span>
+                                        <span style={{ color: 'var(--color-text-muted)' }}>Bike Margin</span>
                                         <strong style={{ color: '#10b981' }}>Rs. {(monthStats?.bikeProfit ?? 0).toLocaleString()}</strong>
                                     </div>
-                                    {(monthStats?.expenseMargin ?? 0) > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', padding: '0.35rem 0.6rem', background: 'rgba(16,185,129,0.07)', borderRadius: '6px' }}>
+                                        <span style={{ color: 'var(--color-text-muted)' }}>Workshop Margin</span>
+                                        <strong style={{ color: '#10b981' }}>Rs. {(monthStats?.workshopProfit ?? 0).toLocaleString()}</strong>
+                                    </div>
+                                    {((monthStats?.expenseMargin ?? 0) + monthWorkshopExpense) > 0 && (
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', padding: '0.35rem 0.6rem', background: 'rgba(239,68,68,0.06)', borderRadius: '6px' }}>
-                                            <span style={{ color: '#ef4444' }}>Margin Expenses</span>
-                                            <strong style={{ color: '#ef4444' }}>− Rs. {(monthStats?.expenseMargin ?? 0).toLocaleString()}</strong>
+                                            <span style={{ color: '#ef4444' }}>All Expenses</span>
+                                            <strong style={{ color: '#ef4444' }}>− Rs. {((monthStats?.expenseMargin ?? 0) + monthWorkshopExpense).toLocaleString()}</strong>
                                         </div>
                                     )}
                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', padding: '0.35rem 0.6rem', background: monthMargin < 0 ? 'rgba(239,68,68,0.08)' : 'rgba(59,130,246,0.08)', borderRadius: '6px', borderTop: '1px solid var(--color-border)' }}>
@@ -556,6 +636,74 @@ export default function ProfitPage() {
                                     {monthStats?.sales ?? 0} bikes · avg Rs. {monthStats?.sales ? Math.round((monthStats.extraCash ?? 0) / monthStats.sales).toLocaleString() : '0'} extra/bike
                                 </div>
                             </div>
+                        </div>
+
+                        {/* ── All-Time Total + Month-by-Month History (combined bike + workshop) ── */}
+                        <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: allTimeMargin ? '1rem' : 0 }}>
+                                <div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>
+                                        All-Time Total (Bike + Workshop, after all expenses)
+                                    </div>
+                                    {allTimeMargin && (
+                                        <div style={{ fontSize: '1.9rem', fontWeight: 800, color: allTimeMargin.netMargin < 0 ? '#ef4444' : '#10b981' }}>
+                                            {allTimeMargin.netMargin < 0 ? '⚠️ Short by Rs. ' + Math.abs(allTimeMargin.netMargin).toLocaleString() : `Rs. ${allTimeMargin.netMargin.toLocaleString()}`}
+                                        </div>
+                                    )}
+                                </div>
+                                <button onClick={toggleMonthlyMarginHistory} disabled={loadingMonthlyMargin}
+                                    style={{ fontSize: '0.78rem', fontWeight: 700, color: '#3b82f6', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)', borderRadius: '6px', padding: '0.4rem 0.9rem', cursor: 'pointer' }}>
+                                    {loadingMonthlyMargin ? 'Loading...' : showMonthlyMarginHistory ? '▲ Hide month-by-month' : '▼ See month-by-month'}
+                                </button>
+                            </div>
+
+                            {showMonthlyMarginHistory && (
+                                monthlyMarginHistory.length === 0 ? (
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>No history yet.</div>
+                                ) : (
+                                    <div style={{ overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                            <thead>
+                                                <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                                                    {['Month', 'Bike Margin', 'Workshop Margin', 'Expenses', 'Net Margin'].map(h => (
+                                                        <th key={h} style={{ padding: '6px 8px', textAlign: h === 'Month' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {monthlyMarginHistory.map(row => (
+                                                    <tr key={row.month} style={{ borderBottom: '1px solid var(--color-border)', background: row.netMargin < 0 ? 'rgba(239,68,68,0.06)' : 'transparent' }}>
+                                                        <td style={{ padding: '6px 8px', fontWeight: 600 }}>
+                                                            {new Date(row.month + '-01').toLocaleDateString('en-PK', { month: 'long', year: 'numeric' })}
+                                                        </td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right' }}>Rs. {Math.round(row.bikeMargin).toLocaleString()}</td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right' }}>Rs. {Math.round(row.workshopMargin).toLocaleString()}</td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right', color: row.expenses > 0 ? '#ef4444' : 'var(--color-text-muted)' }}>
+                                                            {row.expenses > 0 ? `− Rs. ${Math.round(row.expenses).toLocaleString()}` : '—'}
+                                                        </td>
+                                                        <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: row.netMargin < 0 ? '#ef4444' : '#10b981' }}>
+                                                            {row.netMargin < 0 ? '⚠️ ' : ''}Rs. {Math.round(row.netMargin).toLocaleString()}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                            {allTimeMargin && (
+                                                <tfoot>
+                                                    <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 800, background: 'var(--color-bg-elevated)' }}>
+                                                        <td style={{ padding: '8px' }}>All Time</td>
+                                                        <td style={{ padding: '8px', textAlign: 'right' }}>Rs. {Math.round(allTimeMargin.bikeMargin).toLocaleString()}</td>
+                                                        <td style={{ padding: '8px', textAlign: 'right' }}>Rs. {Math.round(allTimeMargin.workshopMargin).toLocaleString()}</td>
+                                                        <td style={{ padding: '8px', textAlign: 'right', color: '#ef4444' }}>− Rs. {Math.round(allTimeMargin.expenses).toLocaleString()}</td>
+                                                        <td style={{ padding: '8px', textAlign: 'right', color: allTimeMargin.netMargin < 0 ? '#ef4444' : '#10b981' }}>
+                                                            Rs. {Math.round(allTimeMargin.netMargin).toLocaleString()}
+                                                        </td>
+                                                    </tr>
+                                                </tfoot>
+                                            )}
+                                        </table>
+                                    </div>
+                                )
+                            )}
                         </div>
 
                         {/* ── Margin Ledger (day-by-day since last collection) ── */}
