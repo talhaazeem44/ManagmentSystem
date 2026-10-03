@@ -209,6 +209,27 @@ export default function WorkshopPage() {
         setEditSuggestions([]);
     };
 
+    // Adding/removing items or changing service charges moves the bill's total, but
+    // Cash Received / Bank Transfer were only ever set once when edit mode opened — left
+    // untouched, they'd silently save as stale amounts. Auto-absorb the difference into
+    // whichever side is already the only one in use (a plain cash or plain bank bill) so the
+    // common case just works; a genuinely split bill is left alone since there's no way to
+    // guess which side the new amount belongs to — the warning below prompts a manual fix.
+    useEffect(() => {
+        if (!editingRecord || editFields.paymentMode === 'CREDIT') return;
+        const sc = Number(editFields.serviceCharges) || 0;
+        const pt = editBillItems.reduce((s, i) => s + i.customerPrice * i.quantity, 0);
+        const newTotal = sc + pt;
+        const cash = Number(editFields.receivedCash) || 0;
+        const bank = Number(editFields.bankTransferAmount) || 0;
+        if (cash + bank === newTotal) return;
+        if (bank === 0) {
+            setEditFields(f => ({ ...f, receivedCash: String(newTotal) }));
+        } else if (cash === 0) {
+            setEditFields(f => ({ ...f, bankTransferAmount: String(newTotal) }));
+        }
+    }, [editBillItems, editFields.serviceCharges, editFields.paymentMode, editingRecord]);
+
     const handleSaveEdit = async () => {
         if (!editingRecord?._id) return;
         setSavingEdit(true);
