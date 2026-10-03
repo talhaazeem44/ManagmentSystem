@@ -24,6 +24,13 @@ interface ExpenseRecord {
     date: string;
 }
 
+interface MarginStats {
+    totalMargin: number;
+    totalLabour: number;
+    workshopExpenseTotal: number;
+    jobCount: number;
+}
+
 /** Entries saved before payment mode existed are cash — that is what they were. */
 const isBank = (r: { paymentMode?: PaymentMode }) => r.paymentMode === 'BANK_TRANSFER';
 const sum = (rows: { amount: number }[]) => rows.reduce((s, r) => s + r.amount, 0);
@@ -40,6 +47,7 @@ export default function WorkshopTrackerPage() {
         const now = new Date();
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     });
+    const [marginStats, setMarginStats] = useState<MarginStats | null>(null);
 
     useEffect(() => { fetchTrackerData(); }, [trackerMonth]);
 
@@ -48,9 +56,10 @@ export default function WorkshopTrackerPage() {
         const start = new Date(year, month - 1, 1).toISOString();
         const end = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
         try {
-            const [depRes, expRes] = await Promise.all([
+            const [depRes, expRes, marginRes] = await Promise.all([
                 fetch(`/api/workshop/deposits?startDate=${start}&endDate=${end}`),
                 fetch(`/api/expenses?startDate=${start}&endDate=${end}`),
+                fetch(`/api/workshop/stats?startDate=${start}&endDate=${end}`),
             ]);
             if (depRes.ok) {
                 setDeposits(await depRes.json());
@@ -63,6 +72,7 @@ export default function WorkshopTrackerPage() {
             } else {
                 showToast('Could not refresh expenses list — reload the page to check', 'error');
             }
+            if (marginRes.ok) setMarginStats(await marginRes.json());
         } catch {
             showToast('Could not refresh tracker data — check your connection', 'error');
         }
@@ -205,6 +215,36 @@ export default function WorkshopTrackerPage() {
                         Rs. {netTotal.toLocaleString()}
                     </span>
                 </div>
+
+                {/* Margin — this is the actual profit from service bills this month, separate from
+                    the cash-flow cards above (which are the manual daily-sale/expense ledger). Shown
+                    here too since this is where cash actually gets closed out and reconciled. */}
+                {marginStats && (
+                    <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', border: '2px solid rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.04)' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>
+                            💰 {monthLabel} — Margin ({marginStats.jobCount} job{marginStats.jobCount !== 1 ? 's' : ''})
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', fontSize: '0.85rem', padding: '0.4rem 0.7rem', background: 'var(--color-bg-elevated)', borderRadius: '6px' }}>
+                                <span style={{ color: 'var(--color-text-muted)' }}>Earned (Labour + Parts)</span>
+                                <strong style={{ color: '#10b981' }}>Rs. {Math.round(marginStats.totalMargin).toLocaleString()}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', fontSize: '0.85rem', padding: '0.4rem 0.7rem', background: 'rgba(239,68,68,0.06)', borderRadius: '6px' }}>
+                                <span style={{ color: '#ef4444' }}>Spent (Expenses)</span>
+                                <strong style={{ color: '#ef4444' }}>− Rs. {Math.round(marginStats.workshopExpenseTotal).toLocaleString()}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.9rem', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '8px' }}>
+                                <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>Take-Home</span>
+                                <strong style={{ fontSize: '1.15rem', color: (marginStats.totalMargin - marginStats.workshopExpenseTotal) < 0 ? '#ef4444' : '#10b981' }}>
+                                    Rs. {Math.round(Math.abs(marginStats.totalMargin - marginStats.workshopExpenseTotal)).toLocaleString()}
+                                </strong>
+                                <span style={{ fontSize: '0.68rem', padding: '2px 7px', borderRadius: '4px', fontWeight: 700, background: (marginStats.totalMargin - marginStats.workshopExpenseTotal) < 0 ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', color: (marginStats.totalMargin - marginStats.workshopExpenseTotal) < 0 ? '#ef4444' : '#10b981' }}>
+                                    {(marginStats.totalMargin - marginStats.workshopExpenseTotal) < 0 ? 'LOSS' : 'PROFIT'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid-2" style={{ alignItems: 'start' }}>
                     {/* Forms */}
