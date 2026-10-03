@@ -233,9 +233,14 @@ export default function WorkshopDashboardPage() {
                                 )}
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.9rem 1.1rem', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '8px', maxWidth: '420px' }}>
-                                <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Net Margin (Take-Home)</span>
-                                <span style={{ fontWeight: 800, fontSize: '1.5rem', color: (stats.totalMargin - stats.workshopExpenseTotal) < 0 ? '#ef4444' : '#10b981' }}>
-                                    Rs. {Math.round(stats.totalMargin - stats.workshopExpenseTotal).toLocaleString()}
+                                <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Take-Home</span>
+                                <span>
+                                    <span style={{ fontWeight: 800, fontSize: '1.5rem', color: (stats.totalMargin - stats.workshopExpenseTotal) < 0 ? '#ef4444' : '#10b981' }}>
+                                        Rs. {Math.round(Math.abs(stats.totalMargin - stats.workshopExpenseTotal)).toLocaleString()}
+                                    </span>
+                                    <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', fontWeight: 700, background: (stats.totalMargin - stats.workshopExpenseTotal) < 0 ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', color: (stats.totalMargin - stats.workshopExpenseTotal) < 0 ? '#ef4444' : '#10b981' }}>
+                                        {(stats.totalMargin - stats.workshopExpenseTotal) < 0 ? 'LOSS' : 'PROFIT'}
+                                    </span>
                                 </span>
                             </div>
                             <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.6rem', maxWidth: '420px' }}>
@@ -307,7 +312,7 @@ export default function WorkshopDashboardPage() {
                         <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
                             <button onClick={() => setShowMonthlyReport(v => !v)}
                                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                                <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>📅 Monthly Report — Earned vs Expenses</span>
+                                <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>📅 Monthly Report — Profit or Loss, Month by Month</span>
                                 <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{showMonthlyReport ? '▲ Hide' : '▼ Show'}</span>
                             </button>
                             {showMonthlyReport && (
@@ -316,35 +321,44 @@ export default function WorkshopDashboardPage() {
                                 ) : monthlyReport.length === 0 ? (
                                     <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '1rem' }}>No workshop history yet.</div>
                                 ) : (
-                                    <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
-                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                                            <thead>
-                                                <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
-                                                    {['Month', 'Jobs', 'Revenue', 'Gross Margin', 'Expenses', 'Net Margin'].map(h => (
-                                                        <th key={h} style={{ padding: '6px 8px', textAlign: h === 'Month' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
-                                                    ))}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {monthlyReport.map(row => (
-                                                    <tr key={row.month} style={{ borderBottom: '1px solid var(--color-border)', background: row.netMargin < 0 ? 'rgba(239,68,68,0.06)' : 'transparent' }}>
-                                                        <td style={{ padding: '6px 8px', fontWeight: 600 }}>
-                                                            {new Date(row.month + '-01').toLocaleDateString('en-PK', { month: 'long', year: 'numeric' })}
-                                                        </td>
-                                                        <td style={{ padding: '6px 8px', textAlign: 'right' }}>{row.jobCount}</td>
-                                                        <td style={{ padding: '6px 8px', textAlign: 'right' }}>Rs. {Math.round(row.revenue).toLocaleString()}</td>
-                                                        <td style={{ padding: '6px 8px', textAlign: 'right', color: '#10b981' }}>Rs. {Math.round(row.grossMargin).toLocaleString()}</td>
-                                                        <td style={{ padding: '6px 8px', textAlign: 'right', color: row.expenseTotal > 0 ? '#ef4444' : 'var(--color-text-muted)' }}>
-                                                            {row.expenseTotal > 0 ? `− Rs. ${Math.round(row.expenseTotal).toLocaleString()}` : '—'}
-                                                        </td>
-                                                        <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: row.netMargin < 0 ? '#ef4444' : '#10b981' }}>
-                                                            {row.netMargin < 0 ? '⚠️ ' : ''}Rs. {Math.round(row.netMargin).toLocaleString()}
-                                                        </td>
+                                    <>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.75rem', marginBottom: '0.5rem' }}>
+                                            <strong>Earned</strong> = labour + parts margin from jobs that month. <strong>Spent</strong> = everything paid out for the workshop that month — buying stock/parts AND running costs (rent, bills, salary) together. A month with heavy stock buying can show a loss even if the parts aren&apos;t sold yet — that cash just isn&apos;t free to take home until they sell.
+                                        </div>
+                                        <div style={{ overflowX: 'auto' }}>
+                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                                <thead>
+                                                    <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                                                        {['Month', 'Jobs', 'Earned', 'Spent', 'Take-Home'].map(h => (
+                                                            <th key={h} style={{ padding: '6px 8px', textAlign: h === 'Month' ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
+                                                        ))}
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                                </thead>
+                                                <tbody>
+                                                    {monthlyReport.map(row => (
+                                                        <tr key={row.month} style={{ borderBottom: '1px solid var(--color-border)', background: row.netMargin < 0 ? 'rgba(239,68,68,0.06)' : 'transparent' }}>
+                                                            <td style={{ padding: '6px 8px', fontWeight: 600 }}>
+                                                                {new Date(row.month + '-01').toLocaleDateString('en-PK', { month: 'long', year: 'numeric' })}
+                                                            </td>
+                                                            <td style={{ padding: '6px 8px', textAlign: 'right' }}>{row.jobCount}</td>
+                                                            <td style={{ padding: '6px 8px', textAlign: 'right', color: '#10b981' }}>Rs. {Math.round(row.grossMargin).toLocaleString()}</td>
+                                                            <td style={{ padding: '6px 8px', textAlign: 'right', color: row.expenseTotal > 0 ? '#ef4444' : 'var(--color-text-muted)' }}>
+                                                                {row.expenseTotal > 0 ? `− Rs. ${Math.round(row.expenseTotal).toLocaleString()}` : '—'}
+                                                            </td>
+                                                            <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+                                                                <span style={{ fontWeight: 800, color: row.netMargin < 0 ? '#ef4444' : '#10b981' }}>
+                                                                    Rs. {Math.round(Math.abs(row.netMargin)).toLocaleString()}
+                                                                </span>
+                                                                <span style={{ marginLeft: '0.4rem', fontSize: '0.68rem', padding: '2px 7px', borderRadius: '4px', fontWeight: 700, background: row.netMargin < 0 ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', color: row.netMargin < 0 ? '#ef4444' : '#10b981' }}>
+                                                                    {row.netMargin < 0 ? 'LOSS' : 'PROFIT'}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </>
                                 )
                             )}
                         </div>
