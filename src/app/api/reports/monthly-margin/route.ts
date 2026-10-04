@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { Sale, AdvanceBooking, Expense, KhataParty, UsedBike, ServiceSale } from '@/models';
+import { Sale, AdvanceBooking, Expense, KhataParty, UsedBike } from '@/models';
 import { BIKE_STANDARD_PRICES, BIKE_UNIT_MARGINS } from '@/lib/constants';
 
 // This GET handler takes no request-specific input, which Next.js would otherwise treat as
@@ -35,22 +35,23 @@ const monthKey = (d: Date | string) => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 };
 
+// Bike sales only — workshop has its own separate margin tracking (Workshop Dashboard /
+// Workshop Cash Tracker), kept off this page on purpose so it stays focused on bike sales.
 export async function GET() {
     try {
         await dbConnect();
 
-        const [sales, advanceBookings, khataParties, usedBikes, expenses, services] = await Promise.all([
+        const [sales, advanceBookings, khataParties, usedBikes, expenses] = await Promise.all([
             Sale.find().populate('bikeId').lean(),
             AdvanceBooking.find().lean(),
             KhataParty.find().lean(),
             UsedBike.find({ status: 'SOLD' }).lean(),
-            Expense.find().lean(),
-            ServiceSale.find().lean(),
+            Expense.find({ deductFrom: 'MARGIN' }).lean(),
         ]);
 
-        const months = new Map<string, { bikeMargin: number; workshopMargin: number; marginExpense: number; workshopExpense: number; salesCount: number; jobCount: number }>();
+        const months = new Map<string, { bikeMargin: number; expense: number; salesCount: number }>();
         const ensure = (key: string) => {
-            if (!months.has(key)) months.set(key, { bikeMargin: 0, workshopMargin: 0, marginExpense: 0, workshopExpense: 0, salesCount: 0, jobCount: 0 });
+            if (!months.has(key)) months.set(key, { bikeMargin: 0, expense: 0, salesCount: 0 });
             return months.get(key)!;
         };
 
@@ -76,35 +77,24 @@ export async function GET() {
         }
         for (const e of expenses as any[]) {
             if (!e.date) continue;
-            const m = ensure(monthKey(e.date));
-            if (e.deductFrom === 'MARGIN') m.marginExpense += Number(e.amount || 0);
-            else if (e.deductFrom === 'WORKSHOP') m.workshopExpense += Number(e.amount || 0);
-        }
-        for (const s of services as any[]) {
-            if (!s.date) continue;
-            const m = ensure(monthKey(s.date));
-            m.workshopMargin += Number(s.margin || 0);
-            m.jobCount += 1;
+            ensure(monthKey(e.date)).expense += Number(e.amount || 0);
         }
 
         const result = Array.from(months.entries())
             .map(([month, v]) => ({
                 month,
                 bikeMargin: v.bikeMargin,
-                workshopMargin: v.workshopMargin,
-                expenses: v.marginExpense + v.workshopExpense,
-                netMargin: v.bikeMargin + v.workshopMargin - v.marginExpense - v.workshopExpense,
+                expenses: v.expense,
+                netMargin: v.bikeMargin - v.expense,
                 salesCount: v.salesCount,
-                jobCount: v.jobCount,
             }))
             .sort((a, b) => b.month.localeCompare(a.month));
 
         const allTime = result.reduce((acc, r) => ({
             bikeMargin: acc.bikeMargin + r.bikeMargin,
-            workshopMargin: acc.workshopMargin + r.workshopMargin,
             expenses: acc.expenses + r.expenses,
             netMargin: acc.netMargin + r.netMargin,
-        }), { bikeMargin: 0, workshopMargin: 0, expenses: 0, netMargin: 0 });
+        }), { bikeMargin: 0, expenses: 0, netMargin: 0 });
 
         return NextResponse.json({ months: result, allTime });
     } catch (error: any) {
