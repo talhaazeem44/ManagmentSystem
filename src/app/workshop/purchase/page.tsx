@@ -110,7 +110,8 @@ export default function WorkshopPurchasePage() {
                 <div className="card" style={{ marginBottom: '1.5rem' }}>
                     <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>➕ Record a Purchase</h2>
                     <form onSubmit={handleSubmit}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Item</div>
+                        <div className="grid-2" style={{ marginBottom: '1.1rem' }}>
                             <div>
                                 <label className="label">Item Name</label>
                                 <input className="input" required list="stock-names" value={form.name}
@@ -126,6 +127,10 @@ export default function WorkshopPurchasePage() {
                                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                             </div>
+                        </div>
+
+                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Quantity &amp; Pricing</div>
+                        <div className="grid-3" style={{ marginBottom: '1.1rem' }}>
                             <div>
                                 <label className="label">Quantity Purchased</label>
                                 <input className="input" type="text" inputMode="decimal" required value={form.quantity}
@@ -141,6 +146,10 @@ export default function WorkshopPurchasePage() {
                                 <input className="input" type="text" inputMode="decimal" required value={form.sellingPrice}
                                     onChange={e => setForm({ ...form, sellingPrice: e.target.value })} />
                             </div>
+                        </div>
+
+                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Payment</div>
+                        <div className="grid-3" style={{ marginBottom: '0.75rem' }}>
                             <div>
                                 <label className="label">Paid As</label>
                                 <select className="select" value={form.paymentMode}
