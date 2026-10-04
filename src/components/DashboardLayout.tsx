@@ -33,6 +33,7 @@ export default function DashboardLayout({
         { href: '/workshop/dashboard', label: 'W. Dashboard', icon: '📊' },
         { href: '/workshop', label: 'Workshop', icon: '🛠️' },
         { href: '/workshop/stock', label: 'W. Stock', icon: '🔩' },
+        { href: '/workshop/purchase', label: 'W. Purchase', icon: '🛒' },
         { href: '/workshop/tracker', label: 'W. Cash', icon: '💵' },
         { href: '/workshop/credit', label: 'W. Credit', icon: '💳' },
         { href: '/workshop/claims', label: 'Claims', icon: '🛡️' },

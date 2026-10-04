@@ -1,0 +1,3 @@
+{
+  "/api/khata/[id]/transactions/[txId]/route": "app/api/khata/[id]/transactions/[txId]/route.js"
+}
