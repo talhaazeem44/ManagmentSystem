@@ -58,7 +58,7 @@ export default function WorkshopCreditPage() {
     const [payForm, setPayForm] = useState({ amount: '', date: today(), note: '', paymentMode: 'CASH' });
     const [saving, setSaving] = useState(false);
     const [editingBill, setEditingBill] = useState<string | null>(null);
-    const [editForm, setEditForm] = useState({ totalAmount: '', received: '' });
+    const [editForm, setEditForm] = useState({ totalAmount: '', received: '', date: today(), paymentMode: 'CASH' });
     const [editSaving, setEditSaving] = useState(false);
 
     useEffect(() => { fetchBills(); }, []);
@@ -129,7 +129,7 @@ export default function WorkshopCreditPage() {
 
     const startEdit = (bill: CreditBill) => {
         setEditingBill(bill._id);
-        setEditForm({ totalAmount: String(bill.totalAmount), received: String(bill.totalAmount - (bill.balance ?? 0)) });
+        setEditForm({ totalAmount: String(bill.totalAmount), received: String(bill.totalAmount - (bill.balance ?? 0)), date: today(), paymentMode: 'CASH' });
     };
 
     const editPending = Math.max(0, (Number(editForm.totalAmount) || 0) - (Number(editForm.received) || 0));
@@ -144,7 +144,14 @@ export default function WorkshopCreditPage() {
             const res = await fetch(`/api/workshop/${bill._id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ editCredit: { totalAmount, balance: Math.max(0, totalAmount - received) } }),
+                body: JSON.stringify({
+                    editCredit: {
+                        totalAmount,
+                        balance: Math.max(0, totalAmount - received),
+                        date: editForm.date,
+                        paymentMode: editForm.paymentMode,
+                    },
+                }),
             });
             if (res.ok) {
                 showToast('Credit updated', 'success');
@@ -295,6 +302,25 @@ export default function WorkshopCreditPage() {
                                                                                 onClick={() => setEditingBill(null)}>✕</button>
                                                                         </div>
                                                                     </div>
+                                                                    {Number(editForm.received) > (bill.totalAmount - (bill.balance ?? 0)) && (
+                                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                                                            <div>
+                                                                                <label style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.2rem' }}>
+                                                                                    Date the extra Rs. {(Number(editForm.received) - (bill.totalAmount - (bill.balance ?? 0))).toLocaleString()} came in
+                                                                                </label>
+                                                                                <input type="date" className="input" value={editForm.date}
+                                                                                    onChange={e => setEditForm({ ...editForm, date: e.target.value })} />
+                                                                            </div>
+                                                                            <div>
+                                                                                <label style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.2rem' }}>Received as</label>
+                                                                                <select className="select" value={editForm.paymentMode}
+                                                                                    onChange={e => setEditForm({ ...editForm, paymentMode: e.target.value })}>
+                                                                                    <option value="CASH">Cash</option>
+                                                                                    <option value="BANK_TRANSFER">Bank Transfer</option>
+                                                                                </select>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                     <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.4rem' }}>
                                                                         Pending updates automatically as Credit Amount / Received change.
                                                                     </div>

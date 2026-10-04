@@ -63,6 +63,11 @@ export default function WorkshopTrackerPage() {
     const [openingBalance, setOpeningBalance] = useState<OpeningBalance | null>(null);
     const [sinceOpeningDeposits, setSinceOpeningDeposits] = useState<DepositRecord[]>([]);
     const [sinceOpeningExpenses, setSinceOpeningExpenses] = useState<ExpenseRecord[]>([]);
+    // Credit payments collected (cash/bank actually walking in the door) since the opening
+    // balance — these never created a "Daily Sale" deposit entry on their own, so without this
+    // they'd silently never show up in Cash in Hand even though real money was received.
+    const [creditPaymentsCash, setCreditPaymentsCash] = useState(0);
+    const [creditPaymentsBank, setCreditPaymentsBank] = useState(0);
     const [showCalculation, setShowCalculation] = useState(false);
     const [showSetBalance, setShowSetBalance] = useState(false);
     const [balanceForm, setBalanceForm] = useState({ cashAmount: '', bankAmount: '', note: '' });
@@ -102,14 +107,20 @@ export default function WorkshopTrackerPage() {
             // falls after the end of the selected month (viewing an older month than the reset
             // point), there's no valid baseline, so just fall back to the plain month total.
             const fromDate = latest && new Date(latest.asOfDate) <= end ? new Date(latest.asOfDate) : start;
-            const [sinceDepRes, sinceExpRes] = await Promise.all([
+            const [sinceDepRes, sinceExpRes, sinceStatsRes] = await Promise.all([
                 fetch(`/api/workshop/deposits?startDate=${fromDate.toISOString()}&endDate=${end.toISOString()}`),
                 fetch(`/api/expenses?startDate=${fromDate.toISOString()}&endDate=${end.toISOString()}`),
+                fetch(`/api/workshop/stats?startDate=${fromDate.toISOString()}&endDate=${end.toISOString()}`),
             ]);
             if (sinceDepRes.ok) setSinceOpeningDeposits(await sinceDepRes.json());
             if (sinceExpRes.ok) {
                 const all = await sinceExpRes.json();
                 setSinceOpeningExpenses(all.filter((e: any) => e.deductFrom === 'WORKSHOP'));
+            }
+            if (sinceStatsRes.ok) {
+                const stats = await sinceStatsRes.json();
+                setCreditPaymentsCash(Number(stats.creditPaymentsCash || 0));
+                setCreditPaymentsBank(Number(stats.creditPaymentsBank || 0));
             }
         } catch {
             showToast('Could not refresh tracker data — check your connection', 'error');
@@ -220,8 +231,8 @@ export default function WorkshopTrackerPage() {
     // moment you set it) and only add up what's happened SINCE then — never older history.
     const baseCash = openingBalance ? openingBalance.cashAmount : 0;
     const baseBank = openingBalance ? openingBalance.bankAmount : 0;
-    const runningCashIn = baseCash + sum(sinceOpeningDeposits.filter(d => !isBank(d)));
-    const runningBankIn = baseBank + sum(sinceOpeningDeposits.filter(isBank));
+    const runningCashIn = baseCash + sum(sinceOpeningDeposits.filter(d => !isBank(d))) + creditPaymentsCash;
+    const runningBankIn = baseBank + sum(sinceOpeningDeposits.filter(isBank)) + creditPaymentsBank;
     const runningCashOut = sum(sinceOpeningExpenses.filter(e => !isBank(e)));
     const runningBankOut = sum(sinceOpeningExpenses.filter(isBank));
 
@@ -393,11 +404,12 @@ export default function WorkshopTrackerPage() {
 
                             <div style={{ padding: '0.75rem', background: 'rgba(59,130,246,0.06)', borderRadius: '8px' }}>
                                 <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#3b82f6', marginBottom: '0.5rem' }}>
-                                    💵 Cash in Hand = Starting Balance + cash deposits since then − cash expenses since then
+                                    💵 Cash in Hand = Starting Balance + cash deposits since then + credit payments received in cash − cash expenses since then
                                 </div>
                                 <div style={{ fontSize: '0.78rem' }}>
                                     Starting balance (cash): Rs. {baseCash.toLocaleString()}
                                     <br />+ Cash deposits since ({sinceOpeningDeposits.filter(d => !isBank(d)).length} entries): Rs. {sum(sinceOpeningDeposits.filter(d => !isBank(d))).toLocaleString()}
+                                    <br />+ Credit payments received as cash: Rs. {creditPaymentsCash.toLocaleString()}
                                     <br />− Cash expenses since ({sinceOpeningExpenses.filter(e => !isBank(e)).length} entries): Rs. {runningCashOut.toLocaleString()}
                                     <br />= <strong style={{ color: netCash < 0 ? '#ef4444' : '#3b82f6' }}>Rs. {netCash.toLocaleString()}</strong>
                                 </div>
@@ -405,18 +417,19 @@ export default function WorkshopTrackerPage() {
 
                             <div style={{ padding: '0.75rem', background: 'rgba(139,92,246,0.06)', borderRadius: '8px' }}>
                                 <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#8b5cf6', marginBottom: '0.5rem' }}>
-                                    🏦 Bank = Starting Balance + bank deposits since then − bank expenses since then
+                                    🏦 Bank = Starting Balance + bank deposits since then + credit payments received in bank − bank expenses since then
                                 </div>
                                 <div style={{ fontSize: '0.78rem' }}>
                                     Starting balance (bank): Rs. {baseBank.toLocaleString()}
                                     <br />+ Bank deposits since ({sinceOpeningDeposits.filter(isBank).length} entries): Rs. {sum(sinceOpeningDeposits.filter(isBank)).toLocaleString()}
+                                    <br />+ Credit payments received as bank transfer: Rs. {creditPaymentsBank.toLocaleString()}
                                     <br />− Bank expenses since ({sinceOpeningExpenses.filter(isBank).length} entries): Rs. {runningBankOut.toLocaleString()}
                                     <br />= <strong style={{ color: netBank < 0 ? '#ef4444' : '#8b5cf6' }}>Rs. {netBank.toLocaleString()}</strong>
                                 </div>
                             </div>
 
                             <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-                                Note: Cash in Hand and Bank count from your Starting Balance forward only — not from before it was set. Deposits and Expenses cards above are this month only.
+                                Note: Cash in Hand and Bank count from your Starting Balance forward only — not from before it was set. Deposits and Expenses cards above are this month only. Credit payments (customers paying off old workshop bills) are included even though they don&apos;t appear as a &quot;Daily Sale&quot; entry.
                             </div>
                         </div>
                     )}

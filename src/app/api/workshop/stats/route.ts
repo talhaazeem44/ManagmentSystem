@@ -136,6 +136,11 @@ export async function GET(request: NextRequest) {
             totalPartsRevenue,
             totalCashReceived,
             totalBankReceived,
+            // Exposed separately (not just merged into totalCashReceived/totalBankReceived)
+            // so the Workshop Cash Tracker can add just the credit-payment portion onto its
+            // running balance, without double-counting direct bill cash it already excludes.
+            creditPaymentsCash,
+            creditPaymentsBank,
             workshopExpenseTotal,
             expenseList: workshopExpenses
                 .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())

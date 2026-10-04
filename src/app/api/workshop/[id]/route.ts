@@ -73,19 +73,38 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
         // Direct correction of a credit bill's amounts (e.g. a discount was agreed after
         // billing, or the wrong total/balance was recorded) — sets totalAmount and balance
-        // straight, without touching items/margin or going through the payments trail.
+        // straight. If the correction means more has actually been received than before, that
+        // difference is recorded as a real dated payment (same mechanism as addPayment below) —
+        // otherwise it never shows up in the Workshop Cash Tracker or margin-by-date reporting,
+        // same bug that used to exist on the Sales list's inline edit.
         if (editCredit) {
             const totalAmount = Number(editCredit.totalAmount);
             const balance = Number(editCredit.balance);
             if (!Number.isFinite(totalAmount) || totalAmount < 0 || !Number.isFinite(balance) || balance < 0) {
                 return NextResponse.json({ message: 'Enter valid amounts' }, { status: 400 });
             }
-            const service = await ServiceSale.findByIdAndUpdate(
-                id,
-                { $set: { totalAmount, balance: Math.min(balance, totalAmount) } },
-                { new: true }
-            );
-            if (!service) return NextResponse.json({ message: 'Not found' }, { status: 404 });
+            const existing = await ServiceSale.findById(id);
+            if (!existing) return NextResponse.json({ message: 'Not found' }, { status: 404 });
+
+            const clampedBalance = Math.min(balance, totalAmount);
+            const oldReceived = Number(existing.totalAmount || 0) - Number(existing.balance || 0);
+            const newReceived = totalAmount - clampedBalance;
+            const delta = newReceived - oldReceived;
+
+            const updateOps: any = { $set: { totalAmount, balance: clampedBalance } };
+            if (delta > 0) {
+                const mode: 'CASH' | 'BANK_TRANSFER' = editCredit.paymentMode === 'BANK_TRANSFER' ? 'BANK_TRANSFER' : 'CASH';
+                updateOps.$push = {
+                    payments: {
+                        amount: delta,
+                        date: resolveTransactionDate(editCredit.date),
+                        note: editCredit.note || 'Edited on Credit page',
+                        paymentMode: mode,
+                    },
+                };
+            }
+
+            const service = await ServiceSale.findByIdAndUpdate(id, updateOps, { new: true });
             return NextResponse.json(service);
         }
 
