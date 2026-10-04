@@ -29,6 +29,8 @@ interface MarginStats {
     totalLabour: number;
     workshopExpenseTotal: number;
     jobCount: number;
+    totalCashReceived: number;
+    totalBankReceived: number;
 }
 
 /** Entries saved before payment mode existed are cash — that is what they were. */
@@ -138,13 +140,22 @@ export default function WorkshopTrackerPage() {
         fetchTrackerData();
     };
 
-    const totalDeposits = sum(deposits);
+    // Real cash/bank actually received from workshop bills this month — the manual "Daily
+    // Sale" deposit log below only ever had a few entries, if any, since bills are normally
+    // created without a separate matching deposit. Using the bills' own real numbers (instead
+    // of an almost-empty manual log) is what makes Cash in Hand actually reflect reality.
+    const billCashIn = marginStats?.totalCashReceived ?? 0;
+    const billBankIn = marginStats?.totalBankReceived ?? 0;
+
     const totalExpenses = sum(expenses);
 
     // Cash and bank are tracked apart: a bank-transfer expense never leaves the
     // drawer, so counting it against cash would understate what is actually there.
-    const cashIn = sum(deposits.filter(d => !isBank(d)));
-    const bankIn = sum(deposits.filter(isBank));
+    const manualCashIn = sum(deposits.filter(d => !isBank(d)));
+    const manualBankIn = sum(deposits.filter(isBank));
+    const cashIn = billCashIn + manualCashIn;
+    const bankIn = billBankIn + manualBankIn;
+    const totalDeposits = cashIn + bankIn;
     const cashOut = sum(expenses.filter(e => !isBank(e)));
     const bankOut = sum(expenses.filter(isBank));
 
@@ -177,10 +188,13 @@ export default function WorkshopTrackerPage() {
                     drawer figure is never mixed with money that moved by transfer. */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                     <div className="card" style={{ padding: '1.25rem', textAlign: 'center', borderLeft: '4px solid #10b981' }}>
-                        <div style={{ fontSize: '0.7rem', color: '#10b981', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>{monthLabel} — Deposits</div>
+                        <div style={{ fontSize: '0.7rem', color: '#10b981', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>{monthLabel} — Received</div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981' }}>Rs. {totalDeposits.toLocaleString()}</div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
                             💵 {cashIn.toLocaleString()} · 🏦 {bankIn.toLocaleString()}
+                        </div>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
+                            from bills: Rs. {(billCashIn + billBankIn).toLocaleString()}{(manualCashIn + manualBankIn) > 0 ? ` + manual: Rs. ${(manualCashIn + manualBankIn).toLocaleString()}` : ''}
                         </div>
                     </div>
                     <div className="card" style={{ padding: '1.25rem', textAlign: 'center', borderLeft: '4px solid #ef4444' }}>
@@ -250,7 +264,10 @@ export default function WorkshopTrackerPage() {
                     {/* Forms */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div className="card">
-                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', marginBottom: '0.75rem', textTransform: 'uppercase' }}>+ Add Daily Sale</div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', marginBottom: '0.4rem', textTransform: 'uppercase' }}>+ Add Extra Cash (optional)</div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>
+                                Cash from your actual bills is already counted automatically — only use this for money received that didn&apos;t come from a bill (e.g. a side cash top-up).
+                            </div>
                             <form onSubmit={handleAddDeposit} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 <input type="number" className="input" placeholder="Amount (Rs.)" required
                                     value={depositForm.amount}
