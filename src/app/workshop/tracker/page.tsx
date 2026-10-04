@@ -63,9 +63,12 @@ export default function WorkshopTrackerPage() {
     const [openingBalance, setOpeningBalance] = useState<OpeningBalance | null>(null);
     const [sinceOpeningDeposits, setSinceOpeningDeposits] = useState<DepositRecord[]>([]);
     const [sinceOpeningExpenses, setSinceOpeningExpenses] = useState<ExpenseRecord[]>([]);
-    // Credit payments collected (cash/bank actually walking in the door) since the opening
-    // balance — these never created a "Daily Sale" deposit entry on their own, so without this
-    // they'd silently never show up in Cash in Hand even though real money was received.
+    // Money actually walking in the door since the opening balance, straight from workshop
+    // bills — direct cash/bank bills add automatically the moment they're saved, and credit
+    // payments add automatically when recorded. Neither needs (or should get) a manual
+    // "Daily Sale" entry too — that would double-count the same money.
+    const [directCashSinceOpening, setDirectCashSinceOpening] = useState(0);
+    const [directBankSinceOpening, setDirectBankSinceOpening] = useState(0);
     const [creditPaymentsCash, setCreditPaymentsCash] = useState(0);
     const [creditPaymentsBank, setCreditPaymentsBank] = useState(0);
     const [showCalculation, setShowCalculation] = useState(false);
@@ -119,6 +122,8 @@ export default function WorkshopTrackerPage() {
             }
             if (sinceStatsRes.ok) {
                 const stats = await sinceStatsRes.json();
+                setDirectCashSinceOpening(Number(stats.directCashReceived || 0));
+                setDirectBankSinceOpening(Number(stats.directBankReceived || 0));
                 setCreditPaymentsCash(Number(stats.creditPaymentsCash || 0));
                 setCreditPaymentsBank(Number(stats.creditPaymentsBank || 0));
             }
@@ -231,8 +236,8 @@ export default function WorkshopTrackerPage() {
     // moment you set it) and only add up what's happened SINCE then — never older history.
     const baseCash = openingBalance ? openingBalance.cashAmount : 0;
     const baseBank = openingBalance ? openingBalance.bankAmount : 0;
-    const runningCashIn = baseCash + sum(sinceOpeningDeposits.filter(d => !isBank(d))) + creditPaymentsCash;
-    const runningBankIn = baseBank + sum(sinceOpeningDeposits.filter(isBank)) + creditPaymentsBank;
+    const runningCashIn = baseCash + sum(sinceOpeningDeposits.filter(d => !isBank(d))) + directCashSinceOpening + creditPaymentsCash;
+    const runningBankIn = baseBank + sum(sinceOpeningDeposits.filter(isBank)) + directBankSinceOpening + creditPaymentsBank;
     const runningCashOut = sum(sinceOpeningExpenses.filter(e => !isBank(e)));
     const runningBankOut = sum(sinceOpeningExpenses.filter(isBank));
 
@@ -404,11 +409,12 @@ export default function WorkshopTrackerPage() {
 
                             <div style={{ padding: '0.75rem', background: 'rgba(59,130,246,0.06)', borderRadius: '8px' }}>
                                 <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#3b82f6', marginBottom: '0.5rem' }}>
-                                    💵 Cash in Hand = Starting Balance + cash deposits since then + credit payments received in cash − cash expenses since then
+                                    💵 Cash in Hand = Starting Balance + cash bills + extra manual cash deposits + credit payments received in cash − cash expenses since then
                                 </div>
                                 <div style={{ fontSize: '0.78rem' }}>
                                     Starting balance (cash): Rs. {baseCash.toLocaleString()}
-                                    <br />+ Cash deposits since ({sinceOpeningDeposits.filter(d => !isBank(d)).length} entries): Rs. {sum(sinceOpeningDeposits.filter(d => !isBank(d))).toLocaleString()}
+                                    <br />+ Cash bills (auto, saved as cash): Rs. {directCashSinceOpening.toLocaleString()}
+                                    <br />+ Extra manual cash deposits since ({sinceOpeningDeposits.filter(d => !isBank(d)).length} entries): Rs. {sum(sinceOpeningDeposits.filter(d => !isBank(d))).toLocaleString()}
                                     <br />+ Credit payments received as cash: Rs. {creditPaymentsCash.toLocaleString()}
                                     <br />− Cash expenses since ({sinceOpeningExpenses.filter(e => !isBank(e)).length} entries): Rs. {runningCashOut.toLocaleString()}
                                     <br />= <strong style={{ color: netCash < 0 ? '#ef4444' : '#3b82f6' }}>Rs. {netCash.toLocaleString()}</strong>
@@ -417,11 +423,12 @@ export default function WorkshopTrackerPage() {
 
                             <div style={{ padding: '0.75rem', background: 'rgba(139,92,246,0.06)', borderRadius: '8px' }}>
                                 <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#8b5cf6', marginBottom: '0.5rem' }}>
-                                    🏦 Bank = Starting Balance + bank deposits since then + credit payments received in bank − bank expenses since then
+                                    🏦 Bank = Starting Balance + bank bills + extra manual bank deposits + credit payments received in bank − bank expenses since then
                                 </div>
                                 <div style={{ fontSize: '0.78rem' }}>
                                     Starting balance (bank): Rs. {baseBank.toLocaleString()}
-                                    <br />+ Bank deposits since ({sinceOpeningDeposits.filter(isBank).length} entries): Rs. {sum(sinceOpeningDeposits.filter(isBank)).toLocaleString()}
+                                    <br />+ Bank bills (auto, saved as bank transfer): Rs. {directBankSinceOpening.toLocaleString()}
+                                    <br />+ Extra manual bank deposits since ({sinceOpeningDeposits.filter(isBank).length} entries): Rs. {sum(sinceOpeningDeposits.filter(isBank)).toLocaleString()}
                                     <br />+ Credit payments received as bank transfer: Rs. {creditPaymentsBank.toLocaleString()}
                                     <br />− Bank expenses since ({sinceOpeningExpenses.filter(isBank).length} entries): Rs. {runningBankOut.toLocaleString()}
                                     <br />= <strong style={{ color: netBank < 0 ? '#ef4444' : '#8b5cf6' }}>Rs. {netBank.toLocaleString()}</strong>
@@ -429,7 +436,7 @@ export default function WorkshopTrackerPage() {
                             </div>
 
                             <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-                                Note: Cash in Hand and Bank count from your Starting Balance forward only — not from before it was set. Deposits and Expenses cards above are this month only. Credit payments (customers paying off old workshop bills) are included even though they don&apos;t appear as a &quot;Daily Sale&quot; entry.
+                                Note: Cash in Hand and Bank count from your Starting Balance forward only — not from before it was set. Deposits and Expenses cards above are this month only. Cash/bank bills and credit payments add in automatically — only use &quot;+ Add Daily Sale&quot; below for cash that did NOT come from a bill (e.g. other income), or you&apos;ll double-count.
                             </div>
                         </div>
                     )}
@@ -469,7 +476,10 @@ export default function WorkshopTrackerPage() {
                     {/* Forms */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div className="card">
-                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', marginBottom: '0.75rem', textTransform: 'uppercase' }}>+ Add Daily Sale</div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', marginBottom: '0.25rem', textTransform: 'uppercase' }}>+ Add Daily Sale</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>
+                                Only for cash/bank that did NOT come from a bill — bills add in automatically now.
+                            </div>
                             <form onSubmit={handleAddDeposit} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 <input type="number" className="input" placeholder="Amount (Rs.)" required
                                     value={depositForm.amount}

@@ -137,8 +137,10 @@ export async function GET(request: NextRequest) {
             totalCashReceived,
             totalBankReceived,
             // Exposed separately (not just merged into totalCashReceived/totalBankReceived)
-            // so the Workshop Cash Tracker can add just the credit-payment portion onto its
-            // running balance, without double-counting direct bill cash it already excludes.
+            // so the Workshop Cash Tracker can add each piece onto its running balance as money
+            // actually walks in the door, without double-counting.
+            directCashReceived,
+            directBankReceived,
             creditPaymentsCash,
             creditPaymentsBank,
             workshopExpenseTotal,
