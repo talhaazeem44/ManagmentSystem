@@ -29,8 +29,6 @@ interface MarginStats {
     totalLabour: number;
     workshopExpenseTotal: number;
     jobCount: number;
-    totalCashReceived: number;
-    totalBankReceived: number;
 }
 
 /** Entries saved before payment mode existed are cash — that is what they were. */
@@ -50,6 +48,12 @@ export default function WorkshopTrackerPage() {
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     });
     const [marginStats, setMarginStats] = useState<MarginStats | null>(null);
+    // Cash in Hand / Bank are running totals of every deposit and expense ever entered, up to
+    // the end of the selected month — not just that month's own activity — since the real
+    // drawer balance carries forward month to month and never resets on the 1st.
+    const [allDeposits, setAllDeposits] = useState<DepositRecord[]>([]);
+    const [allExpenses, setAllExpenses] = useState<ExpenseRecord[]>([]);
+    const [showCalculation, setShowCalculation] = useState(false);
 
     useEffect(() => { fetchTrackerData(); }, [trackerMonth]);
 
@@ -57,11 +61,14 @@ export default function WorkshopTrackerPage() {
         const [year, month] = trackerMonth.split('-').map(Number);
         const start = new Date(year, month - 1, 1).toISOString();
         const end = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
+        const epoch = new Date(0).toISOString();
         try {
-            const [depRes, expRes, marginRes] = await Promise.all([
+            const [depRes, expRes, marginRes, allDepRes, allExpRes] = await Promise.all([
                 fetch(`/api/workshop/deposits?startDate=${start}&endDate=${end}`),
                 fetch(`/api/expenses?startDate=${start}&endDate=${end}`),
                 fetch(`/api/workshop/stats?startDate=${start}&endDate=${end}`),
+                fetch(`/api/workshop/deposits?startDate=${epoch}&endDate=${end}`),
+                fetch(`/api/expenses?startDate=${epoch}&endDate=${end}`),
             ]);
             if (depRes.ok) {
                 setDeposits(await depRes.json());
@@ -75,6 +82,11 @@ export default function WorkshopTrackerPage() {
                 showToast('Could not refresh expenses list — reload the page to check', 'error');
             }
             if (marginRes.ok) setMarginStats(await marginRes.json());
+            if (allDepRes.ok) setAllDeposits(await allDepRes.json());
+            if (allExpRes.ok) {
+                const all = await allExpRes.json();
+                setAllExpenses(all.filter((e: any) => e.deductFrom === 'WORKSHOP'));
+            }
         } catch {
             showToast('Could not refresh tracker data — check your connection', 'error');
         }
@@ -140,28 +152,27 @@ export default function WorkshopTrackerPage() {
         fetchTrackerData();
     };
 
-    // Real cash/bank actually received from workshop bills this month — the manual "Daily
-    // Sale" deposit log below only ever had a few entries, if any, since bills are normally
-    // created without a separate matching deposit. Using the bills' own real numbers (instead
-    // of an almost-empty manual log) is what makes Cash in Hand actually reflect reality.
-    const billCashIn = marginStats?.totalCashReceived ?? 0;
-    const billBankIn = marginStats?.totalBankReceived ?? 0;
-
+    // "Deposits"/"Expenses" cards show just this month's own activity — the manual "Daily Sale"
+    // entry IS the real cash record for this shop (it's logged once per day already, separate
+    // from individual job bills), so these are not combined with bill totals.
+    const totalDeposits = sum(deposits);
     const totalExpenses = sum(expenses);
-
-    // Cash and bank are tracked apart: a bank-transfer expense never leaves the
-    // drawer, so counting it against cash would understate what is actually there.
-    const manualCashIn = sum(deposits.filter(d => !isBank(d)));
-    const manualBankIn = sum(deposits.filter(isBank));
-    const cashIn = billCashIn + manualCashIn;
-    const bankIn = billBankIn + manualBankIn;
-    const totalDeposits = cashIn + bankIn;
+    const cashIn = sum(deposits.filter(d => !isBank(d)));
+    const bankIn = sum(deposits.filter(isBank));
     const cashOut = sum(expenses.filter(e => !isBank(e)));
     const bankOut = sum(expenses.filter(isBank));
 
-    const netCash = cashIn - cashOut;          // physical cash in hand
-    const netBank = bankIn - bankOut;          // money through the bank
-    const netTotal = totalDeposits - totalExpenses;
+    // Cash in Hand / Bank are running totals: every deposit and expense ever recorded, up to
+    // the end of the selected month — the real drawer balance carries forward, it doesn't
+    // reset to zero on the 1st of each month.
+    const runningCashIn = sum(allDeposits.filter(d => !isBank(d)));
+    const runningBankIn = sum(allDeposits.filter(isBank));
+    const runningCashOut = sum(allExpenses.filter(e => !isBank(e)));
+    const runningBankOut = sum(allExpenses.filter(isBank));
+
+    const netCash = runningCashIn - runningCashOut;    // physical cash in hand, running balance
+    const netBank = runningBankIn - runningBankOut;    // money through the bank, running balance
+    const netTotal = netCash + netBank;
 
     const monthLabel = new Date(trackerMonth + '-01').toLocaleDateString('en-PK', { month: 'long', year: 'numeric' });
 
@@ -188,13 +199,10 @@ export default function WorkshopTrackerPage() {
                     drawer figure is never mixed with money that moved by transfer. */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                     <div className="card" style={{ padding: '1.25rem', textAlign: 'center', borderLeft: '4px solid #10b981' }}>
-                        <div style={{ fontSize: '0.7rem', color: '#10b981', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>{monthLabel} — Received</div>
+                        <div style={{ fontSize: '0.7rem', color: '#10b981', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>{monthLabel} — Deposits</div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981' }}>Rs. {totalDeposits.toLocaleString()}</div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
                             💵 {cashIn.toLocaleString()} · 🏦 {bankIn.toLocaleString()}
-                        </div>
-                        <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
-                            from bills: Rs. {(billCashIn + billBankIn).toLocaleString()}{(manualCashIn + manualBankIn) > 0 ? ` + manual: Rs. ${(manualCashIn + manualBankIn).toLocaleString()}` : ''}
                         </div>
                     </div>
                     <div className="card" style={{ padding: '1.25rem', textAlign: 'center', borderLeft: '4px solid #ef4444' }}>
@@ -208,26 +216,103 @@ export default function WorkshopTrackerPage() {
                         <div style={{ fontSize: '0.7rem', color: netCash >= 0 ? '#3b82f6' : '#ef4444', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>💵 Cash in Hand</div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 800, color: netCash >= 0 ? '#3b82f6' : '#ef4444' }}>Rs. {netCash.toLocaleString()}</div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
-                            In {cashIn.toLocaleString()} · Out {cashOut.toLocaleString()}
+                            In {runningCashIn.toLocaleString()} · Out {runningCashOut.toLocaleString()} (all-time, as of {monthLabel})
                         </div>
                     </div>
                     <div className="card" style={{ padding: '1.25rem', textAlign: 'center', borderLeft: `4px solid ${netBank >= 0 ? '#8b5cf6' : '#ef4444'}` }}>
                         <div style={{ fontSize: '0.7rem', color: netBank >= 0 ? '#8b5cf6' : '#ef4444', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>🏦 Bank</div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 800, color: netBank >= 0 ? '#8b5cf6' : '#ef4444' }}>Rs. {netBank.toLocaleString()}</div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
-                            In {bankIn.toLocaleString()} · Out {bankOut.toLocaleString()}
+                            In {runningBankIn.toLocaleString()} · Out {runningBankOut.toLocaleString()} (all-time, as of {monthLabel})
                         </div>
                     </div>
                 </div>
 
-                {/* Cash + bank together — the figure the old "Net Cash" card used to show */}
-                <div className="card" style={{ padding: '0.85rem 1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                {/* Cash + bank together — running balance, same basis as the two cards above */}
+                <div className="card" style={{ padding: '0.85rem 1.25rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                     <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
-                        Total Balance (Cash + Bank)
+                        Total Balance (Cash + Bank) — Running Total
                     </span>
                     <span style={{ fontSize: '1.15rem', fontWeight: 800, color: netTotal >= 0 ? '#10b981' : '#ef4444' }}>
                         Rs. {netTotal.toLocaleString()}
                     </span>
+                </div>
+
+                {/* ── Full transparency: exact formula + real numbers behind every card above ── */}
+                <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
+                    <button onClick={() => setShowCalculation(v => !v)}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>🔍 How is this calculated?</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{showCalculation ? '▲ Hide' : '▼ Show'}</span>
+                    </button>
+
+                    {showCalculation && (
+                        <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div style={{ padding: '0.75rem', background: 'rgba(16,185,129,0.06)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#10b981', marginBottom: '0.5rem' }}>
+                                    {monthLabel} — Deposits = sum of every &quot;Daily Sale&quot; entry YOU added this month ({deposits.length} entries)
+                                </div>
+                                <div style={{ fontSize: '0.78rem' }}>
+                                    💵 Cash: {sum(deposits.filter(d => !isBank(d))).toLocaleString()} + 🏦 Bank: {sum(deposits.filter(isBank)).toLocaleString()} = <strong>Rs. {totalDeposits.toLocaleString()}</strong>
+                                </div>
+                                {deposits.length > 0 && (
+                                    <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '150px', overflowY: 'auto' }}>
+                                        {deposits.map(d => (
+                                            <div key={d._id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+                                                <span>{new Date(d.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })} {isBank(d) ? '🏦' : '💵'} {d.note || '—'}</span>
+                                                <span>Rs. {d.amount.toLocaleString()}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div style={{ padding: '0.75rem', background: 'rgba(239,68,68,0.06)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#ef4444', marginBottom: '0.5rem' }}>
+                                    {monthLabel} — Expenses = sum of every expense logged this month ({expenses.length} entries)
+                                </div>
+                                <div style={{ fontSize: '0.78rem' }}>
+                                    💵 Cash: {sum(expenses.filter(e => !isBank(e))).toLocaleString()} + 🏦 Bank: {sum(expenses.filter(isBank)).toLocaleString()} = <strong>Rs. {totalExpenses.toLocaleString()}</strong>
+                                </div>
+                                {expenses.length > 0 && (
+                                    <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '150px', overflowY: 'auto' }}>
+                                        {expenses.map(e => (
+                                            <div key={e._id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+                                                <span>{new Date(e.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })} {isBank(e) ? '🏦' : '💵'} {e.description}</span>
+                                                <span>Rs. {e.amount.toLocaleString()}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div style={{ padding: '0.75rem', background: 'rgba(59,130,246,0.06)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#3b82f6', marginBottom: '0.5rem' }}>
+                                    💵 Cash in Hand = ALL cash deposits ever (not just this month) − ALL cash expenses ever, up to the end of {monthLabel}
+                                </div>
+                                <div style={{ fontSize: '0.78rem' }}>
+                                    All-time cash deposits ({allDeposits.filter(d => !isBank(d)).length} entries): Rs. {runningCashIn.toLocaleString()}
+                                    <br />− All-time cash expenses ({allExpenses.filter(e => !isBank(e)).length} entries): Rs. {runningCashOut.toLocaleString()}
+                                    <br />= <strong style={{ color: netCash < 0 ? '#ef4444' : '#3b82f6' }}>Rs. {netCash.toLocaleString()}</strong>
+                                </div>
+                            </div>
+
+                            <div style={{ padding: '0.75rem', background: 'rgba(139,92,246,0.06)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#8b5cf6', marginBottom: '0.5rem' }}>
+                                    🏦 Bank = ALL bank deposits ever − ALL bank expenses ever, up to the end of {monthLabel}
+                                </div>
+                                <div style={{ fontSize: '0.78rem' }}>
+                                    All-time bank deposits ({allDeposits.filter(isBank).length} entries): Rs. {runningBankIn.toLocaleString()}
+                                    <br />− All-time bank expenses ({allExpenses.filter(isBank).length} entries): Rs. {runningBankOut.toLocaleString()}
+                                    <br />= <strong style={{ color: netBank < 0 ? '#ef4444' : '#8b5cf6' }}>Rs. {netBank.toLocaleString()}</strong>
+                                </div>
+                            </div>
+
+                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
+                                Note: Cash in Hand and Bank are running totals — they include every deposit/expense ever entered, not just {monthLabel}&apos;s. Deposits and Expenses above are this month only.
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Margin — this is the actual profit from service bills this month, separate from
@@ -264,10 +349,7 @@ export default function WorkshopTrackerPage() {
                     {/* Forms */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div className="card">
-                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', marginBottom: '0.4rem', textTransform: 'uppercase' }}>+ Add Extra Cash (optional)</div>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>
-                                Cash from your actual bills is already counted automatically — only use this for money received that didn&apos;t come from a bill (e.g. a side cash top-up).
-                            </div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', marginBottom: '0.75rem', textTransform: 'uppercase' }}>+ Add Daily Sale</div>
                             <form onSubmit={handleAddDeposit} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 <input type="number" className="input" placeholder="Amount (Rs.)" required
                                     value={depositForm.amount}
