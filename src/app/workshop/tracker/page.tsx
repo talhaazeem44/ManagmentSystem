@@ -31,6 +31,14 @@ interface MarginStats {
     jobCount: number;
 }
 
+interface OpeningBalance {
+    _id: string;
+    cashAmount: number;
+    bankAmount: number;
+    asOfDate: string;
+    note?: string;
+}
+
 /** Entries saved before payment mode existed are cash — that is what they were. */
 const isBank = (r: { paymentMode?: PaymentMode }) => r.paymentMode === 'BANK_TRANSFER';
 const sum = (rows: { amount: number }[]) => rows.reduce((s, r) => s + r.amount, 0);
@@ -48,27 +56,30 @@ export default function WorkshopTrackerPage() {
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     });
     const [marginStats, setMarginStats] = useState<MarginStats | null>(null);
-    // Cash in Hand / Bank are running totals of every deposit and expense ever entered, up to
-    // the end of the selected month — not just that month's own activity — since the real
-    // drawer balance carries forward month to month and never resets on the 1st.
-    const [allDeposits, setAllDeposits] = useState<DepositRecord[]>([]);
-    const [allExpenses, setAllExpenses] = useState<ExpenseRecord[]>([]);
+
+    // Cash in Hand / Bank count from the most recent "opening balance" reset point forward —
+    // not from every deposit/expense ever entered. Old/unreliable history before that point
+    // is simply ignored; this is the clean-slate fix for a confused/duplicated cash history.
+    const [openingBalance, setOpeningBalance] = useState<OpeningBalance | null>(null);
+    const [sinceOpeningDeposits, setSinceOpeningDeposits] = useState<DepositRecord[]>([]);
+    const [sinceOpeningExpenses, setSinceOpeningExpenses] = useState<ExpenseRecord[]>([]);
     const [showCalculation, setShowCalculation] = useState(false);
+    const [showSetBalance, setShowSetBalance] = useState(false);
+    const [balanceForm, setBalanceForm] = useState({ cashAmount: '', bankAmount: '', note: '' });
+    const [savingBalance, setSavingBalance] = useState(false);
 
     useEffect(() => { fetchTrackerData(); }, [trackerMonth]);
 
     const fetchTrackerData = async () => {
         const [year, month] = trackerMonth.split('-').map(Number);
-        const start = new Date(year, month - 1, 1).toISOString();
-        const end = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
-        const epoch = new Date(0).toISOString();
+        const start = new Date(year, month - 1, 1);
+        const end = new Date(year, month, 0, 23, 59, 59, 999);
         try {
-            const [depRes, expRes, marginRes, allDepRes, allExpRes] = await Promise.all([
-                fetch(`/api/workshop/deposits?startDate=${start}&endDate=${end}`),
-                fetch(`/api/expenses?startDate=${start}&endDate=${end}`),
-                fetch(`/api/workshop/stats?startDate=${start}&endDate=${end}`),
-                fetch(`/api/workshop/deposits?startDate=${epoch}&endDate=${end}`),
-                fetch(`/api/expenses?startDate=${epoch}&endDate=${end}`),
+            const [depRes, expRes, marginRes, balRes] = await Promise.all([
+                fetch(`/api/workshop/deposits?startDate=${start.toISOString()}&endDate=${end.toISOString()}`),
+                fetch(`/api/expenses?startDate=${start.toISOString()}&endDate=${end.toISOString()}`),
+                fetch(`/api/workshop/stats?startDate=${start.toISOString()}&endDate=${end.toISOString()}`),
+                fetch('/api/workshop/cash-balance'),
             ]);
             if (depRes.ok) {
                 setDeposits(await depRes.json());
@@ -82,13 +93,56 @@ export default function WorkshopTrackerPage() {
                 showToast('Could not refresh expenses list — reload the page to check', 'error');
             }
             if (marginRes.ok) setMarginStats(await marginRes.json());
-            if (allDepRes.ok) setAllDeposits(await allDepRes.json());
-            if (allExpRes.ok) {
-                const all = await allExpRes.json();
-                setAllExpenses(all.filter((e: any) => e.deductFrom === 'WORKSHOP'));
+
+            const balData = balRes.ok ? await balRes.json() : { latest: null };
+            const latest: OpeningBalance | null = balData.latest;
+            setOpeningBalance(latest);
+
+            // Cash in Hand / Bank count from the opening balance's date forward — if that date
+            // falls after the end of the selected month (viewing an older month than the reset
+            // point), there's no valid baseline, so just fall back to the plain month total.
+            const fromDate = latest && new Date(latest.asOfDate) <= end ? new Date(latest.asOfDate) : start;
+            const [sinceDepRes, sinceExpRes] = await Promise.all([
+                fetch(`/api/workshop/deposits?startDate=${fromDate.toISOString()}&endDate=${end.toISOString()}`),
+                fetch(`/api/expenses?startDate=${fromDate.toISOString()}&endDate=${end.toISOString()}`),
+            ]);
+            if (sinceDepRes.ok) setSinceOpeningDeposits(await sinceDepRes.json());
+            if (sinceExpRes.ok) {
+                const all = await sinceExpRes.json();
+                setSinceOpeningExpenses(all.filter((e: any) => e.deductFrom === 'WORKSHOP'));
             }
         } catch {
             showToast('Could not refresh tracker data — check your connection', 'error');
+        }
+    };
+
+    const handleSetBalance = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!balanceForm.cashAmount && !balanceForm.bankAmount) return;
+        setSavingBalance(true);
+        try {
+            const res = await fetch('/api/workshop/cash-balance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cashAmount: Number(balanceForm.cashAmount) || 0,
+                    bankAmount: Number(balanceForm.bankAmount) || 0,
+                    note: balanceForm.note,
+                    asOfDate: todayDateInputValue(),
+                }),
+            });
+            if (res.ok) {
+                showToast('Starting balance set — tracking from here on', 'success');
+                setBalanceForm({ cashAmount: '', bankAmount: '', note: '' });
+                setShowSetBalance(false);
+                await fetchTrackerData();
+            } else {
+                showToast('Failed to save starting balance', 'error');
+            }
+        } catch {
+            showToast('Error saving — check your connection', 'error');
+        } finally {
+            setSavingBalance(false);
         }
     };
 
@@ -162,13 +216,14 @@ export default function WorkshopTrackerPage() {
     const cashOut = sum(expenses.filter(e => !isBank(e)));
     const bankOut = sum(expenses.filter(isBank));
 
-    // Cash in Hand / Bank are running totals: every deposit and expense ever recorded, up to
-    // the end of the selected month — the real drawer balance carries forward, it doesn't
-    // reset to zero on the 1st of each month.
-    const runningCashIn = sum(allDeposits.filter(d => !isBank(d)));
-    const runningBankIn = sum(allDeposits.filter(isBank));
-    const runningCashOut = sum(allExpenses.filter(e => !isBank(e)));
-    const runningBankOut = sum(allExpenses.filter(isBank));
+    // Cash in Hand / Bank start from the opening balance (your real counted cash/bank at the
+    // moment you set it) and only add up what's happened SINCE then — never older history.
+    const baseCash = openingBalance ? openingBalance.cashAmount : 0;
+    const baseBank = openingBalance ? openingBalance.bankAmount : 0;
+    const runningCashIn = baseCash + sum(sinceOpeningDeposits.filter(d => !isBank(d)));
+    const runningBankIn = baseBank + sum(sinceOpeningDeposits.filter(isBank));
+    const runningCashOut = sum(sinceOpeningExpenses.filter(e => !isBank(e)));
+    const runningBankOut = sum(sinceOpeningExpenses.filter(isBank));
 
     const netCash = runningCashIn - runningCashOut;    // physical cash in hand, running balance
     const netBank = runningBankIn - runningBankOut;    // money through the bank, running balance
@@ -195,6 +250,56 @@ export default function WorkshopTrackerPage() {
                     />
                 </div>
 
+                {/* ── Opening Balance — the clean-slate reset point ── */}
+                <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1.5rem', border: '1px solid rgba(245,158,11,0.3)', background: 'rgba(245,158,11,0.04)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                        <div>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#f59e0b' }}>⚙️ Starting Balance</div>
+                            {openingBalance ? (
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
+                                    Rs. {openingBalance.cashAmount.toLocaleString()} cash + Rs. {openingBalance.bankAmount.toLocaleString()} bank, set as of {new Date(openingBalance.asOfDate).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    {openingBalance.note ? ` — ${openingBalance.note}` : ''}
+                                </div>
+                            ) : (
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
+                                    Not set yet — Cash in Hand below is just counting from the start of this month.
+                                </div>
+                            )}
+                        </div>
+                        <button onClick={() => setShowSetBalance(v => !v)}
+                            style={{ fontSize: '0.78rem', fontWeight: 700, color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', padding: '0.4rem 0.9rem', cursor: 'pointer' }}>
+                            {showSetBalance ? '✕ Cancel' : (openingBalance ? '↻ Reset Starting Balance' : '✅ Set Starting Balance')}
+                        </button>
+                    </div>
+
+                    {showSetBalance && (
+                        <form onSubmit={handleSetBalance} style={{ marginTop: '0.9rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'flex-end' }}>
+                            <div className="form-group" style={{ margin: 0 }}>
+                                <label className="label" style={{ fontSize: '0.7rem' }}>Cash you physically have right now</label>
+                                <input type="number" className="input" style={{ width: '160px' }} placeholder="Rs."
+                                    value={balanceForm.cashAmount}
+                                    onChange={e => setBalanceForm({ ...balanceForm, cashAmount: e.target.value })} min="0" />
+                            </div>
+                            <div className="form-group" style={{ margin: 0 }}>
+                                <label className="label" style={{ fontSize: '0.7rem' }}>Bank balance right now</label>
+                                <input type="number" className="input" style={{ width: '160px' }} placeholder="Rs."
+                                    value={balanceForm.bankAmount}
+                                    onChange={e => setBalanceForm({ ...balanceForm, bankAmount: e.target.value })} min="0" />
+                            </div>
+                            <div className="form-group" style={{ margin: 0, flex: 1, minWidth: '160px' }}>
+                                <label className="label" style={{ fontSize: '0.7rem' }}>Note (optional)</label>
+                                <input className="input" placeholder="e.g. counted today"
+                                    value={balanceForm.note}
+                                    onChange={e => setBalanceForm({ ...balanceForm, note: e.target.value })} />
+                            </div>
+                            <button type="submit" disabled={savingBalance}
+                                style={{ padding: '0.5rem 1rem', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>
+                                {savingBalance ? 'Saving...' : 'Confirm'}
+                            </button>
+                        </form>
+                    )}
+                </div>
+
                 {/* Summary Cards — cash and bank are kept on separate cards so the
                     drawer figure is never mixed with money that moved by transfer. */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -216,14 +321,14 @@ export default function WorkshopTrackerPage() {
                         <div style={{ fontSize: '0.7rem', color: netCash >= 0 ? '#3b82f6' : '#ef4444', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>💵 Cash in Hand</div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 800, color: netCash >= 0 ? '#3b82f6' : '#ef4444' }}>Rs. {netCash.toLocaleString()}</div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
-                            In {runningCashIn.toLocaleString()} · Out {runningCashOut.toLocaleString()} (all-time, as of {monthLabel})
+                            In {runningCashIn.toLocaleString()} · Out {runningCashOut.toLocaleString()} (since starting balance)
                         </div>
                     </div>
                     <div className="card" style={{ padding: '1.25rem', textAlign: 'center', borderLeft: `4px solid ${netBank >= 0 ? '#8b5cf6' : '#ef4444'}` }}>
                         <div style={{ fontSize: '0.7rem', color: netBank >= 0 ? '#8b5cf6' : '#ef4444', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>🏦 Bank</div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 800, color: netBank >= 0 ? '#8b5cf6' : '#ef4444' }}>Rs. {netBank.toLocaleString()}</div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' }}>
-                            In {runningBankIn.toLocaleString()} · Out {runningBankOut.toLocaleString()} (all-time, as of {monthLabel})
+                            In {runningBankIn.toLocaleString()} · Out {runningBankOut.toLocaleString()} (since starting balance)
                         </div>
                     </div>
                 </div>
@@ -288,28 +393,30 @@ export default function WorkshopTrackerPage() {
 
                             <div style={{ padding: '0.75rem', background: 'rgba(59,130,246,0.06)', borderRadius: '8px' }}>
                                 <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#3b82f6', marginBottom: '0.5rem' }}>
-                                    💵 Cash in Hand = ALL cash deposits ever (not just this month) − ALL cash expenses ever, up to the end of {monthLabel}
+                                    💵 Cash in Hand = Starting Balance + cash deposits since then − cash expenses since then
                                 </div>
                                 <div style={{ fontSize: '0.78rem' }}>
-                                    All-time cash deposits ({allDeposits.filter(d => !isBank(d)).length} entries): Rs. {runningCashIn.toLocaleString()}
-                                    <br />− All-time cash expenses ({allExpenses.filter(e => !isBank(e)).length} entries): Rs. {runningCashOut.toLocaleString()}
+                                    Starting balance (cash): Rs. {baseCash.toLocaleString()}
+                                    <br />+ Cash deposits since ({sinceOpeningDeposits.filter(d => !isBank(d)).length} entries): Rs. {sum(sinceOpeningDeposits.filter(d => !isBank(d))).toLocaleString()}
+                                    <br />− Cash expenses since ({sinceOpeningExpenses.filter(e => !isBank(e)).length} entries): Rs. {runningCashOut.toLocaleString()}
                                     <br />= <strong style={{ color: netCash < 0 ? '#ef4444' : '#3b82f6' }}>Rs. {netCash.toLocaleString()}</strong>
                                 </div>
                             </div>
 
                             <div style={{ padding: '0.75rem', background: 'rgba(139,92,246,0.06)', borderRadius: '8px' }}>
                                 <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#8b5cf6', marginBottom: '0.5rem' }}>
-                                    🏦 Bank = ALL bank deposits ever − ALL bank expenses ever, up to the end of {monthLabel}
+                                    🏦 Bank = Starting Balance + bank deposits since then − bank expenses since then
                                 </div>
                                 <div style={{ fontSize: '0.78rem' }}>
-                                    All-time bank deposits ({allDeposits.filter(isBank).length} entries): Rs. {runningBankIn.toLocaleString()}
-                                    <br />− All-time bank expenses ({allExpenses.filter(isBank).length} entries): Rs. {runningBankOut.toLocaleString()}
+                                    Starting balance (bank): Rs. {baseBank.toLocaleString()}
+                                    <br />+ Bank deposits since ({sinceOpeningDeposits.filter(isBank).length} entries): Rs. {sum(sinceOpeningDeposits.filter(isBank)).toLocaleString()}
+                                    <br />− Bank expenses since ({sinceOpeningExpenses.filter(isBank).length} entries): Rs. {runningBankOut.toLocaleString()}
                                     <br />= <strong style={{ color: netBank < 0 ? '#ef4444' : '#8b5cf6' }}>Rs. {netBank.toLocaleString()}</strong>
                                 </div>
                             </div>
 
                             <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-                                Note: Cash in Hand and Bank are running totals — they include every deposit/expense ever entered, not just {monthLabel}&apos;s. Deposits and Expenses above are this month only.
+                                Note: Cash in Hand and Bank count from your Starting Balance forward only — not from before it was set. Deposits and Expenses cards above are this month only.
                             </div>
                         </div>
                     )}

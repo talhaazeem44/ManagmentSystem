@@ -455,6 +455,30 @@ const CashTopUpSchema = new Schema<ICashTopUp>({
 
 export const CashTopUp: Model<ICashTopUp> = models.CashTopUp || mongoose.model<ICashTopUp>('CashTopUp', CashTopUpSchema);
 
+// ── Workshop Cash Opening Balance ──────────────────────────────────────────────
+// A one-time "reset point" for the Workshop Cash Tracker — instead of trying to
+// reconstruct a running total from every deposit/expense ever entered (unreliable
+// once old habits/duplicate entries are mixed in), the owner counts their real
+// cash/bank right now and the app tracks accurately from that exact moment on.
+// Only the most recent record is ever used; setting a new one supersedes the old.
+export interface IWorkshopCashBalance {
+    _id?: string;
+    cashAmount: number;
+    bankAmount: number;
+    asOfDate: Date;
+    note?: string;
+    createdAt?: Date;
+}
+
+const WorkshopCashBalanceSchema = new Schema<IWorkshopCashBalance>({
+    cashAmount: { type: Number, required: true, default: 0 },
+    bankAmount: { type: Number, required: true, default: 0 },
+    asOfDate: { type: Date, default: Date.now },
+    note: { type: String },
+}, { timestamps: true });
+
+export const WorkshopCashBalance: Model<IWorkshopCashBalance> = models.WorkshopCashBalance || mongoose.model<IWorkshopCashBalance>('WorkshopCashBalance', WorkshopCashBalanceSchema);
+
 // ── Monthly Plan ───────────────────────────────────────────────────────────────
 export interface IMonthlyPlan {
     _id?: string;
