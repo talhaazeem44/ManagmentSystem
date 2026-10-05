@@ -27,7 +27,7 @@ export const BIKE_BOOK_PRICES: Record<string, number> = {
     'CG150 2-Tone': 438000,
     'CG 150': 428000,
     'CB125F.SE': 376000,
-    'DREAM': 160000,
+    'DREAM': 162000,
     'ICON EV': 400000,
 };
 

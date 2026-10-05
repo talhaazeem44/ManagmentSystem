@@ -28,9 +28,13 @@ interface PurchaseRecord {
 const CATEGORIES = ['Oil', 'Filter', 'Parts', 'Accessories', 'Consumable', 'Other'];
 
 const emptyForm = {
-    name: '', category: 'Other', quantity: '', costPrice: '', sellingPrice: '',
+    name: '', category: 'Other', quantity: '', totalCost: '', costPrice: '', sellingPrice: '',
     paymentMode: 'CASH' as PaymentMode, supplier: '', date: todayDateInputValue(),
 };
+
+/** Rounds to 2dp only when the division isn't exact, so a clean per-unit price like 1250
+ *  doesn't turn into "1250.00" just because it went through this field. */
+const roundCost = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
 
 export default function WorkshopPurchasePage() {
     const { toasts, showToast, removeToast } = useToast();
@@ -60,6 +64,27 @@ export default function WorkshopPurchasePage() {
             ...prev,
             name,
             ...(match ? { category: match.category, costPrice: String(match.retailPrice), sellingPrice: String(match.customerPrice) } : {}),
+        }));
+    };
+
+    // Total Cost is a convenience: if you know what the whole box/batch cost but not the
+    // per-unit price, type it here and quantity splits it for you. Cost Price stays a normal
+    // editable field either way — typing in it directly still works, this is purely optional.
+    const handleTotalCostChange = (totalCost: string) => {
+        const qty = Number(form.quantity);
+        setForm(prev => ({
+            ...prev,
+            totalCost,
+            costPrice: qty > 0 && totalCost ? roundCost(Number(totalCost) / qty) : prev.costPrice,
+        }));
+    };
+
+    const handleQuantityChange = (quantity: string) => {
+        const qty = Number(quantity);
+        setForm(prev => ({
+            ...prev,
+            quantity,
+            costPrice: qty > 0 && prev.totalCost ? roundCost(Number(prev.totalCost) / qty) : prev.costPrice,
         }));
     };
 
@@ -96,7 +121,7 @@ export default function WorkshopPurchasePage() {
         }
     };
 
-    const totalCost = Number(form.costPrice || 0) * Number(form.quantity || 0);
+    const computedTotalCost = Number(form.costPrice || 0) * Number(form.quantity || 0);
 
     return (
         <DashboardLayout>
@@ -130,11 +155,16 @@ export default function WorkshopPurchasePage() {
                         </div>
 
                         <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Quantity &amp; Pricing</div>
-                        <div className="grid-3" style={{ marginBottom: '1.1rem' }}>
+                        <div className="grid-4" style={{ marginBottom: '0.4rem' }}>
                             <div>
                                 <label className="label">Quantity Purchased</label>
                                 <input className="input" type="text" inputMode="decimal" required value={form.quantity}
-                                    onChange={e => setForm({ ...form, quantity: e.target.value })} />
+                                    onChange={e => handleQuantityChange(e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="label">Total Cost (optional, Rs.)</label>
+                                <input className="input" type="text" inputMode="decimal" value={form.totalCost}
+                                    onChange={e => handleTotalCostChange(e.target.value)} placeholder="e.g. 13000 for the whole box" />
                             </div>
                             <div>
                                 <label className="label">Cost Price (per unit, Rs.)</label>
@@ -146,6 +176,9 @@ export default function WorkshopPurchasePage() {
                                 <input className="input" type="text" inputMode="decimal" required value={form.sellingPrice}
                                     onChange={e => setForm({ ...form, sellingPrice: e.target.value })} />
                             </div>
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '1.1rem' }}>
+                            Know the total you paid but not the per-unit cost? Fill in Total Cost and Quantity — Cost Price fills in automatically (still editable by hand).
                         </div>
 
                         <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Payment</div>
@@ -175,9 +208,9 @@ export default function WorkshopPurchasePage() {
                                 Already in stock: <strong>{matchedItem.quantity}</strong> units on hand — this purchase will add to that, not create a new item.
                             </div>
                         )}
-                        {totalCost > 0 && (
+                        {computedTotalCost > 0 && (
                             <div style={{ marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(239,68,68,0.08)', borderRadius: '6px', fontSize: '0.85rem' }}>
-                                Total cost: <strong style={{ color: '#ef4444' }}>Rs. {totalCost.toLocaleString()}</strong> — will be deducted from Workshop {form.paymentMode === 'BANK_TRANSFER' ? 'Bank' : 'Cash'} automatically.
+                                Total cost: <strong style={{ color: '#ef4444' }}>Rs. {Math.round(computedTotalCost).toLocaleString()}</strong> — will be deducted from Workshop {form.paymentMode === 'BANK_TRANSFER' ? 'Bank' : 'Cash'} automatically.
                             </div>
                         )}
 
