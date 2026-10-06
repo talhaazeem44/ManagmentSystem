@@ -103,6 +103,12 @@ export default function AdvanceBookingsPage() {
     const [remainingCash, setRemainingCash] = useState('');
     const [remainingBank, setRemainingBank] = useState('');
     const [deliveryAddress, setDeliveryAddress] = useState('');
+    // A booking taken without registration fee agreed up front — the customer can still decide
+    // to pay it at delivery. Collected the same way as the remaining balance (added to the
+    // cash/bank being taken right now) and saved as the booking's registrationFee so margin
+    // picks it up via the same calcAdvanceMargin path as if it had been set at booking time.
+    const [regFeeAmount, setRegFeeAmount] = useState('');
+    const [regFeeMode, setRegFeeMode] = useState<'CASH' | 'BANK_TRANSFER'>('CASH');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editForm, setEditForm] = useState<EditForm>({ customerName: '', cnic: '', bikeModel: '', bikeColor: '', engineNumber: '', chassisNumber: '', totalPrice: '', expectedDeliveryDate: '', deliveredAt: '' });
     const [savingEdit, setSavingEdit] = useState(false);
@@ -166,6 +172,8 @@ export default function AdvanceBookingsPage() {
         setRemainingCash('');
         setRemainingBank('');
         setDeliveryAddress(booking.address || '');
+        setRegFeeAmount('');
+        setRegFeeMode('CASH');
         setLoadingBikes(true);
         try {
             const res = await fetch('/api/bikes');
@@ -198,8 +206,12 @@ export default function AdvanceBookingsPage() {
         }
         setLinkingBikeId(selectedBike.id);
         try {
-            const cashAmount = parseFloat(remainingCash) || 0;
-            const bankAmount = parseFloat(remainingBank) || 0;
+            let cashAmount = parseFloat(remainingCash) || 0;
+            let bankAmount = parseFloat(remainingBank) || 0;
+            const regFee = booking.registrationFee ? 0 : (parseFloat(regFeeAmount) || 0);
+            if (regFee > 0) {
+                if (regFeeMode === 'BANK_TRANSFER') bankAmount += regFee; else cashAmount += regFee;
+            }
             const res = await fetch(`/api/advance-bookings/${booking._id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -213,6 +225,7 @@ export default function AdvanceBookingsPage() {
                     bikeModel: selectedBike.model,
                     bikeColor: selectedBike.color,
                     ...(!booking.address && deliveryAddress.trim() ? { address: deliveryAddress.trim() } : {}),
+                    ...(regFee > 0 ? { registrationFee: regFee } : {}),
                     ...(cashAmount + bankAmount > 0 ? { deliveryPayment: { cashAmount, bankAmount } } : {}),
                 }),
             });
@@ -757,6 +770,32 @@ export default function AdvanceBookingsPage() {
                                                             onChange={e => setRemainingBank(e.target.value)}
                                                             placeholder="Bank transfer received"
                                                         />
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {!b.registrationFee && (
+                                                <div style={{ marginBottom: '0.6rem' }}>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.3rem' }}>
+                                                        No registration fee on file — is the customer paying it now?
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                        <input
+                                                            className="input"
+                                                            type="number"
+                                                            style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem', maxWidth: '160px' }}
+                                                            value={regFeeAmount}
+                                                            onChange={e => setRegFeeAmount(e.target.value)}
+                                                            placeholder="Registration fee"
+                                                        />
+                                                        <select
+                                                            className="select"
+                                                            style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem', maxWidth: '160px' }}
+                                                            value={regFeeMode}
+                                                            onChange={e => setRegFeeMode(e.target.value as 'CASH' | 'BANK_TRANSFER')}
+                                                        >
+                                                            <option value="CASH">Cash</option>
+                                                            <option value="BANK_TRANSFER">Bank Transfer</option>
+                                                        </select>
                                                     </div>
                                                 </div>
                                             )}
