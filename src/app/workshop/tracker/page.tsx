@@ -286,7 +286,15 @@ export default function WorkshopTrackerPage() {
                                 </div>
                             )}
                         </div>
-                        <button onClick={() => setShowSetBalance(v => !v)}
+                        <button onClick={() => {
+                            // Pre-fill with the current numbers — correcting just one field (e.g. only
+                            // bank was wrong) must not silently zero out the other one, which is exactly
+                            // what happened leaving this blank before: each save replaces both at once.
+                            if (!showSetBalance && openingBalance) {
+                                setBalanceForm({ cashAmount: String(openingBalance.cashAmount), bankAmount: String(openingBalance.bankAmount), note: '' });
+                            }
+                            setShowSetBalance(v => !v);
+                        }}
                             style={{ fontSize: '0.78rem', fontWeight: 700, color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', padding: '0.4rem 0.9rem', cursor: 'pointer' }}>
                             {showSetBalance ? '✕ Cancel' : (openingBalance ? '↻ Reset Starting Balance' : '✅ Set Starting Balance')}
                         </button>
@@ -316,6 +324,9 @@ export default function WorkshopTrackerPage() {
                                 style={{ padding: '0.5rem 1rem', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>
                                 {savingBalance ? 'Saving...' : 'Confirm'}
                             </button>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', width: '100%' }}>
+                                Both fields save together — correcting only one still submits both, so don&apos;t clear the one you&apos;re not changing.
+                            </div>
                         </form>
                     )}
                 </div>
