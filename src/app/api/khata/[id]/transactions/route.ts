@@ -114,5 +114,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         await Bike.findByIdAndUpdate(body.bikeId, { $set: { status: 'EXCHANGED' } });
     }
 
-    return NextResponse.json({ success: true });
+    const newTx = party.transactions && party.transactions[party.transactions.length - 1];
+    return NextResponse.json({
+        success: true,
+        transactionId: newTx?._id?.toString(),
+        transaction: newTx,
+    });
 }

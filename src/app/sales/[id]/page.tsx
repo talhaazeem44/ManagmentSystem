@@ -8,6 +8,7 @@ import styles from './receipt.module.css';
 import { BIKE_STANDARD_PRICES, RECEIPT_COLOURS, guessReceiptColour } from '@/lib/constants';
 import Loader from '@/components/Loader';
 import { todayDateInputValue } from '@/lib/dates';
+import { sharePdfFile } from '@/lib/pdfShare';
 
 const COLOUR_OPTIONS = RECEIPT_COLOURS.map(c => c.label);
 
@@ -87,6 +88,7 @@ export default function ReceiptPage() {
     const [payError, setPayError] = useState('');
     const [deletingPayment, setDeletingPayment] = useState<number | null>(null);
     const [exporting, setExporting] = useState(false);
+    const [sharing, setSharing] = useState(false);
     const receiptRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -208,6 +210,42 @@ export default function ReceiptPage() {
         }
     };
 
+    const handleSharePDF = async () => {
+        if (!receiptRef.current || !sale) return;
+        setSharing(true);
+        try {
+            const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+                import('html2canvas'),
+                import('jspdf'),
+            ]);
+            const canvas = await html2canvas(receiptRef.current, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                windowWidth: 900,
+            });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const imgWidth = pageWidth;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            const finalHeight = Math.min(imgHeight, pageHeight);
+            const finalWidth = imgHeight > pageHeight ? (canvas.width * finalHeight) / canvas.height : imgWidth;
+            const x = (pageWidth - finalWidth) / 2;
+            pdf.addImage(imgData, 'PNG', x, 0, finalWidth, finalHeight);
+            const fileName = `Sale-Receipt-${(sale.customer.name || 'Customer').replace(/\s+/g, '_')}.pdf`;
+            const blob = pdf.output('blob');
+            const file = new File([blob], fileName, { type: 'application/pdf' });
+            const title = `Sale Receipt - ${sale.customer.name || 'Customer'}`;
+            const text = `Sale Receipt for ${sale.bike.model} (${sale.bike.engineNumber})`;
+            await sharePdfFile(file, title, text);
+        } catch (err) {
+            console.error('Share error:', err);
+        } finally {
+            setSharing(false);
+        }
+    };
+
     return (
         <DashboardLayout>
             <div className="animate-fade-in">
@@ -215,8 +253,11 @@ export default function ReceiptPage() {
                 {/* ── Top bar ── */}
                 <div className="no-print" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                     <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Sale Receipt</h1>
-                    <div style={{ display: 'flex', gap: '0.6rem' }}>
-                        <button onClick={handleExportPDF} disabled={exporting} className="btn btn-secondary">
+                    <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                        <button onClick={handleSharePDF} disabled={sharing || exporting} className="btn" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff', border: 'none', fontWeight: 700 }}>
+                            {sharing ? '⏳ Generating...' : '📲 Share PDF'}
+                        </button>
+                        <button onClick={handleExportPDF} disabled={exporting || sharing} className="btn btn-secondary">
                             {exporting ? '⏳ Generating...' : '📄 Export PDF'}
                         </button>
                         <button onClick={() => window.print()} className="btn btn-primary">🖨️ Print Receipt</button>

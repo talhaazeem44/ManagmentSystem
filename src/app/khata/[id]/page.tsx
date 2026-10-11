@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/useToast';
 import Loader from '@/components/Loader';
 import { HONDA_BIKE_MODELS, getKhataMargin } from '@/lib/constants';
 import { dateInputValue } from '@/lib/dates';
+import KhataShareModal from '@/components/KhataShareModal';
 
 interface KhataItem {
     model: string;
@@ -287,6 +288,22 @@ export default function KhataDetailPage() {
     const [editPaymentForm, setEditPaymentForm] = useState({ amount: '', paymentMode: 'CASH' as 'CASH' | 'BANK_TRANSFER' | 'CREDIT', note: '', date: '' });
     const [editSubmitting, setEditSubmitting] = useState(false);
     const [availableBikes, setAvailableBikes] = useState<AvailableBike[]>([]);
+    const [shareModalTx, setShareModalTx] = useState<KhataTransaction | null>(null);
+    const [recentSaleReceipt, setRecentSaleReceipt] = useState<KhataTransaction | null>(null);
+
+    const computeTxRunningBalance = (txId: string): number => {
+        if (!party) return 0;
+        const sorted = [...(party.transactions || [])].sort(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+        let bal = 0;
+        for (const t of sorted) {
+            if (t.type === 'STOCK_GIVEN') bal += t.amount;
+            else if (t.type === 'PAYMENT') bal -= t.amount;
+            if (t._id === txId) break;
+        }
+        return bal;
+    };
 
     const fetchAvailableBikes = async () => {
         try {
@@ -306,10 +323,15 @@ export default function KhataDetailPage() {
         setLoading(true);
         try {
             const res = await fetch(`/api/khata/${id}`);
-            if (res.ok) setParty(await res.json());
+            if (res.ok) {
+                const data = await res.json();
+                setParty(data);
+                return data;
+            }
         } finally {
             setLoading(false);
         }
+        return null;
     };
 
     useEffect(() => { fetchParty(); fetchAvailableBikes(); }, [id]);
@@ -364,14 +386,21 @@ export default function KhataDetailPage() {
                 body: JSON.stringify({ type: 'STOCK_GIVEN', items, otherAmount: Number(otherAmount) || 0, date: stockDate || undefined, note: stockNote }),
             });
             if (res.ok) {
-                showToast('Stock entry added', 'success');
+                const data = await res.json();
+                showToast('Stock entry added — Sale Receipt ready!', 'success');
                 setBikeRows([newBikeRow()]);
                 setStockDate('');
                 setStockNote('');
                 setOtherAmount('');
                 setActiveForm(null);
-                fetchParty();
+                const updatedParty = await fetchParty();
                 fetchAvailableBikes();
+
+                const newTx = (updatedParty?.transactions || []).find((t: any) => t._id === data.transactionId) || data.transaction;
+                if (newTx) {
+                    setRecentSaleReceipt(newTx);
+                    setShareModalTx(newTx);
+                }
             } else {
                 const err = await res.json();
                 showToast(err.message || 'Failed', 'error');
@@ -674,6 +703,87 @@ export default function KhataDetailPage() {
                         </button>
                     </div>
                 </div>
+
+                {/* ── Recent Sale Receipt Ready Banner ── */}
+                {recentSaleReceipt && (
+                    <div
+                        className="card"
+                        style={{
+                            marginBottom: '1.5rem',
+                            background: 'linear-gradient(135deg, rgba(16,185,129,0.09) 0%, rgba(59,130,246,0.06) 100%)',
+                            border: '1.5px solid #10b981',
+                            padding: '1.1rem 1.4rem',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: '0.85rem',
+                            borderRadius: '12px',
+                        }}
+                    >
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                                <span style={{ fontSize: '1.25rem' }}>🎉</span>
+                                <strong style={{ fontSize: '1.05rem', color: '#10b981' }}>Sale Receipt Ready!</strong>
+                                <span
+                                    style={{
+                                        fontSize: '0.75rem',
+                                        background: 'rgba(16,185,129,0.18)',
+                                        color: '#059669',
+                                        padding: '2px 8px',
+                                        borderRadius: '12px',
+                                        fontWeight: 700,
+                                    }}
+                                >
+                                    #{recentSaleReceipt._id ? recentSaleReceipt._id.slice(-8).toUpperCase() : 'RECEIPT'}
+                                </span>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                                Stock given entry recorded for <strong>{party.name}</strong> · Amount:{' '}
+                                <strong>Rs. {recentSaleReceipt.amount.toLocaleString()}</strong>
+                            </p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                            <button
+                                className="btn"
+                                style={{
+                                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.4rem',
+                                    fontWeight: 700,
+                                    padding: '0.45rem 0.95rem',
+                                }}
+                                onClick={() => setShareModalTx(recentSaleReceipt)}
+                            >
+                                📲 Share PDF Receipt
+                            </button>
+                            <button
+                                className="btn btn-secondary"
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 0.8rem' }}
+                                onClick={() => window.open(`/khata/${id}/receipt/${recentSaleReceipt._id}`, '_blank')}
+                            >
+                                🧾 View
+                            </button>
+                            <button
+                                onClick={() => setRecentSaleReceipt(null)}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: 'var(--color-text-muted)',
+                                    fontSize: '1.1rem',
+                                    cursor: 'pointer',
+                                    padding: '0.2rem 0.4rem',
+                                }}
+                                title="Dismiss"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Summary cards */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
@@ -1050,8 +1160,40 @@ export default function KhataDetailPage() {
                                                     ) : (
                                                         <div style={{ display: 'flex', gap: '0.25rem' }}>
                                                             {tx.type === 'STOCK_GIVEN' && (
-                                                                <button className="btn" title="Print / download receipt" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}
-                                                                    onClick={() => window.open(`/khata/${id}/receipt/${tx._id}`, '_blank')}>🧾</button>
+                                                                <>
+                                                                    <button
+                                                                        className="btn"
+                                                                        title="Share PDF Receipt"
+                                                                        style={{
+                                                                            padding: '0.2rem 0.45rem',
+                                                                            fontSize: '0.7rem',
+                                                                            background: 'rgba(16,185,129,0.14)',
+                                                                            color: '#10b981',
+                                                                            border: '1px solid rgba(16,185,129,0.35)',
+                                                                            fontWeight: 700,
+                                                                            display: 'inline-flex',
+                                                                            alignItems: 'center',
+                                                                            gap: '2px',
+                                                                        }}
+                                                                        onClick={() => setShareModalTx(tx)}
+                                                                    >
+                                                                        📲 Share
+                                                                    </button>
+                                                                    <button
+                                                                        className="btn"
+                                                                        title="Print / view receipt"
+                                                                        style={{
+                                                                            padding: '0.2rem 0.4rem',
+                                                                            fontSize: '0.7rem',
+                                                                            background: 'rgba(16,185,129,0.08)',
+                                                                            color: '#10b981',
+                                                                            border: '1px solid rgba(16,185,129,0.25)',
+                                                                        }}
+                                                                        onClick={() => window.open(`/khata/${id}/receipt/${tx._id}`, '_blank')}
+                                                                    >
+                                                                        🧾
+                                                                    </button>
+                                                                </>
                                                             )}
                                                             <button className="btn" title="Export this transaction" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)' }}
                                                                 onClick={() => exportTransaction(tx)}>📤</button>
@@ -1085,6 +1227,15 @@ export default function KhataDetailPage() {
                     )}
                 </div>
             </div>
+            {shareModalTx && party && (
+                <KhataShareModal
+                    party={party}
+                    tx={shareModalTx}
+                    balance={computeTxRunningBalance(shareModalTx._id)}
+                    onClose={() => setShareModalTx(null)}
+                    onToast={showToast}
+                />
+            )}
             <Toast toasts={toasts} removeToast={removeToast} />
         </DashboardLayout>
     );

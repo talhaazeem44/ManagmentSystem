@@ -1,57 +1,47 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
-import Image from 'next/image';
 import DashboardLayout from '@/components/DashboardLayout';
 import Loader from '@/components/Loader';
-import styles from './receipt.module.css';
-
-interface KhataItem {
-    model: string;
-    quantity: number;
-    pricePerUnit: number;
-    engineNumber?: string;
-    chassisNumber?: string;
-}
-
-interface KhataTransaction {
-    _id: string;
-    date: string;
-    type: 'STOCK_GIVEN' | 'PAYMENT';
-    description: string;
-    amount: number;
-    items?: KhataItem[];
-    note?: string;
-}
-
-interface KhataParty {
-    _id: string;
-    name: string;
-    mobile?: string;
-    address?: string;
-    transactions: KhataTransaction[];
-}
+import Toast from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
+import KhataReceiptView, {
+    KhataReceiptParty,
+    KhataReceiptTx,
+} from '@/components/KhataReceiptView';
+import {
+    generateReceiptPdf,
+    sharePdfFile,
+    downloadBlobFile,
+    formatKhataReceiptWhatsAppMessage,
+    openWhatsAppChat,
+} from '@/lib/pdfShare';
 
 export default function KhataStockReceiptPage() {
     const params = useParams();
-    const [party, setParty] = useState<KhataParty | null>(null);
+    const { toasts, showToast, removeToast } = useToast();
+    const [party, setParty] = useState<(KhataReceiptParty & { transactions: KhataReceiptTx[] }) | null>(null);
     const [loading, setLoading] = useState(true);
+    const [exporting, setExporting] = useState(false);
+    const [sharing, setSharing] = useState(false);
+    const receiptRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const id = params.id as string;
         if (!id) return;
         fetch(`/api/khata/${id}`)
-            .then(r => r.ok ? r.json() : null)
+            .then(r => (r.ok ? r.json() : null))
             .then(setParty)
             .finally(() => setLoading(false));
     }, [params.id]);
 
-    if (loading) return (
-        <DashboardLayout>
-            <Loader size={160} fullPage />
-        </DashboardLayout>
-    );
+    if (loading)
+        return (
+            <DashboardLayout>
+                <Loader size={160} fullPage />
+            </DashboardLayout>
+        );
 
     const tx = party?.transactions.find(t => t._id === params.txId);
 
@@ -66,119 +56,165 @@ export default function KhataStockReceiptPage() {
     }
 
     // Running balance across all transactions up to and including this one, chronologically
-    const sorted = [...party.transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sorted = [...party.transactions].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
     let balance = 0;
     for (const t of sorted) {
         balance += t.type === 'STOCK_GIVEN' ? t.amount : -t.amount;
         if (t._id === tx._id) break;
     }
 
-    const items = tx.items || [];
-    const itemsTotal = items.reduce((s, i) => s + i.quantity * i.pricePerUnit, 0);
-    const otherAmount = tx.amount - itemsTotal;
+    const receiptNo = tx._id ? tx._id.slice(-8).toUpperCase() : 'RECEIPT';
+    const fileName = `Sale-Receipt-${(party.name || 'Party').replace(/\s+/g, '_')}-${receiptNo}.pdf`;
+    const receiptUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+    const handleSharePDF = async () => {
+        if (!receiptRef.current) return;
+        setSharing(true);
+        try {
+            const { file } = await generateReceiptPdf(receiptRef.current, fileName);
+            const title = `Sale Receipt #${receiptNo} - ${party.name}`;
+            const text = `Sale Receipt for ${party.name} · Total: Rs. ${tx.amount.toLocaleString()} · Balance: Rs. ${balance.toLocaleString()}`;
+
+            const res = await sharePdfFile(file, title, text);
+            if (res.mode === 'native') {
+                showToast('Receipt shared successfully!', 'success');
+            } else if (res.mode === 'download') {
+                showToast('PDF downloaded! You can now send it to the dealer.', 'success');
+            }
+        } catch (err) {
+            console.error('Share error:', err);
+            showToast('Failed to generate PDF for sharing.', 'error');
+        } finally {
+            setSharing(false);
+        }
+    };
+
+    const handleExportPDF = async () => {
+        if (!receiptRef.current) return;
+        setExporting(true);
+        try {
+            const { file } = await generateReceiptPdf(receiptRef.current, fileName);
+            downloadBlobFile(file, fileName);
+            showToast(`Downloaded ${fileName}`, 'success');
+        } catch (err) {
+            console.error('Export error:', err);
+            showToast('Failed to export PDF.', 'error');
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    const handleWhatsApp = () => {
+        const msg = formatKhataReceiptWhatsAppMessage(party, tx, balance, receiptUrl);
+        if (receiptRef.current) {
+            generateReceiptPdf(receiptRef.current, fileName)
+                .then(({ file }) => downloadBlobFile(file, fileName))
+                .catch(() => {});
+        }
+        openWhatsAppChat(party.mobile, msg);
+        showToast('Opening WhatsApp... PDF also downloaded to attach!', 'info');
+    };
 
     return (
         <DashboardLayout>
-            <div className={styles.noPrint} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-                <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Stock Receipt</h1>
-                <button onClick={() => window.print()} className="btn btn-primary">🖨️ Print / Save as PDF</button>
-            </div>
-
-            <div className={styles.printArea}>
-                <div className={styles.receipt}>
-                    <div className={styles.topBar}>
-                        <Image src="/honda-logo.png" alt="Honda" width={130} height={90} className={styles.hondaLogo} priority />
-                        <div className={styles.titleBox}>
-                            <h1>SALE RECEIPT</h1>
-                            <span>Stock Given to Dealer</span>
-                        </div>
-                        <div className={styles.badgeArea}>
-                            <div className={styles.badgeCircle}>3S</div>
-                            <div className={styles.badgeText}>SALES<br />SERVICE<br />SPARE PARTS</div>
-                        </div>
+            <div className="animate-fade-in">
+                {/* ── Top Bar ── */}
+                <div
+                    className="no-print"
+                    style={{
+                        marginBottom: '1.5rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '0.75rem',
+                    }}
+                >
+                    <div>
+                        <a
+                            href={`/khata/${party._id}`}
+                            style={{
+                                color: 'var(--color-text-muted)',
+                                fontSize: '0.85rem',
+                                textDecoration: 'none',
+                                display: 'inline-block',
+                                marginBottom: '0.25rem',
+                            }}
+                        >
+                            ← Back to {party.name} Khata
+                        </a>
+                        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, margin: 0 }}>
+                            Sale Receipt
+                        </h1>
                     </div>
 
-                    <div className={styles.metaRow}>
-                        <div>Receipt Date: <strong>{new Date(tx.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'long', year: 'numeric' })}</strong></div>
-                        <div>Receipt No: <strong>{tx._id.slice(-8).toUpperCase()}</strong></div>
-                    </div>
+                    <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                        <button
+                            onClick={handleSharePDF}
+                            disabled={sharing || exporting}
+                            className="btn"
+                            style={{
+                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                color: '#ffffff',
+                                border: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                fontWeight: 700,
+                            }}
+                        >
+                            {sharing ? '⏳ Generating...' : '📲 Share PDF'}
+                        </button>
 
-                    <div className={styles.section}>
-                        <div className={styles.field}>
-                            <span className={styles.label}>Dealer / Party:</span>
-                            <span className={styles.value}>{party.name}</span>
-                        </div>
-                        {party.mobile && (
-                            <div className={styles.field}>
-                                <span className={styles.label}>Mobile #:</span>
-                                <span className={styles.value}>{party.mobile}</span>
-                            </div>
-                        )}
-                        {party.address && (
-                            <div className={styles.field}>
-                                <span className={styles.label}>Address:</span>
-                                <span className={styles.value}>{party.address}</span>
-                            </div>
-                        )}
-                    </div>
+                        <button
+                            onClick={handleExportPDF}
+                            disabled={exporting || sharing}
+                            className="btn btn-secondary"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                        >
+                            {exporting ? '⏳ Generating...' : '📄 Export PDF'}
+                        </button>
 
-                    <table className={styles.table}>
-                        <thead>
-                            <tr>
-                                <th>Model</th>
-                                <th>Engine # / Chassis #</th>
-                                <th className={styles.num}>Qty</th>
-                                <th className={styles.num}>Price / Unit</th>
-                                <th className={styles.num}>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {items.map((item, i) => (
-                                <tr key={i}>
-                                    <td>{item.model}</td>
-                                    <td>{item.engineNumber ? `${item.engineNumber} / ${item.chassisNumber}` : '—'}</td>
-                                    <td className={styles.num}>{item.quantity}</td>
-                                    <td className={styles.num}>Rs. {item.pricePerUnit.toLocaleString()}</td>
-                                    <td className={styles.num}>Rs. {(item.quantity * item.pricePerUnit).toLocaleString()}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                        <button
+                            onClick={handleWhatsApp}
+                            className="btn"
+                            style={{
+                                background: '#25D366',
+                                color: '#ffffff',
+                                border: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                fontWeight: 600,
+                            }}
+                        >
+                            💬 WhatsApp
+                        </button>
 
-                    {tx.note && <div className={styles.note}>Note: {tx.note}</div>}
-
-                    <div className={styles.totalsBox}>
-                        <div className={styles.totalsRow}>
-                            <span>Bikes Total</span>
-                            <strong>Rs. {itemsTotal.toLocaleString()}</strong>
-                        </div>
-                        {otherAmount > 0 && (
-                            <div className={styles.totalsRow}>
-                                <span>Other Charges</span>
-                                <strong>Rs. {otherAmount.toLocaleString()}</strong>
-                            </div>
-                        )}
-                        <div className={`${styles.totalsRow} ${styles.grand}`}>
-                            <span>Total Amount</span>
-                            <span>Rs. {tx.amount.toLocaleString()}</span>
-                        </div>
-                        <div className={styles.totalsRow}>
-                            <span>Balance After This Entry</span>
-                            <strong style={{ color: balance > 0 ? '#c00' : '#0a0' }}>Rs. {balance.toLocaleString()}</strong>
-                        </div>
-                    </div>
-
-                    <div className={styles.footer}>
-                        <div className={styles.dealerInfo}>
-                            <p>📞 Ph: 052-6525001-2 Cell: 0331-8800216, 0334-8179775</p>
-                        </div>
-                        <div className={styles.signature}>
-                            <div className={styles.signatureLine} />
-                            <p>Received By (Dealer Signature)</p>
-                        </div>
+                        <button
+                            onClick={() => window.print()}
+                            className="btn btn-primary"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                        >
+                            🖨️ Print Receipt
+                        </button>
                     </div>
                 </div>
+
+                {/* ── Receipt View ── */}
+                <div style={{ margin: '0 auto', maxWidth: '780px' }}>
+                    <KhataReceiptView
+                        ref={receiptRef}
+                        party={party}
+                        tx={tx as unknown as KhataReceiptTx}
+                        balance={balance}
+                    />
+                </div>
             </div>
+
+            <Toast toasts={toasts} removeToast={removeToast} />
         </DashboardLayout>
     );
 }
