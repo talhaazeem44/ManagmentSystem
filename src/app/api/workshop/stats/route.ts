@@ -14,12 +14,12 @@ export async function GET(request: NextRequest) {
 
         const filter: any = {};
         if (startDateStr && endDateStr) {
-            filter.date = { $gte: new Date(startDateStr), $lt: new Date(endDateStr) };
+            filter.date = { $gte: new Date(startDateStr), $lte: new Date(endDateStr) };
         }
 
         const [sales, workshopExpenses] = await Promise.all([
             ServiceSale.find(filter).sort({ date: -1 }).lean(),
-            Expense.find({ deductFrom: 'WORKSHOP', ...(startDateStr && endDateStr ? { date: { $gte: new Date(startDateStr), $lt: new Date(endDateStr) } } : {}) }).lean(),
+            Expense.find({ deductFrom: 'WORKSHOP', ...(startDateStr && endDateStr ? { date: { $gte: new Date(startDateStr), $lte: new Date(endDateStr) } } : {}) }).lean(),
         ]);
 
         const totalRevenue = sales.reduce((s, r: any) => s + Number(r.totalAmount || 0), 0);
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
             for (const cs of creditSales as any[]) {
                 for (const p of cs.payments || []) {
                     const pd = new Date(p.date);
-                    if (pd < start || pd >= end) continue;
+                    if (pd < start || pd > end) continue;
                     if (p.paymentMode === 'BANK_TRANSFER') creditPaymentsBank += Number(p.amount || 0);
                     else creditPaymentsCash += Number(p.amount || 0);
                 }
@@ -177,6 +177,28 @@ export async function GET(request: NextRequest) {
                 paymentMode: r.paymentMode,
                 date: r.date,
             })),
+            jobs: sales.map((r: any) => {
+                const partsRevenue = (r.items || []).reduce((si: number, it: any) => si + Number(it.customerPrice || 0) * Number(it.quantity || 0), 0);
+                const labourCharge = Number(r.serviceCharges || 0);
+                const totalMargin = Number(r.margin || 0);
+                const partsMargin = Math.max(0, totalMargin - labourCharge);
+                return {
+                    _id: r._id.toString(),
+                    customerName: r.customerName || '—',
+                    customerMobile: r.customerMobile || '',
+                    bikeNumber: r.bikeNumber || '—',
+                    mechanicName: r.mechanicName || '—',
+                    serviceType: r.serviceType || 'General',
+                    serviceCharges: labourCharge,
+                    partsRevenue,
+                    partsMargin,
+                    totalAmount: Number(r.totalAmount || 0),
+                    margin: totalMargin,
+                    paymentMode: r.paymentMode || 'CASH',
+                    date: r.date,
+                    itemsCount: (r.items || []).length,
+                };
+            }),
         });
     } catch (error: any) {
         return NextResponse.json({ message: error.message }, { status: 500 });

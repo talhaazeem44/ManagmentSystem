@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
         const filter: any = {};
         if (startDate && endDate) {
-            filter.date = { $gte: new Date(startDate), $lt: new Date(endDate) };
+            filter.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
         }
 
         // Workshop-role accounts can reach this endpoint (their own Tracker page depends on
