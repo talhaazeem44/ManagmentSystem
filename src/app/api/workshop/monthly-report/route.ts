@@ -22,7 +22,9 @@ export async function GET() {
                 },
             ]),
             Expense.aggregate([
-                { $match: { deductFrom: 'WORKSHOP' } },
+                // Cash moved to the bank isn't a business expense — it's already counted as
+                // bank income via its paired deposit, so it's excluded here too.
+                { $match: { deductFrom: 'WORKSHOP', category: { $ne: 'Bank Transfer' } } },
                 {
                     $group: {
                         _id: { $dateToString: { format: '%Y-%m', date: '$date' } },

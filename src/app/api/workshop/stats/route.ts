@@ -74,9 +74,15 @@ export async function GET(request: NextRequest) {
         }
         const totalCashReceived = directCashReceived + creditPaymentsCash;
         const totalBankReceived = directBankReceived + creditPaymentsBank;
-        // WORKSHOP expenses deducted from cash — what you should physically have in hand
-        const workshopExpenseTotal = workshopExpenses.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
-        const netCashReceived = Math.max(0, totalCashReceived - workshopExpenseTotal);
+        // WORKSHOP expenses deducted from cash — what you should physically have in hand.
+        // Cash moved to the bank (category 'Bank Transfer') isn't money the business spent —
+        // it already shows up as bank income via its paired deposit, so counting it here too
+        // would double-subtract it from the margin/take-home figure below.
+        const workshopExpenseTotalAll = workshopExpenses.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+        const workshopExpenseTotal = workshopExpenses
+            .filter((e: any) => e.category !== 'Bank Transfer')
+            .reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+        const netCashReceived = Math.max(0, totalCashReceived - workshopExpenseTotalAll);
         // Total actually collected (cash + bank) — excludes unpaid credit balances
         const totalCollected = totalCashReceived + totalBankReceived;
 

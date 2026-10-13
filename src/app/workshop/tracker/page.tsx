@@ -107,6 +107,8 @@ export default function WorkshopTrackerPage() {
     const [expenseForm, setExpenseForm] = useState({ amount: '', description: '', paymentMode: 'CASH' as PaymentMode, date: todayDateInputValue() });
     const [savingDeposit, setSavingDeposit] = useState(false);
     const [savingExpense, setSavingExpense] = useState(false);
+    const [transferForm, setTransferForm] = useState({ amount: '', note: '', date: todayDateInputValue() });
+    const [savingTransfer, setSavingTransfer] = useState(false);
 
     // ── Starting balance reset point ──
     const [openingBalance, setOpeningBalance] = useState<OpeningBalance | null>(null);
@@ -308,9 +310,37 @@ export default function WorkshopTrackerPage() {
         }
     };
 
+    // A part bought for a specific job is already priced into that job's bill (totalCost/
+    // margin) — logging it again here as a cash expense double-counts it and makes the
+    // shop look like it's losing more than it really is. Nudge whoever's entering the
+    // expense to check before that happens, instead of catching it a month later in the
+    // margin report.
+    const findMatchingJob = (description: string, dateStr: string): WorkshopJobRecord | null => {
+        const jobs = marginStats?.jobs || [];
+        const descUpper = description.toUpperCase();
+        const expenseDate = new Date(dateStr);
+        for (const job of jobs) {
+            const jobDate = new Date(job.date);
+            const daysApart = Math.abs(expenseDate.getTime() - jobDate.getTime()) / (1000 * 60 * 60 * 24);
+            if (daysApart > 3) continue;
+            const names = [job.customerName, job.mechanicName, job.bikeNumber].filter((n): n is string => !!n && n !== '—' && n.length >= 3);
+            if (names.some(n => descUpper.includes(n.toUpperCase()))) return job;
+        }
+        return null;
+    };
+
     const handleAddExpense = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!expenseForm.amount || !expenseForm.description) return;
+
+        const matchedJob = findMatchingJob(expenseForm.description, expenseForm.date);
+        if (matchedJob) {
+            const proceed = window.confirm(
+                `This looks related to ${matchedJob.customerName}'s bill (Rs. ${matchedJob.totalAmount} on ${dateInputValue(matchedJob.date)}) — that bill's parts cost already includes this.\n\nAdding it again as an expense will double-count it and inflate the loss in the margin report.\n\nAdd anyway?`
+            );
+            if (!proceed) return;
+        }
+
         setSavingExpense(true);
         try {
             const res = await fetch('/api/expenses', {
@@ -331,6 +361,53 @@ export default function WorkshopTrackerPage() {
             showToast(msg, 'error');
         } finally {
             setSavingExpense(false);
+        }
+    };
+
+    // Moving cash to the bank is a transfer, not a business expense — it's recorded as a
+    // paired Expense (drains Cash in Hand) + WorkshopDeposit (fills Bank Balance). The
+    // Expense side is tagged category: 'Bank Transfer' so the margin/take-home report
+    // (which only counts real spending) excludes it — see /api/workshop/stats.
+    const handleAddTransfer = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const amount = Number(transferForm.amount);
+        if (!amount || amount <= 0) return;
+        setSavingTransfer(true);
+        try {
+            const noteSuffix = transferForm.note ? ` — ${transferForm.note}` : '';
+            const expRes = await fetch('/api/expenses', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount,
+                    description: `Cash transferred to bank${noteSuffix}`,
+                    category: 'Bank Transfer',
+                    deductFrom: 'WORKSHOP',
+                    paymentMode: 'CASH',
+                    date: transferForm.date,
+                }),
+            });
+            if (!expRes.ok) {
+                showToast('Failed to record transfer', 'error');
+                return;
+            }
+            const depRes = await fetch('/api/workshop/deposits', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount, note: `Cash transfer${noteSuffix}`, paymentMode: 'BANK_TRANSFER', date: transferForm.date }),
+            });
+            if (!depRes.ok) {
+                showToast(`Cash deducted but the bank side failed — add a Rs. ${amount.toLocaleString()} bank deposit manually`, 'error');
+                await fetchTrackerData();
+                return;
+            }
+            showToast(`Rs. ${amount.toLocaleString()} moved from cash to bank`, 'success');
+            setTransferForm({ amount: '', note: '', date: todayDateInputValue() });
+            await fetchTrackerData();
+        } catch {
+            showToast('Error saving transfer — check your connection', 'error');
+        } finally {
+            setSavingTransfer(false);
         }
     };
 
@@ -983,6 +1060,47 @@ export default function WorkshopTrackerPage() {
                                             style={{ padding: '0.6rem', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer' }}
                                         >
                                             {savingDeposit ? 'Saving...' : 'Save Deposit'}
+                                        </button>
+                                    </form>
+                                </div>
+
+                                {/* ⇄ Transfer Cash to Bank */}
+                                <div className="card">
+                                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#8b5cf6', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                                        ⇄ Transfer Cash → Bank
+                                    </div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>
+                                        Moves money from the drawer into the bank. Reduces Cash in Hand and increases Bank Balance — not counted as a business expense.
+                                    </div>
+                                    <form onSubmit={handleAddTransfer} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <input
+                                            type="number"
+                                            className="input"
+                                            placeholder="Amount (Rs.)"
+                                            required
+                                            value={transferForm.amount}
+                                            onChange={e => setTransferForm({ ...transferForm, amount: e.target.value })}
+                                            min="1"
+                                        />
+                                        <input
+                                            type="text"
+                                            className="input"
+                                            placeholder="Note (optional)"
+                                            value={transferForm.note}
+                                            onChange={e => setTransferForm({ ...transferForm, note: e.target.value })}
+                                        />
+                                        <input
+                                            type="date"
+                                            className="input"
+                                            value={transferForm.date}
+                                            onChange={e => setTransferForm({ ...transferForm, date: e.target.value })}
+                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={savingTransfer}
+                                            style={{ padding: '0.6rem', background: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer' }}
+                                        >
+                                            {savingTransfer ? 'Saving...' : 'Move Cash to Bank'}
                                         </button>
                                     </form>
                                 </div>
