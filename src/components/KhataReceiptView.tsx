@@ -51,8 +51,8 @@ export const KhataReceiptView = forwardRef<HTMLDivElement, KhataReceiptViewProps
                     <Image
                         src="/honda-logo.png"
                         alt="Honda"
-                        width={130}
-                        height={90}
+                        width={100}
+                        height={100}
                         className={styles.hondaLogo}
                         priority
                     />
