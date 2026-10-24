@@ -25,6 +25,10 @@ interface CreditSale {
     id: string; saleDate: string; price: number; balance: number;
     receivedCash: number; bankTransferAmount: number;
     bikeModel: string; customerName: string; customerMobile: string; cnic: string;
+    // A delivered Advance Booking never creates a Sale record (would double-count margin),
+    // so its remaining balance is merged into this same list from a different source —
+    // collecting payment against it goes through the Advance Bookings API instead of Sales.
+    source?: 'SALE' | 'ADVANCE_BOOKING';
 }
 
 interface CashBreakdownItem {
@@ -109,21 +113,31 @@ export default function DashboardPage() {
     const handleCreditPayment = async (cs: CreditSale) => {
         const amount = Number(creditPayAmount);
         if (!amount || amount <= 0) { showToast('Enter a valid amount', 'error'); return; }
-        if (!creditSettleFinal && amount > cs.balance) { showToast('Amount exceeds remaining balance — tick "Settle in full" to allow this', 'error'); return; }
+        // Advance Booking balances are derived (totalPrice - advancePaid, clamped at 0), so an
+        // overpayment is harmless there and doesn't need the Sale-specific settle-in-full escape hatch.
+        if (cs.source !== 'ADVANCE_BOOKING' && !creditSettleFinal && amount > cs.balance) { showToast('Amount exceeds remaining balance — tick "Settle in full" to allow this', 'error'); return; }
         setCreditPaySubmitting(true);
         try {
-            const res = await fetch(`/api/sales/${cs.id}`, {
+            // Advance Booking balances don't live on a Sale record — they're the booking's own
+            // totalPrice minus advancePaid — so collecting against one goes through the Advance
+            // Bookings API's `deliveryPayment`, which just adds to advancePaid directly.
+            const isAdvanceBooking = cs.source === 'ADVANCE_BOOKING';
+            const res = await fetch(isAdvanceBooking ? `/api/advance-bookings/${cs.id}` : `/api/sales/${cs.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    addPayment: {
-                        amount,
-                        date: todayDateInputValue(),
-                        note: '',
-                        paymentMode: creditPayMode,
-                        settleFinal: creditSettleFinal,
-                    },
-                }),
+                body: JSON.stringify(
+                    isAdvanceBooking
+                        ? { deliveryPayment: creditPayMode === 'BANK_TRANSFER' ? { bankAmount: amount } : { cashAmount: amount } }
+                        : {
+                              addPayment: {
+                                  amount,
+                                  date: todayDateInputValue(),
+                                  note: '',
+                                  paymentMode: creditPayMode,
+                                  settleFinal: creditSettleFinal,
+                              },
+                          }
+                ),
             });
             if (res.ok) {
                 showToast('Payment recorded', 'success');
@@ -664,6 +678,9 @@ export default function DashboardPage() {
                                             <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{cs.customerName}</span>
                                             <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>🏍️ {cs.bikeModel}</span>
                                             {cs.customerMobile && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>📞 {cs.customerMobile}</span>}
+                                            {cs.source === 'ADVANCE_BOOKING' && (
+                                                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#8b5cf6', background: 'rgba(139,92,246,0.12)', padding: '1px 6px', borderRadius: '4px', marginLeft: '0.5rem' }}>ADVANCE BOOKING</span>
+                                            )}
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                                             <span style={{ fontWeight: 700, color: '#ef4444', fontSize: '0.9rem' }}>Rs. {cs.balance.toLocaleString()} left</span>
@@ -696,10 +713,12 @@ export default function DashboardPage() {
                                                     <option value="BANK_TRANSFER">Bank Transfer</option>
                                                 </select>
                                             </div>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: 'var(--color-text-muted)', cursor: 'pointer', paddingBottom: '0.5rem' }}>
-                                                <input type="checkbox" checked={creditSettleFinal} onChange={e => setCreditSettleFinal(e.target.checked)} />
-                                                Settle in full (adjusts margin if amount differs)
-                                            </label>
+                                            {cs.source !== 'ADVANCE_BOOKING' && (
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: 'var(--color-text-muted)', cursor: 'pointer', paddingBottom: '0.5rem' }}>
+                                                    <input type="checkbox" checked={creditSettleFinal} onChange={e => setCreditSettleFinal(e.target.checked)} />
+                                                    Settle in full (adjusts margin if amount differs)
+                                                </label>
+                                            )}
                                             <button
                                                 onClick={() => handleCreditPayment(cs)}
                                                 disabled={creditPaySubmitting}

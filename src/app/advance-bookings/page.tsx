@@ -187,7 +187,9 @@ export default function AdvanceBookingsPage() {
     };
 
     const remainingForBooking = (b: AdvanceBooking) => {
-        const displayTotal = (b.bikeModel && BIKE_STANDARD_PRICES[b.bikeModel]) || b.totalPrice || 0;
+        // The booking's own agreed totalPrice is the real amount owed — the model's generic
+        // standard price is only a fallback for bookings where totalPrice was never set.
+        const displayTotal = b.totalPrice || (b.bikeModel && BIKE_STANDARD_PRICES[b.bikeModel]) || 0;
         return Math.max(0, displayTotal - b.advancePaid);
     };
 

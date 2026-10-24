@@ -193,6 +193,7 @@ export async function GET(request: NextRequest) {
             const customer = creditCustomers.find((c: any) => c._id.toString() === s.customerId.toString());
             return {
                 id: s._id.toString(),
+                source: 'SALE' as const,
                 saleDate: s.saleDate,
                 price: s.price,
                 balance: s.balance,
@@ -204,6 +205,30 @@ export async function GET(request: NextRequest) {
                 cnic: customer?.cnic || '',
             };
         });
+
+        // Delivered advance bookings never create a Sale record (see AdvanceBooking model —
+        // doing so would double-count margin), so a delivered booking with money still owed
+        // was previously invisible everywhere except the Advance Bookings page's own math.
+        // Surface it in the same Credit Customers list the Dashboard already shows, using
+        // totalPrice - advancePaid as the single source of truth for what's still owed
+        // (advancePaid already includes every payment collected after the initial advance).
+        const advanceBookingCreditSales = allDeliveredAdvanceBookings
+            .map((b: any) => ({
+                id: b._id.toString(),
+                source: 'ADVANCE_BOOKING' as const,
+                saleDate: b.deliveredAt || b.date,
+                price: Number(b.totalPrice || 0),
+                balance: Math.max(0, Number(b.totalPrice || 0) - Number(b.advancePaid || 0)),
+                receivedCash: Number(b.advanceCashAmount || 0),
+                bankTransferAmount: Number(b.advanceBankAmount || 0),
+                bikeModel: b.bikeModel || '',
+                customerName: b.customerName || '',
+                customerMobile: b.customerMobile || '',
+                cnic: b.cnic || '',
+            }))
+            .filter((b: any) => b.balance > 0);
+
+        const allCreditSales = [...creditSales, ...advanceBookingCreditSales];
 
         // ── Range: bike sales ──────────────────────────────────────────────────
         const rangeRevenue = filteredSales.reduce((s, sale: any) => s + Number(sale.price || 0), 0);
@@ -628,7 +653,7 @@ export async function GET(request: NextRequest) {
                 availableModelBreakdown,
             },
             deliveryOrders: doStats,
-            creditSales,
+            creditSales: allCreditSales,
             advanceBookings: {
                 pendingCount: advancePendingCount,
                 pendingMargin: advancePendingMargin,
