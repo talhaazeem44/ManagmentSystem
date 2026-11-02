@@ -69,13 +69,19 @@ export async function POST(request: NextRequest) {
             ? Math.max(0, parsedPrice - parsedReceived - parsedBank)
             : parsedBalance;
 
-        // Auto-increment receipt number
+        // Auto-increment receipt number, scoped to the current year+month so it resets to 1
+        // every month — e.g. "S-2611001" is the 1st bike sold in month 11 (Nov) of 2026.
+        // A fresh counter doc per month key means it naturally starts back at 1 (findByIdAndUpdate's
+        // $inc on a not-yet-existing doc goes 0 -> 1), no manual reset logic needed.
+        const now = new Date();
+        const yy = String(now.getFullYear()).slice(-2);
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
         const counter = await Counter.findByIdAndUpdate(
-            'saleReceipt',
+            `saleReceipt-${yy}${mm}`,
             { $inc: { seq: 1 } },
             { new: true, upsert: true }
         );
-        const autoReceiptNumber = String(counter.seq);
+        const autoReceiptNumber = `S-${yy}${mm}${String(counter.seq).padStart(3, '0')}`;
 
         // Create sale
         const sale = await Sale.create({
