@@ -360,6 +360,32 @@ export default function AdvanceBookingsPage() {
     const totalMargin = pendingBookings.reduce((s, b) => s + (b.margin || 0), 0);
     const pendingCount = pendingBookings.length;
 
+    // How many bikes are committed for delivery each month, by expected delivery date — lets
+    // you see at a glance how much stock/quantity of each model needs to be on hand this month
+    // (and plan ahead for next month) without counting pending bookings by hand.
+    const deliveryScheduleByMonth = (() => {
+        const map: Record<string, { count: number; byModel: Record<string, number> }> = {};
+        for (const b of pendingBookings) {
+            if (!b.expectedDeliveryDate) continue;
+            const d = new Date(b.expectedDeliveryDate);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            if (!map[key]) map[key] = { count: 0, byModel: {} };
+            map[key].count += 1;
+            const model = b.bikeModel || 'Unspecified';
+            map[key].byModel[model] = (map[key].byModel[model] || 0) + 1;
+        }
+        return Object.entries(map)
+            .sort(([a], [b2]) => a.localeCompare(b2))
+            .map(([key, val]) => {
+                const [y, m] = key.split('-').map(Number);
+                return { key, label: new Date(y, m - 1, 1).toLocaleDateString('en-PK', { month: 'long', year: 'numeric' }), ...val };
+            });
+    })();
+    const currentMonthKey = (() => {
+        const n = new Date();
+        return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`;
+    })();
+
     return (
         <DashboardLayout>
             <div className="animate-fade-in">
@@ -448,6 +474,39 @@ export default function AdvanceBookingsPage() {
                                 <button type="button" className="btn btn-secondary" onClick={() => { setShowForm(false); setForm(emptyForm); }}>Cancel</button>
                             </div>
                         </form>
+                    </div>
+                )}
+
+                {/* Delivery schedule — pending bookings grouped by expected delivery month */}
+                {deliveryScheduleByMonth.length > 0 && (
+                    <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>
+                            📅 Delivery Schedule — Pending Bookings by Month
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                            {deliveryScheduleByMonth.map(m => {
+                                const isCurrent = m.key === currentMonthKey;
+                                return (
+                                    <div key={m.key} style={{
+                                        padding: '0.75rem 1rem',
+                                        borderRadius: '10px',
+                                        minWidth: '170px',
+                                        background: isCurrent ? 'rgba(16,185,129,0.08)' : 'var(--color-bg-elevated)',
+                                        border: isCurrent ? '2px solid rgba(16,185,129,0.4)' : '1px solid var(--color-border)',
+                                    }}>
+                                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: isCurrent ? '#10b981' : 'var(--color-text-muted)', marginBottom: '0.3rem' }}>
+                                            {m.label}{isCurrent && ' · This Month'}
+                                        </div>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: isCurrent ? '#10b981' : 'inherit' }}>
+                                            {m.count} bike{m.count !== 1 ? 's' : ''}
+                                        </div>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.3rem', lineHeight: 1.5 }}>
+                                            {Object.entries(m.byModel).map(([model, cnt]) => `${model} × ${cnt}`).join(', ')}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 )}
 
