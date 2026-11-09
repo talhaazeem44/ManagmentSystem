@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
+import { motion } from 'framer-motion';
 import styles from './DashboardLayout.module.css';
 import ThemeToggle from './ThemeToggle';
 
@@ -95,7 +96,17 @@ export default function DashboardLayout({
 
             <main className={styles.main}>
                 <div className={styles.content}>
-                    {children}
+                    {/* Keyed by pathname so every sidebar navigation remounts this wrapper —
+                        the whole page (cards, tables, everything inside) fades/slides in fresh,
+                        without needing to touch every individual page. */}
+                    <motion.div
+                        key={pathname}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                    >
+                        {children}
+                    </motion.div>
                 </div>
             </main>
 

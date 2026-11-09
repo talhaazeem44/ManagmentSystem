@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.89.0",
     "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^3.0.3",
+    "framer-motion": "^14.11.0",
     "heic2any": "^0.0.4",
     "html2canvas": "^1.4.1",
     "html5-qrcode": "^2.3.8",

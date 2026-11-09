@@ -23,10 +23,11 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Sets the theme attribute before React hydrates/paints, so there's no flash of the
-            wrong theme. Reads the user's saved choice, falling back to OS preference. */}
+            wrong theme. Reads the user's saved choice, defaulting to light rather than OS
+            preference — the dark glass styling reads as "black theme" to most users here. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
           }}
         />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />

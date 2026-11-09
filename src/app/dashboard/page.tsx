@@ -4,10 +4,15 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
+import { motion } from 'framer-motion';
 import Loader from '@/components/Loader';
 import { HONDA_BIKE_MODELS } from '@/lib/constants';
 import { todayDateInputValue } from '@/lib/dates';
+
+// Categorical palette for the "This Month's Mix" donut chart — cycles if there are more
+// models than colors.
+const MODEL_CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#64748b'];
 
 interface SaleRecord {
     id: string;
@@ -351,26 +356,72 @@ export default function DashboardPage() {
                     </div>
                 )}
 
-                {/* ── 4 KPI Cards ── */}
+                {/* ── KPI Cards — glass cards with a hover lift and a gradient icon badge ── */}
                 <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
-                    <div className="card" style={{ padding: '1.25rem' }}>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Available Bikes</div>
+                    <motion.div
+                        className="glass-card"
+                        style={{ padding: '1.25rem' }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0 }}
+                        whileHover={{ y: -5, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
+                        whileTap={{ scale: 0.96 }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.6rem' }}>
+                            <span style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                width: '2.5rem', height: '2.5rem', borderRadius: '0.85rem', fontSize: '1.2rem',
+                                background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
+                            }}>🏍️</span>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Available Bikes</div>
+                        </div>
                         <div style={{ fontSize: '2rem', fontWeight: 800 }}>{stats?.allTime?.availableBikes ?? '-'}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>in stock</div>
-                    </div>
+                    </motion.div>
 
-                    <div className="card" style={{ padding: '1.25rem' }}>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Sold Today</div>
+                    <motion.div
+                        className="glass-card"
+                        style={{ padding: '1.25rem' }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.08 }}
+                        whileHover={{ y: -5, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
+                        whileTap={{ scale: 0.96 }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.6rem' }}>
+                            <span style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                width: '2.5rem', height: '2.5rem', borderRadius: '0.85rem', fontSize: '1.2rem',
+                                background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+                            }}>✅</span>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Sold Today</div>
+                        </div>
                         <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-success)' }}>{rs?.sales ?? '-'}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>bikes sold</div>
-                    </div>
+                    </motion.div>
 
                     {/* Profit — link to profit page */}
-                    <a href="/profit" className="card" style={{ padding: '1.25rem', textDecoration: 'none', display: 'block', cursor: 'pointer' }}>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Net Profit Today</div>
+                    <motion.a
+                        href="/profit"
+                        className="glass-card"
+                        style={{ padding: '1.25rem', textDecoration: 'none', display: 'block', cursor: 'pointer' }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.16 }}
+                        whileHover={{ y: -5, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
+                        whileTap={{ scale: 0.96 }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.6rem' }}>
+                            <span style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                width: '2.5rem', height: '2.5rem', borderRadius: '0.85rem', fontSize: '1.2rem',
+                                background: 'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)',
+                            }}>💰</span>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Net Profit Today</div>
+                        </div>
                         <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text-muted)', letterSpacing: '0.2em' }}>••••••</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)', marginTop: '0.3rem', fontWeight: 600 }}>Tap to view →</div>
-                    </a>
+                    </motion.a>
                 </div>
 
                 {/* ── Model-wise Sales ── */}
@@ -421,6 +472,50 @@ export default function DashboardPage() {
                                 })}
                         </div>
 
+                        {monthModelBreakdown && Object.values(monthModelBreakdown).reduce((s, n) => s + n, 0) > 0 && (
+                            <motion.div
+                                className="glass-card"
+                                style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.4, delay: 0.24 }}
+                            >
+                                <div style={{ width: '170px', height: '170px', flexShrink: 0 }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={Object.entries(monthModelBreakdown).map(([model, count]) => ({ name: model, value: count }))}
+                                                dataKey="value"
+                                                nameKey="name"
+                                                innerRadius={48}
+                                                outerRadius={78}
+                                                paddingAngle={2}
+                                                cornerRadius={4}
+                                            >
+                                                {Object.keys(monthModelBreakdown).map((model, i) => (
+                                                    <Cell key={model} fill={MODEL_CHART_COLORS[i % MODEL_CHART_COLORS.length]} stroke="none" />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip formatter={(value: any, name: any) => [`${value} sold`, name]} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1, minWidth: '160px' }}>
+                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.2rem' }}>
+                                        This Month&apos;s Mix
+                                    </div>
+                                    {Object.entries(monthModelBreakdown)
+                                        .sort(([, a], [, b]) => b - a)
+                                        .map(([model, count], i) => (
+                                            <div key={model} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}>
+                                                <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: MODEL_CHART_COLORS[i % MODEL_CHART_COLORS.length], flexShrink: 0 }} />
+                                                <span style={{ flex: 1 }}>{model}</span>
+                                                <span style={{ fontWeight: 700 }}>{count}</span>
+                                            </div>
+                                        ))}
+                                </div>
+                            </motion.div>
+                        )}
                     </div>
                 )}
 

@@ -128,7 +128,7 @@ export const PERMISSION_SECTIONS: { key: string; label: string }[] = [
     { key: 'reports', label: 'Reports' },
     { key: 'profit', label: 'Profit' },
     { key: 'expenses', label: 'Expenses' },
-    { key: 'khata', label: 'Khata' },
+    { key: 'khata', label: 'Khata/Ledgers' },
     { key: 'used-bikes', label: 'Used Bikes' },
 ];
 
