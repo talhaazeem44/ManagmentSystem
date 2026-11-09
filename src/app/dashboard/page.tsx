@@ -778,7 +778,7 @@ export default function DashboardPage() {
                                 <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
                                     <thead>
                                         <tr style={{ background: 'var(--color-bg-elevated)' }}>
-                                            {['#', 'Buyer', 'Model', 'Mode', 'Sale Price', 'Std Price', 'Rcvd Cash', 'Bank Xfer', 'Base Margin', 'Extra', 'Bike Profit', 'Reg Profit', 'Total Profit'].map(h => (
+                                            {['#', 'Buyer', 'Model', 'Mode', 'Sale Price', 'Std Price', 'Rcvd Cash', 'Bank Xfer', 'Base Margin', 'Adj.', 'Bike Profit', 'Reg Profit', 'Total Profit'].map(h => (
                                                 <th key={h} style={{ padding: '0.4rem 0.6rem', textAlign: h === 'Buyer' ? 'left' : 'right', fontWeight: 700, color: 'var(--color-text-muted)', whiteSpace: 'nowrap', borderBottom: '1px solid var(--color-border)' }}>{h}</th>
                                             ))}
                                         </tr>
@@ -854,7 +854,7 @@ export default function DashboardPage() {
                                 <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
                                     <thead>
                                         <tr style={{ background: 'var(--color-bg-elevated)' }}>
-                                            {['#', 'Party / Buyer', 'Model', 'Qty', 'Mode', 'Sale Price', 'Std Price', 'Rcvd Cash', 'Bank Xfer', 'Base Margin', 'Extra', 'Bike Profit', 'Reg Profit', 'Total Profit'].map(h => (
+                                            {['#', 'Party / Buyer', 'Model', 'Qty', 'Mode', 'Sale Price', 'Std Price', 'Rcvd Cash', 'Bank Xfer', 'Base Margin', 'Adj.', 'Bike Profit', 'Reg Profit', 'Total Profit'].map(h => (
                                                 <th key={h} style={{ padding: '0.4rem 0.6rem', textAlign: h === 'Party / Buyer' ? 'left' : 'right', fontWeight: 700, color: 'var(--color-text-muted)', whiteSpace: 'nowrap', borderBottom: '1px solid var(--color-border)' }}>{h}</th>
                                             ))}
                                         </tr>

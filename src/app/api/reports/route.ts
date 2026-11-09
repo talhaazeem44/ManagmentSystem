@@ -116,11 +116,20 @@ export async function GET(request: NextRequest) {
                 const sd = new Date(s.saleDate);
                 return sd >= d && sd < nextD;
             });
+            // Delivered Advance Bookings never create a Sale record (would double-count margin —
+            // see AdvanceBooking model), so without this the chart silently dropped every bike
+            // delivered from an advance booking, undercounting both the bar count and the margin.
+            const dayDeliveredBookings = (allDeliveredAdvanceBookings as any[]).filter(b => {
+                if (!b.deliveredAt) return false;
+                const dd = new Date(b.deliveredAt);
+                return dd >= d && dd < nextD;
+            });
             return {
                 day: d.toLocaleDateString('en-PK', { weekday: 'short' }),
                 date: d.toLocaleDateString('en-PK', { day: 'numeric', month: 'short' }),
-                sales: daySales.length,
-                revenue: daySales.reduce((s, sale) => s + calcSaleMargin(sale).totalProfit, 0),
+                sales: daySales.length + dayDeliveredBookings.length,
+                revenue: daySales.reduce((s, sale) => s + calcSaleMargin(sale).totalProfit, 0)
+                    + dayDeliveredBookings.reduce((s, b) => s + calcAdvanceMargin(b).bikeProfit, 0),
             };
         });
 
