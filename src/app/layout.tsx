@@ -6,7 +6,14 @@ export const metadata: Metadata = {
   title: "Naeem Autos",
   description: "Naeem Autos Dealership Management System",
   manifest: "/manifest.json",
-  icons: { icon: '/bike-icon.gif' },
+  icons: {
+    icon: [
+      { url: '/bike-icon.gif' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -40,7 +47,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Naeem Autos" />
-        <link rel="apple-touch-icon" href="/icon-192.svg" />
+        {/* apple-touch-icon is emitted automatically from metadata.icons.apple above */}
       </head>
       <body><Providers>{children}</Providers></body>
     </html>
