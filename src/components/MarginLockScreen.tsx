@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useMarginUnlock } from '@/hooks/useMarginUnlock';
 
@@ -19,6 +19,25 @@ export default function MarginLockScreen({
 }) {
     const m = useMarginUnlock();
     const firedRef = useRef(false);
+    const passwordInputRef = useRef<HTMLInputElement>(null);
+    // Password field stays hidden behind the Face ID/Touch ID button until it's actually
+    // needed — either a biometric attempt fails, or the user asks for it directly — instead of
+    // cluttering the lock screen with both options at once every time.
+    const [showPassword, setShowPassword] = useState(false);
+
+    // autoFocus only applies on an element's initial mount — it won't re-fire just because the
+    // prop's value changes later, so revealing the password field needs an imperative focus to
+    // actually move the cursor into it.
+    useEffect(() => {
+        if (m.biometricError) {
+            setShowPassword(true);
+            passwordInputRef.current?.focus();
+        }
+    }, [m.biometricError]);
+
+    useEffect(() => {
+        if (showPassword) passwordInputRef.current?.focus();
+    }, [showPassword]);
 
     useEffect(() => {
         if (m.unlocked && !firedRef.current) {
@@ -32,7 +51,7 @@ export default function MarginLockScreen({
     }, [m.unlocked]);
 
     if (m.unlocked) {
-        const relock = () => m.setUnlocked(false);
+        const relock = () => { m.setUnlocked(false); setShowPassword(false); };
         return <>{typeof children === 'function' ? children(relock) : children}</>;
     }
 
@@ -77,24 +96,38 @@ export default function MarginLockScreen({
                                     <button
                                         type="button"
                                         className="btn btn-primary"
-                                        style={{ width: '100%', marginBottom: '1rem' }}
+                                        style={{ width: '100%', marginBottom: m.biometricError ? '0.5rem' : '1rem' }}
                                         disabled={m.busy}
                                         onClick={m.verifyBiometric}
                                     >
                                         {m.busy ? 'Checking...' : '🫆 Unlock with Face ID / Touch ID'}
                                     </button>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>or use your password</div>
+                                    {m.biometricError ? (
+                                        <p style={{ color: '#ef4444', fontSize: '0.78rem', marginBottom: '1rem' }}>
+                                            Face ID / Touch ID didn&apos;t work — enter your password below instead.
+                                        </p>
+                                    ) : !showPassword && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(true)}
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--color-text-muted)', textDecoration: 'underline', marginBottom: '1rem' }}
+                                        >
+                                            or use your password
+                                        </button>
+                                    )}
                                 </>
                             )}
 
-                            <form onSubmit={m.submitPassword}>
-                                <input type="password" className="input" placeholder="Password" value={m.password}
-                                    onChange={e => { m.setPassword(e.target.value); m.setError(false); }}
-                                    style={{ marginBottom: '0.75rem', borderColor: m.error ? '#ef4444' : undefined, textAlign: 'center', fontSize: '1.25rem', letterSpacing: '0.2em' }}
-                                    autoFocus={!(m.biometricAvailable && m.biometricRegistered)} />
-                                {m.error && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Wrong password</p>}
-                                <button type="submit" className="btn btn-secondary" style={{ width: '100%' }}>Unlock</button>
-                            </form>
+                            {(showPassword || !(m.biometricAvailable && m.biometricRegistered)) && (
+                                <form onSubmit={m.submitPassword}>
+                                    <input ref={passwordInputRef} type="password" className="input" placeholder="Password" value={m.password}
+                                        onChange={e => { m.setPassword(e.target.value); m.setError(false); }}
+                                        style={{ marginBottom: '0.75rem', borderColor: m.error ? '#ef4444' : undefined, textAlign: 'center', fontSize: '1.25rem', letterSpacing: '0.2em' }}
+                                        autoFocus={!(m.biometricAvailable && m.biometricRegistered)} />
+                                    {m.error && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Wrong password</p>}
+                                    <button type="submit" className="btn btn-secondary" style={{ width: '100%' }}>Unlock</button>
+                                </form>
+                            )}
 
                             {m.biometricRegistered && (
                                 <button

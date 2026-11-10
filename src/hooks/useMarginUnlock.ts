@@ -29,6 +29,10 @@ export function useMarginUnlock() {
     const [unlocked, setUnlocked] = useState(false);
     const [password, setPassword] = useState('');
     const [error, setError] = useState(false);
+    // Separate from `error` (which is specifically "wrong password") — a failed/cancelled
+    // Face ID or Touch ID attempt is a different situation and needs its own message, plus a
+    // nudge toward the password field instead of just leaving you stuck on the biometric button.
+    const [biometricError, setBiometricError] = useState(false);
     const [busy, setBusy] = useState(false);
     const [biometricAvailable, setBiometricAvailable] = useState(false);
     const [biometricRegistered, setBiometricRegistered] = useState(false);
@@ -77,7 +81,7 @@ export function useMarginUnlock() {
         const storedId = localStorage.getItem(CREDENTIAL_KEY);
         if (!storedId) return false;
         setBusy(true);
-        setError(false);
+        setBiometricError(false);
         try {
             const assertion = await navigator.credentials.get({
                 publicKey: {
@@ -91,7 +95,7 @@ export function useMarginUnlock() {
             setUnlocked(true);
             return true;
         } catch {
-            setError(true);
+            setBiometricError(true);
             return false;
         } finally {
             setBusy(false);
@@ -103,6 +107,7 @@ export function useMarginUnlock() {
         if (password === MARGIN_PASSWORD) {
             setUnlocked(true);
             setError(false);
+            setBiometricError(false);
             if (biometricAvailable && !biometricRegistered) setOfferBiometricSetup(true);
         } else {
             setError(true);
@@ -116,7 +121,7 @@ export function useMarginUnlock() {
     }, []);
 
     return {
-        unlocked, setUnlocked, password, setPassword, error, setError, busy,
+        unlocked, setUnlocked, password, setPassword, error, setError, biometricError, busy,
         biometricAvailable, biometricRegistered, offerBiometricSetup, setOfferBiometricSetup,
         registerBiometric, verifyBiometric, submitPassword, forgetBiometric,
     };
