@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
 import { motion } from 'framer-motion';
 import Loader from '@/components/Loader';
 import { HONDA_BIKE_MODELS } from '@/lib/constants';
@@ -134,14 +134,14 @@ export default function DashboardPage() {
                     isAdvanceBooking
                         ? { deliveryPayment: creditPayMode === 'BANK_TRANSFER' ? { bankAmount: amount } : { cashAmount: amount } }
                         : {
-                              addPayment: {
-                                  amount,
-                                  date: todayDateInputValue(),
-                                  note: '',
-                                  paymentMode: creditPayMode,
-                                  settleFinal: creditSettleFinal,
-                              },
-                          }
+                            addPayment: {
+                                amount,
+                                date: todayDateInputValue(),
+                                note: '',
+                                paymentMode: creditPayMode,
+                                settleFinal: creditSettleFinal,
+                            },
+                        }
                 ),
             });
             if (res.ok) {
@@ -490,6 +490,9 @@ export default function DashboardPage() {
                                                 outerRadius={78}
                                                 paddingAngle={2}
                                                 cornerRadius={4}
+                                                animationBegin={240}
+                                                animationDuration={900}
+                                                animationEasing="ease-out"
                                             >
                                                 {Object.keys(monthModelBreakdown).map((model, i) => (
                                                     <Cell key={model} fill={MODEL_CHART_COLORS[i % MODEL_CHART_COLORS.length]} stroke="none" />
@@ -506,11 +509,17 @@ export default function DashboardPage() {
                                     {Object.entries(monthModelBreakdown)
                                         .sort(([, a], [, b]) => b - a)
                                         .map(([model, count], i) => (
-                                            <div key={model} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}>
+                                            <motion.div
+                                                key={model}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ duration: 0.35, delay: 0.35 + i * 0.07 }}
+                                            >
                                                 <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: MODEL_CHART_COLORS[i % MODEL_CHART_COLORS.length], flexShrink: 0 }} />
                                                 <span style={{ flex: 1 }}>{model}</span>
                                                 <span style={{ fontWeight: 700 }}>{count}</span>
-                                            </div>
+                                            </motion.div>
                                         ))}
                                 </div>
                             </motion.div>
@@ -630,25 +639,64 @@ export default function DashboardPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.25rem', marginBottom: '1.5rem' }}>
                     {/* Sales Chart */}
                     <div className="card" style={{ padding: '1.25rem' }}>
-                        <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>Sales &amp; Margin — Last 7 Days</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                            <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Bikes Sold — Last 7 Days</span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.65rem', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                <span className="animate-pulse" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
+                                Live
+                            </span>
+                        </div>
                         {stats?.chartData ? (
-                            <div style={{ width: '100%', height: 200 }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={stats.chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                                    <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
-                                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
-                                    <Tooltip
-                                        contentStyle={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '0.8rem' }}
-                                        formatter={(value: any, name: any) => name === 'revenue' ? [`Rs. ${Number(value).toLocaleString()}`, 'Margin'] : [value, 'Bikes Sold']}
-                                        labelFormatter={(label) => {
-                                            const d = stats.chartData.find(c => c.day === label);
-                                            return d?.date || label;
-                                        }}
-                                    />
-                                    <Bar dataKey="sales" fill="hsl(0,85%,45%)" radius={[4, 4, 0, 0]} name="sales" />
-                                </BarChart>
-                            </ResponsiveContainer>
+                            <div style={{ width: '100%', height: 300 }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={stats.chartData} margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
+                                        <defs>
+                                            <linearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor="hsl(0,85%,55%)" stopOpacity={0.45} />
+                                                <stop offset="100%" stopColor="hsl(0,85%,55%)" stopOpacity={0.03} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                                        <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
+                                        <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
+                                        <Tooltip
+                                            contentStyle={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '0.8rem' }}
+                                            formatter={(value: any) => [value, 'Bikes Sold']}
+                                            labelFormatter={(label) => {
+                                                const d = stats.chartData.find(c => c.day === label);
+                                                return d?.date || label;
+                                            }}
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="sales"
+                                            stroke="hsl(0,85%,50%)"
+                                            strokeWidth={2.5}
+                                            fill="url(#salesFill)"
+                                            dot={(props: any) => {
+                                                const { cx, cy, index } = props;
+                                                const isToday = index === stats.chartData.length - 1;
+                                                if (!isToday) {
+                                                    return <circle key={`dot-${index}`} cx={cx} cy={cy} r={3} fill="hsl(0,85%,50%)" />;
+                                                }
+                                                // Today's point gets a "live" radar-ping ring, pulsing forever via
+                                                // native SVG <animate> — no JS animation loop needed.
+                                                return (
+                                                    <g key="live-dot">
+                                                        <circle cx={cx} cy={cy} r={4} fill="hsl(0,85%,50%)" />
+                                                        <circle cx={cx} cy={cy} r={4} fill="none" stroke="hsl(0,85%,50%)" strokeWidth={2}>
+                                                            <animate attributeName="r" values="4;11;4" dur="1.8s" repeatCount="indefinite" />
+                                                            <animate attributeName="opacity" values="0.8;0;0.8" dur="1.8s" repeatCount="indefinite" />
+                                                        </circle>
+                                                    </g>
+                                                );
+                                            }}
+                                            activeDot={{ r: 5 }}
+                                            animationDuration={1200}
+                                            animationEasing="ease-out"
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
                             </div>
                         ) : (
                             <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>Loading chart...</div>
@@ -890,9 +938,11 @@ export default function DashboardPage() {
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'left', fontWeight: 600, whiteSpace: 'nowrap' }}>{row.buyerName || '—'}{isBankRow && <span title="Includes bank transfer" style={{ marginLeft: '0.3rem' }}>🏦</span>}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 600 }}>{row.bikeModel}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right' }}>
-                                                        <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px',
+                                                        <span style={{
+                                                            fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px',
                                                             background: row.paymentMode === 'ADVANCE' ? 'rgba(245,158,11,0.15)' : row.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : row.paymentMode === 'BANK_TRANSFER' ? 'rgba(59,130,246,0.12)' : 'rgba(16,185,129,0.12)',
-                                                            color: row.paymentMode === 'ADVANCE' ? '#f59e0b' : row.paymentMode === 'CREDIT' ? '#ef4444' : row.paymentMode === 'BANK_TRANSFER' ? '#3b82f6' : '#10b981' }}>
+                                                            color: row.paymentMode === 'ADVANCE' ? '#f59e0b' : row.paymentMode === 'CREDIT' ? '#ef4444' : row.paymentMode === 'BANK_TRANSFER' ? '#3b82f6' : '#10b981'
+                                                        }}>
                                                             {row.paymentMode}
                                                         </span>
                                                     </td>
@@ -967,9 +1017,11 @@ export default function DashboardPage() {
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 600 }}>{row.bikeModel}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', color: 'var(--color-text-muted)' }}>{row.quantity ?? 1}</td>
                                                     <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right' }}>
-                                                        <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px',
+                                                        <span style={{
+                                                            fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px',
                                                             background: row.paymentMode === 'KHATA' ? 'rgba(139,92,246,0.15)' : row.paymentMode === 'ADVANCE' ? 'rgba(245,158,11,0.15)' : row.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : row.paymentMode === 'BANK_TRANSFER' ? 'rgba(59,130,246,0.12)' : 'rgba(16,185,129,0.12)',
-                                                            color: row.paymentMode === 'KHATA' ? '#8b5cf6' : row.paymentMode === 'ADVANCE' ? '#f59e0b' : row.paymentMode === 'CREDIT' ? '#ef4444' : row.paymentMode === 'BANK_TRANSFER' ? '#3b82f6' : '#10b981' }}>
+                                                            color: row.paymentMode === 'KHATA' ? '#8b5cf6' : row.paymentMode === 'ADVANCE' ? '#f59e0b' : row.paymentMode === 'CREDIT' ? '#ef4444' : row.paymentMode === 'BANK_TRANSFER' ? '#3b82f6' : '#10b981'
+                                                        }}>
                                                             {row.paymentMode}
                                                         </span>
                                                     </td>
@@ -1057,9 +1109,11 @@ export default function DashboardPage() {
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                                             <strong style={{ fontSize: '0.875rem' }}>{r.customer.name}</strong>
                                             {r.paymentMode !== 'CASH' && (
-                                                <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '1px 5px', borderRadius: '4px',
+                                                <span style={{
+                                                    fontSize: '0.65rem', fontWeight: 700, padding: '1px 5px', borderRadius: '4px',
                                                     background: r.paymentMode === 'CREDIT' ? 'rgba(239,68,68,0.12)' : 'rgba(59,130,246,0.12)',
-                                                    color: r.paymentMode === 'CREDIT' ? '#ef4444' : '#3b82f6' }}>
+                                                    color: r.paymentMode === 'CREDIT' ? '#ef4444' : '#3b82f6'
+                                                }}>
                                                     {r.paymentMode}
                                                 </span>
                                             )}

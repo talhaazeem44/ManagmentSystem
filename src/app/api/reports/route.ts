@@ -124,12 +124,28 @@ export async function GET(request: NextRequest) {
                 const dd = new Date(b.deliveredAt);
                 return dd >= d && dd < nextD;
             });
+            // Khata stock given (bikes handed to dealers) also never creates a Sale record —
+            // same gap as above, same fix: count bike units (not transactions) given out this day.
+            let dayKhataUnits = 0;
+            let dayKhataMargin = 0;
+            for (const party of allKhataParties as any[]) {
+                for (const tx of party.transactions || []) {
+                    if (tx.type !== 'STOCK_GIVEN') continue;
+                    const td = new Date(tx.date);
+                    if (td < d || td >= nextD) continue;
+                    for (const item of tx.items || []) {
+                        dayKhataUnits += Number(item.quantity) || 0;
+                        dayKhataMargin += Number(item.totalMargin) || 0;
+                    }
+                }
+            }
             return {
                 day: d.toLocaleDateString('en-PK', { weekday: 'short' }),
                 date: d.toLocaleDateString('en-PK', { day: 'numeric', month: 'short' }),
-                sales: daySales.length + dayDeliveredBookings.length,
+                sales: daySales.length + dayDeliveredBookings.length + dayKhataUnits,
                 revenue: daySales.reduce((s, sale) => s + calcSaleMargin(sale).totalProfit, 0)
-                    + dayDeliveredBookings.reduce((s, b) => s + calcAdvanceMargin(b).bikeProfit, 0),
+                    + dayDeliveredBookings.reduce((s, b) => s + calcAdvanceMargin(b).bikeProfit, 0)
+                    + dayKhataMargin,
             };
         });
 
