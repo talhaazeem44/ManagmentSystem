@@ -137,7 +137,6 @@ export const BIKE_COLORS = [
     'Black',
     'Blue',
     'Silver',
-    'White'
 ] as const;
 
 export type BikeColor = typeof BIKE_COLORS[number];

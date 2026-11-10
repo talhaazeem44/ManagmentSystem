@@ -47,6 +47,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             'transactions.$.date': resolveTransactionDate(body.date),
             'transactions.$.description': 'Payment received',
         };
+    } else if (body.type === 'REFUND') {
+        const amount = Number(body.amount || 0);
+        if (!amount) return NextResponse.json({ message: 'amount required' }, { status: 400 });
+        if (body.paymentMode !== 'CASH' && body.paymentMode !== 'BANK_TRANSFER') {
+            return NextResponse.json({ message: 'paymentMode (CASH or BANK_TRANSFER) required for a refund' }, { status: 400 });
+        }
+        update = {
+            'transactions.$.amount': amount,
+            'transactions.$.paymentMode': body.paymentMode,
+            'transactions.$.note': body.note?.trim() || '',
+            'transactions.$.date': resolveTransactionDate(body.date),
+            'transactions.$.description': body.description?.trim() || 'Advance Refund',
+        };
     } else if (body.type === 'STOCK_GIVEN') {
         const existingParty = await KhataParty.findById(id).lean();
         const existingTx = (existingParty as any)?.transactions?.find((t: any) => t._id.toString() === txId);

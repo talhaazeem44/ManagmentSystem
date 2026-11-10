@@ -80,8 +80,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         }];
     }
 
+    // Refund: cash handed back to the party — e.g. they overpaid / paid in advance and we're
+    // giving some of that advance back instead of working it off with stock. Moves the balance
+    // the same direction as STOCK_GIVEN (their credit with us goes down), but carries no items
+    // and no margin — it's a cash outflow, not a sale.
+    if (body.type === 'REFUND') {
+        amount = Number(body.amount) || 0;
+        margin = 0;
+        description = body.description?.trim() || 'Advance Refund';
+    }
+
     // Allow amount=0 for exchange returns (record-only, no financial value agreed)
     if (!amount && body.type !== 'EXCHANGE_RETURN') return NextResponse.json({ message: 'amount required' }, { status: 400 });
+    if (body.type === 'REFUND' && body.paymentMode !== 'CASH' && body.paymentMode !== 'BANK_TRANSFER') {
+        return NextResponse.json({ message: 'paymentMode (CASH or BANK_TRANSFER) required for a refund' }, { status: 400 });
+    }
     if (!description) return NextResponse.json({ message: 'description required' }, { status: 400 });
 
     const party = await KhataParty.findByIdAndUpdate(

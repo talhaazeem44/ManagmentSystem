@@ -61,7 +61,11 @@ export default function KhataStockReceiptPage() {
     );
     let balance = 0;
     for (const t of sorted) {
-        balance += t.type === 'STOCK_GIVEN' ? t.amount : -t.amount;
+        // STOCK_GIVEN/REFUND increase what's owed; PAYMENT reduces it; EXCHANGE_RETURN is an
+        // inventory record only and doesn't move the financial balance — matches the party
+        // detail page's math exactly (see khata/[id]/page.tsx).
+        if (t.type === 'STOCK_GIVEN' || t.type === 'REFUND') balance += t.amount;
+        else if (t.type === 'PAYMENT') balance -= t.amount;
         if (t._id === tx._id) break;
     }
 

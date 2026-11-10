@@ -553,7 +553,7 @@ export default function AdvanceBookingsPage() {
                                             </div>
                                             <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                                 {b.customerMobile && <span>📞 {b.customerMobile}</span>}
-                                                {b.bikeModel && <span>🏍️ {b.bikeModel}{b.bikeColor ? ` · ${b.bikeColor}` : ''}</span>}
+                                                {b.bikeModel && <span>{b.bikeModel}{b.bikeColor ? ` · ${b.bikeColor}` : ''}</span>}
                                                 <span>📅 {new Date(b.date).toLocaleDateString()}</span>
                                                 {b.expectedDeliveryDate && <span style={{ color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : 'var(--color-text-muted)', fontWeight: isOverdue || isDueSoon ? 700 : 400 }}>🚚 By {new Date(b.expectedDeliveryDate).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}</span>}
                                                 {b.status === 'DELIVERED' && b.deliveredAt && <span>✅ Delivered {new Date(b.deliveredAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })} · {new Date(b.deliveredAt).toLocaleTimeString('en-PK', { hour: 'numeric', minute: '2-digit' })}</span>}

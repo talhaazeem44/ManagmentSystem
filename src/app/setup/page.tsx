@@ -44,7 +44,8 @@ export default function SetupPage() {
         }}>
             <div className="card" style={{ maxWidth: '600px', width: '100%' }}>
                 <div style={{ textAlign: 'center', marginBottom: 'var(--spacing-xl)' }}>
-                    <div style={{ fontSize: '4rem', marginBottom: 'var(--spacing-md)' }}>🏍️</div>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/icon-192.png" alt="" style={{ width: '5rem', height: '5rem', borderRadius: '1.1rem', marginBottom: 'var(--spacing-md)' }} />
                     <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: 'var(--spacing-sm)' }}>
                         Honda DMS Setup
                     </h1>

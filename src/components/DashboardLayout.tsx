@@ -20,13 +20,13 @@ export default function DashboardLayout({
         { href: '/dashboard', label: 'Dashboard', icon: '📊' },
         { href: '/sales/new', label: 'New Sale', icon: '➕' },
         { href: '/advance-bookings', label: 'Advance', icon: '📋' },
-        { href: '/inventory', label: 'Inventory', icon: '🏍️' },
+        { href: '/inventory', label: 'Inventory', icon: '🗄️' },
         { href: '/inventory/receive', label: 'Receive', icon: '📦' },
         { href: '/sales', label: 'Sales', icon: '💰' },
         { href: '/reports', label: 'Reports', icon: '📈' },
         { href: '/profit', label: 'Profit', icon: '💰' },
         { href: '/expenses', label: 'Expenses', icon: '💸' },
-        { href: '/khata', label: 'Khata', icon: '📒' },
+        { href: '/khata', label: 'Ledgers', icon: '📒' },
         { href: '/used-bikes', label: 'Used Bikes', icon: '🔁' },
     ];
 
@@ -65,7 +65,8 @@ export default function DashboardLayout({
             {/* Desktop sidebar */}
             <aside className={styles.sidebar}>
                 <div className={styles.logo}>
-                    <div className={styles.logoIcon}>🏍️</div>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/icon-192.png" alt="" className={styles.logoIcon} />
                     <h1 className={styles.logoText}>Honda DMS</h1>
                 </div>
 

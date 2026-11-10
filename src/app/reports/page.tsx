@@ -463,7 +463,6 @@ export default function ReportsPage() {
                                         .sort(([, a], [, b]) => b - a)
                                         .map(([model, count]) => (
                                             <div key={model} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.85rem 1.25rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: '12px', minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
-                                                <span style={{ fontSize: '1.4rem' }}>🏍️</span>
                                                 <div>
                                                     <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>{model}</div>
                                                     <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1 }}>{count}</div>

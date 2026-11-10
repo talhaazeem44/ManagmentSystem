@@ -342,7 +342,7 @@ export default function DashboardPage() {
                                     <div key={b._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.82rem' }}>
                                         <span>
                                             <strong>{b.customerName}</strong>
-                                            {b.bikeModel && <span style={{ color: 'var(--color-text-muted)', marginLeft: '0.4rem' }}>🏍️ {b.bikeModel}</span>}
+                                            {b.bikeModel && <span style={{ color: 'var(--color-text-muted)', marginLeft: '0.4rem' }}>{b.bikeModel}</span>}
                                             {b.customerMobile && <span style={{ color: 'var(--color-text-muted)', marginLeft: '0.4rem' }}>📞 {b.customerMobile}</span>}
                                         </span>
                                         <span style={{ color: '#ef4444', fontWeight: 600 }}>
@@ -372,7 +372,7 @@ export default function DashboardPage() {
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 width: '2.5rem', height: '2.5rem', borderRadius: '0.85rem', fontSize: '1.2rem',
                                 background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
-                            }}>🏍️</span>
+                            }}>🗄️</span>
                             <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Available Bikes</div>
                         </div>
                         <div style={{ fontSize: '2rem', fontWeight: 800 }}>{stats?.allTime?.availableBikes ?? '-'}</div>
@@ -456,7 +456,6 @@ export default function DashboardPage() {
                                     const todayCount = stats.range?.modelBreakdown?.[model] ?? 0;
                                     return (
                                         <div key={model} className="card" style={{ padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
-                                            <span style={{ fontSize: '1.4rem' }}>🏍️</span>
                                             <div>
                                                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>{model}</div>
                                                 <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1 }}>{monthCount}</div>
@@ -526,7 +525,7 @@ export default function DashboardPage() {
                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>
                             {showPlan
                                 ? `${new Date().toLocaleDateString('en-PK', { month: 'long', year: 'numeric' })} — Honda Plan · Sold · Pending · Stock`
-                                : '🏍️ Stock in Hand — Model Wise'}
+                                : 'Stock in Hand — Model Wise'}
                         </div>
                         {!showPlan ? (
                             <button onClick={() => setShowPlan(true)} className="btn btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}>📋 Show Plan</button>
@@ -771,7 +770,7 @@ export default function DashboardPage() {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                                         <div>
                                             <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{cs.customerName}</span>
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>🏍️ {cs.bikeModel}</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>{cs.bikeModel}</span>
                                             {cs.customerMobile && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>📞 {cs.customerMobile}</span>}
                                             {cs.source === 'ADVANCE_BOOKING' && (
                                                 <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#8b5cf6', background: 'rgba(139,92,246,0.12)', padding: '1px 6px', borderRadius: '4px', marginLeft: '0.5rem' }}>ADVANCE BOOKING</span>

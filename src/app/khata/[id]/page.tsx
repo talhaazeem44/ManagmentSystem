@@ -34,7 +34,7 @@ interface AvailableBike {
 interface KhataTransaction {
     _id: string;
     date: string;
-    type: 'STOCK_GIVEN' | 'PAYMENT' | 'EXCHANGE_RETURN';
+    type: 'STOCK_GIVEN' | 'PAYMENT' | 'EXCHANGE_RETURN' | 'REFUND';
     description: string;
     amount: number;
     margin?: number;
@@ -75,6 +75,9 @@ interface BikeRow {
 }
 
 const emptyPaymentForm = { amount: '', paymentMode: 'CASH' as 'CASH' | 'BANK_TRANSFER' | 'CREDIT', note: '', date: '' };
+// A refund is always real money leaving the till — unlike a stock sale, "CREDIT" isn't a
+// meaningful mode here, so it's left out of the type entirely.
+const emptyRefundForm = { amount: '', paymentMode: 'CASH' as 'CASH' | 'BANK_TRANSFER', note: '', date: '' };
 const newBikeSlot = (): BikeSlot => ({ slotKey: Math.random().toString(36).slice(2), search: '' });
 const newBikeRow = (): BikeRow => ({ key: Math.random().toString(36).slice(2), model: '', quantity: '1', pricePerUnit: '', bikeSlots: [newBikeSlot()] });
 
@@ -270,12 +273,13 @@ export default function KhataDetailPage() {
     const { toasts, showToast, removeToast } = useToast();
     const [party, setParty] = useState<KhataParty | null>(null);
     const [loading, setLoading] = useState(true);
-    const [activeForm, setActiveForm] = useState<'STOCK' | 'PAYMENT' | 'EXCHANGE' | null>(null);
+    const [activeForm, setActiveForm] = useState<'STOCK' | 'PAYMENT' | 'EXCHANGE' | 'REFUND' | null>(null);
     const [bikeRows, setBikeRows] = useState<BikeRow[]>([newBikeRow()]);
     const [stockDate, setStockDate] = useState('');
     const [stockNote, setStockNote] = useState('');
     const [otherAmount, setOtherAmount] = useState('');
     const [paymentForm, setPaymentForm] = useState(emptyPaymentForm);
+    const [refundForm, setRefundForm] = useState(emptyRefundForm);
     const [exchangeForm, setExchangeForm] = useState({ bikeSearch: '', bikeId: '', model: '', engineNumber: '', chassisNumber: '', amount: '', date: '', note: '' });
     const [submitting, setSubmitting] = useState(false);
     const [confirmDeleteTx, setConfirmDeleteTx] = useState<string | null>(null);
@@ -298,7 +302,7 @@ export default function KhataDetailPage() {
         );
         let bal = 0;
         for (const t of sorted) {
-            if (t.type === 'STOCK_GIVEN') bal += t.amount;
+            if (t.type === 'STOCK_GIVEN' || t.type === 'REFUND') bal += t.amount;
             else if (t.type === 'PAYMENT') bal -= t.amount;
             if (t._id === txId) break;
         }
@@ -439,6 +443,35 @@ export default function KhataDetailPage() {
         }
     };
 
+    const handleAddRefund = async () => {
+        setSubmitting(true);
+        try {
+            const res = await fetch(`/api/khata/${id}/transactions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'REFUND',
+                    description: 'Advance Refund',
+                    amount: Number(refundForm.amount),
+                    paymentMode: refundForm.paymentMode,
+                    note: refundForm.note,
+                    date: refundForm.date || undefined,
+                }),
+            });
+            if (res.ok) {
+                showToast('Refund recorded', 'success');
+                setRefundForm(emptyRefundForm);
+                setActiveForm(null);
+                fetchParty();
+            } else {
+                const err = await res.json();
+                showToast(err.message || 'Failed', 'error');
+            }
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     const handleAddExchange = async () => {
         if (!exchangeForm.bikeId || !exchangeForm.amount) return;
         setSubmitting(true);
@@ -486,7 +519,7 @@ export default function KhataDetailPage() {
     const handleEditInit = (tx: KhataTransaction) => {
         setActiveForm(null);
         setEditingTx(tx);
-        if (tx.type === 'PAYMENT') {
+        if (tx.type === 'PAYMENT' || tx.type === 'REFUND') {
             setEditPaymentForm({
                 amount: String(tx.amount),
                 paymentMode: tx.paymentMode || 'CASH',
@@ -521,6 +554,8 @@ export default function KhataDetailPage() {
             let body: any;
             if (editingTx.type === 'PAYMENT') {
                 body = { type: 'PAYMENT', amount: Number(editPaymentForm.amount), paymentMode: editPaymentForm.paymentMode, note: editPaymentForm.note, date: editPaymentForm.date || undefined };
+            } else if (editingTx.type === 'REFUND') {
+                body = { type: 'REFUND', amount: Number(editPaymentForm.amount), paymentMode: editPaymentForm.paymentMode, note: editPaymentForm.note, date: editPaymentForm.date || undefined };
             } else {
                 const items = expandRowsToItems(editBikeRows);
                 body = { type: 'STOCK_GIVEN', items, otherAmount: Number(editOtherAmount) || 0, date: editDate || undefined, note: editNote };
@@ -569,17 +604,17 @@ export default function KhataDetailPage() {
         if (selectedMonth !== 'ALL') {
             const [y, m] = selectedMonth.split('-').map(Number);
             const monthStart = new Date(y, m - 1, 1);
-            // Only STOCK_GIVEN and PAYMENT affect the financial balance
+            // STOCK_GIVEN/REFUND and PAYMENT are the only types that affect the financial balance
             balance = (party?.transactions || [])
                 .filter(t => new Date(t.date) < monthStart)
                 .reduce((s, t) => {
-                    if (t.type === 'STOCK_GIVEN') return s + t.amount;
+                    if (t.type === 'STOCK_GIVEN' || t.type === 'REFUND') return s + t.amount;
                     if (t.type === 'PAYMENT') return s - t.amount;
                     return s; // EXCHANGE_RETURN: no effect on outstanding
                 }, 0);
         }
         return filteredTxs.map(t => {
-            if (t.type === 'STOCK_GIVEN') balance += t.amount;
+            if (t.type === 'STOCK_GIVEN' || t.type === 'REFUND') balance += t.amount;
             else if (t.type === 'PAYMENT') balance -= t.amount;
             // EXCHANGE_RETURN: balance stays the same — it's inventory record only
             return { ...t, runningBalance: balance };
@@ -589,6 +624,7 @@ export default function KhataDetailPage() {
     const filteredDebit = filteredTxs.filter(t => t.type === 'STOCK_GIVEN').reduce((s, t) => s + t.amount, 0);
     const filteredCredit = filteredTxs.filter(t => t.type === 'PAYMENT').reduce((s, t) => s + t.amount, 0);
     const filteredExchanged = filteredTxs.filter(t => t.type === 'EXCHANGE_RETURN').reduce((s, t) => s + t.amount, 0);
+    const filteredRefunded = filteredTxs.filter(t => t.type === 'REFUND').reduce((s, t) => s + t.amount, 0);
     const filteredMargin = filteredTxs.filter(t => t.type === 'STOCK_GIVEN').reduce((s, t) => s + (t.margin || 0), 0);
 
     const monthLabel = (m: string) => {
@@ -611,22 +647,24 @@ export default function KhataDetailPage() {
             [`Generated: ${new Date().toLocaleString('en-PK')}`],
             [`Period: ${selectedMonth === 'ALL' ? 'All Time' : monthLabel(selectedMonth)}`],
             [],
-            ['Date', 'Details', 'Stock Given (Rs.)', 'Paid (Rs.)', 'Balance (Rs.)'],
+            ['Date', 'Details', 'Stock Given (Rs.)', 'Paid (Rs.)', 'Refunded (Rs.)', 'Balance (Rs.)'],
             ...runningRows.map(t => [
                 new Date(t.date).toLocaleDateString('en-PK'),
                 t.description,
                 t.type === 'STOCK_GIVEN' ? t.amount : '',
                 t.type === 'PAYMENT' ? t.amount : '',
+                t.type === 'REFUND' ? t.amount : '',
                 t.runningBalance,
             ]),
             [],
             ['Total Stock Given', '', filteredDebit],
             ['Total Paid', '', '', filteredCredit],
-            ['Remaining / Outstanding Amount', '', '', '', party.balance],
+            ...(filteredRefunded > 0 ? [['Total Refunded', '', '', '', filteredRefunded]] : []),
+            ['Remaining / Outstanding Amount', '', '', '', '', party.balance],
         ];
 
         const ws = XLSX.utils.aoa_to_sheet(rows);
-        ws['!cols'] = [{ wch: 14 }, { wch: 38 }, { wch: 16 }, { wch: 14 }, { wch: 16 }];
+        ws['!cols'] = [{ wch: 14 }, { wch: 38 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 16 }];
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Statement');
         XLSX.writeFile(wb, `${party.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-statement.xlsx`);
@@ -656,7 +694,7 @@ export default function KhataDetailPage() {
         }
 
         rows.push([]);
-        rows.push([tx.type === 'STOCK_GIVEN' ? 'Stock Given Amount (Rs.)' : 'Payment Received (Rs.)', tx.amount]);
+        rows.push([tx.type === 'STOCK_GIVEN' ? 'Stock Given Amount (Rs.)' : tx.type === 'REFUND' ? 'Refunded Amount (Rs.)' : 'Payment Received (Rs.)', tx.amount]);
         rows.push(['Balance After This Entry (Rs.)', tx.runningBalance]);
 
         const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -700,6 +738,12 @@ export default function KhataDetailPage() {
                             style={activeForm !== 'EXCHANGE' ? { background: 'rgba(139,92,246,0.15)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.4)' } : {}}
                             onClick={() => setActiveForm(activeForm === 'EXCHANGE' ? null : 'EXCHANGE')}>
                             {activeForm === 'EXCHANGE' ? 'Cancel' : '🔄 Exchange Return'}
+                        </button>
+                        <button className={`btn ${activeForm === 'REFUND' ? 'btn-secondary' : ''}`}
+                            title="Give cash back to this party instead of working off their advance with stock"
+                            style={activeForm !== 'REFUND' ? { background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.4)' } : {}}
+                            onClick={() => setActiveForm(activeForm === 'REFUND' ? null : 'REFUND')}>
+                            {activeForm === 'REFUND' ? 'Cancel' : '💸 Refund Advance'}
                         </button>
                     </div>
                 </div>
@@ -897,6 +941,45 @@ export default function KhataDetailPage() {
                     </div>
                 )}
 
+                {/* ── Refund form — hands cash back to a party who's paid in advance, instead
+                       of working off that credit with stock. ── */}
+                {activeForm === 'REFUND' && (
+                    <div className="card" style={{ marginBottom: '1.25rem', borderLeft: '4px solid #f59e0b' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.25rem' }}>💸 Refund Advance</h3>
+                        <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+                            Gives cash back to {party.name} instead of giving stock — reduces their advance/credit balance with you.
+                        </p>
+                        <div className="grid-2" style={{ marginBottom: '1rem' }}>
+                            <div className="form-group">
+                                <label className="label">Amount (PKR) *</label>
+                                <input type="text" inputMode="decimal" className="input" value={refundForm.amount}
+                                    onChange={e => setRefundForm({ ...refundForm, amount: e.target.value })} placeholder="50000" />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Refunded Via *</label>
+                                <select className="select" value={refundForm.paymentMode}
+                                    onChange={e => setRefundForm({ ...refundForm, paymentMode: e.target.value as any })}>
+                                    <option value="CASH">Cash</option>
+                                    <option value="BANK_TRANSFER">Bank Transfer</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Date</label>
+                                <input type="date" className="input" value={refundForm.date}
+                                    onChange={e => setRefundForm({ ...refundForm, date: e.target.value })} />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Note</label>
+                                <input className="input" value={refundForm.note}
+                                    onChange={e => setRefundForm({ ...refundForm, note: e.target.value })} placeholder="Reference / note..." />
+                            </div>
+                        </div>
+                        <button className="btn" style={{ background: '#f59e0b', color: '#fff' }} disabled={submitting || !refundForm.amount} onClick={handleAddRefund}>
+                            {submitting ? 'Saving...' : '✅ Give Refund'}
+                        </button>
+                    </div>
+                )}
+
                 {/* ── Exchange Return form ── */}
                 {activeForm === 'EXCHANGE' && (
                     <div className="card" style={{ marginBottom: '1.25rem', borderLeft: '4px solid #8b5cf6' }}>
@@ -1001,6 +1084,11 @@ export default function KhataDetailPage() {
                                 Exchanged: <strong style={{ color: '#8b5cf6' }}>Rs. {filteredExchanged.toLocaleString()}</strong>
                             </div>
                         )}
+                        {filteredRefunded > 0 && (
+                            <div style={{ padding: '0.5rem 0.9rem', background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '8px', fontSize: '0.82rem' }}>
+                                Refunded: <strong style={{ color: '#f59e0b' }}>Rs. {filteredRefunded.toLocaleString()}</strong>
+                            </div>
+                        )}
                         {filteredMargin !== 0 && (
                             <div style={{ padding: '0.5rem 0.9rem', background: 'rgba(139,92,246,0.07)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '8px', fontSize: '0.82rem' }}>
                                 Margin: <strong style={{ color: '#8b5cf6' }}>Rs. {filteredMargin.toLocaleString()}</strong>
@@ -1014,12 +1102,12 @@ export default function KhataDetailPage() {
                     <div className="card" style={{ marginBottom: '1.25rem', borderLeft: '4px solid #f59e0b' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                             <h3 style={{ fontSize: '1rem', fontWeight: 700 }}>
-                                ✏️ Edit {editingTx.type === 'PAYMENT' ? 'Payment' : 'Stock Entry'}
+                                ✏️ Edit {editingTx.type === 'PAYMENT' ? 'Payment' : editingTx.type === 'REFUND' ? 'Refund' : 'Stock Entry'}
                             </h3>
                             <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.3rem 0.75rem' }} onClick={() => setEditingTx(null)}>Cancel</button>
                         </div>
 
-                        {editingTx.type === 'PAYMENT' ? (
+                        {(editingTx.type === 'PAYMENT' || editingTx.type === 'REFUND') ? (
                             <div className="grid-2" style={{ marginBottom: '1rem' }}>
                                 <div className="form-group">
                                     <label className="label">Amount (PKR) *</label>
@@ -1027,12 +1115,12 @@ export default function KhataDetailPage() {
                                         onChange={e => setEditPaymentForm({ ...editPaymentForm, amount: e.target.value })} placeholder="50000" />
                                 </div>
                                 <div className="form-group">
-                                    <label className="label">Payment Mode *</label>
+                                    <label className="label">{editingTx.type === 'REFUND' ? 'Refunded Via' : 'Payment Mode'} *</label>
                                     <select className="select" value={editPaymentForm.paymentMode}
                                         onChange={e => setEditPaymentForm({ ...editPaymentForm, paymentMode: e.target.value as any })}>
                                         <option value="CASH">Cash</option>
                                         <option value="BANK_TRANSFER">Bank Transfer</option>
-                                        <option value="CREDIT">Credit (still owed)</option>
+                                        {editingTx.type === 'PAYMENT' && <option value="CREDIT">Credit (still owed)</option>}
                                     </select>
                                 </div>
                                 <div className="form-group">
@@ -1080,7 +1168,7 @@ export default function KhataDetailPage() {
                             </>
                         )}
 
-                        <button className="btn btn-primary" disabled={editSubmitting || (editingTx.type === 'STOCK_GIVEN' && !editStockValid) || (editingTx.type === 'PAYMENT' && !editPaymentForm.amount)}
+                        <button className="btn btn-primary" disabled={editSubmitting || (editingTx.type === 'STOCK_GIVEN' && !editStockValid) || ((editingTx.type === 'PAYMENT' || editingTx.type === 'REFUND') && !editPaymentForm.amount)}
                             onClick={handleSaveEdit}>
                             {editSubmitting ? 'Saving...' : '✅ Save Changes'}
                         </button>
@@ -1138,6 +1226,9 @@ export default function KhataDetailPage() {
                                                     )}
                                                     {tx.type === 'EXCHANGE_RETURN' && (
                                                         <span style={{ color: '#8b5cf6' }}>🔄 Rs. {tx.amount.toLocaleString()}</span>
+                                                    )}
+                                                    {tx.type === 'REFUND' && (
+                                                        <span style={{ color: '#f59e0b' }} title="Cash given back to this party">💸 Rs. {tx.amount.toLocaleString()}</span>
                                                     )}
                                                     {tx.type === 'STOCK_GIVEN' && '—'}
                                                 </td>

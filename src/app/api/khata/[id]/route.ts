@@ -7,7 +7,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     const { id } = await params;
     const party = await KhataParty.findById(id).lean();
     if (!party) return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    const totalDebit = (party.transactions || []).filter((t: any) => t.type === 'STOCK_GIVEN').reduce((s: number, t: any) => s + t.amount, 0);
+    const totalDebit = (party.transactions || []).filter((t: any) => t.type === 'STOCK_GIVEN' || t.type === 'REFUND').reduce((s: number, t: any) => s + t.amount, 0);
     const totalCredit = (party.transactions || []).filter((t: any) => t.type === 'PAYMENT').reduce((s: number, t: any) => s + t.amount, 0);
     const totalExchanged = (party.transactions || []).filter((t: any) => t.type === 'EXCHANGE_RETURN').reduce((s: number, t: any) => s + t.amount, 0);
     // outstanding = stock given minus cash payments only; exchange returns are inventory record, not financial settlement

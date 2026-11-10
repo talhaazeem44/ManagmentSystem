@@ -10,7 +10,9 @@ export async function GET() {
     await dbConnect();
     const parties = await KhataParty.find({}).sort({ updatedAt: -1 }).lean();
     return NextResponse.json(parties.map(p => {
-        const totalDebit = p.transactions.filter((t: any) => t.type === 'STOCK_GIVEN').reduce((s: number, t: any) => s + t.amount, 0);
+        // REFUND moves the balance the same direction as STOCK_GIVEN (cash handed back reduces
+        // their credit with us, same as stock would) — see models/index.ts for the full rationale.
+        const totalDebit = p.transactions.filter((t: any) => t.type === 'STOCK_GIVEN' || t.type === 'REFUND').reduce((s: number, t: any) => s + t.amount, 0);
         const totalCredit = p.transactions.filter((t: any) => t.type === 'PAYMENT').reduce((s: number, t: any) => s + t.amount, 0);
         return {
             _id: p._id,
