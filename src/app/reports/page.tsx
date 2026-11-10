@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { MARGIN_PASSWORD } from '@/lib/constants';
+import MarginLockScreen from '@/components/MarginLockScreen';
 import Loader from '@/components/Loader';
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -148,16 +148,6 @@ function getRangeDates(filter: QuickFilter): { start: Date; end: Date } {
 }
 
 export default function ReportsPage() {
-    const [unlocked, setUnlocked] = useState(false);
-    const [password, setPassword] = useState('');
-    const [pwError, setPwError] = useState(false);
-
-    const handleUnlock = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (password === MARGIN_PASSWORD) { setUnlocked(true); setPwError(false); }
-        else { setPwError(true); setPassword(''); }
-    };
-
     const [data, setData] = useState<ReportData | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<QuickFilter>('today');
@@ -303,31 +293,9 @@ export default function ReportsPage() {
     const profitBeforeExp = (r?.bikeProfit ?? 0) + (r?.regProfit ?? 0) + (r?.workshopProfit ?? 0);
     const totalAllExp = (r?.expenseCash ?? 0) + (r?.expenseMargin ?? 0);
 
-    if (!unlocked) {
-        return (
-            <DashboardLayout>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-                    <div className="card" style={{ maxWidth: '380px', width: '100%', textAlign: 'center', padding: '2.5rem' }}>
-                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</div>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>Reports</h2>
-                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-                            Enter password to view reports
-                        </p>
-                        <form onSubmit={handleUnlock}>
-                            <input type="password" className="input" placeholder="Password" value={password}
-                                onChange={e => { setPassword(e.target.value); setPwError(false); }}
-                                style={{ marginBottom: '0.75rem', borderColor: pwError ? '#ef4444' : undefined, textAlign: 'center', fontSize: '1.25rem', letterSpacing: '0.2em' }}
-                                autoFocus />
-                            {pwError && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Wrong password</p>}
-                            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Unlock</button>
-                        </form>
-                    </div>
-                </div>
-            </DashboardLayout>
-        );
-    }
-
     return (
+        <MarginLockScreen title="Reports" subtitle="Enter password to view reports">
+            {(relock) => (
         <DashboardLayout>
             <div className="animate-fade-in">
                 {/* Header */}
@@ -346,7 +314,7 @@ export default function ReportsPage() {
                             </button>
                         </>)}
                         <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }}
-                            onClick={() => { setUnlocked(false); setPassword(''); setData(null); }}>
+                            onClick={() => { relock(); setData(null); }}>
                             🔒 Lock
                         </button>
                     </div>
@@ -723,5 +691,7 @@ export default function ReportsPage() {
                 )}
             </div>
         </DashboardLayout>
+            )}
+        </MarginLockScreen>
     );
 }

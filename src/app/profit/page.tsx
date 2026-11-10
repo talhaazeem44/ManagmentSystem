@@ -2,7 +2,7 @@
 
 import { Fragment, useMemo, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { MARGIN_PASSWORD } from '@/lib/constants';
+import MarginLockScreen from '@/components/MarginLockScreen';
 import Loader from '@/components/Loader';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line } from 'recharts';
 
@@ -94,9 +94,6 @@ function daysBetween(from: Date, to: Date) {
 }
 
 export default function ProfitPage() {
-    const [unlocked, setUnlocked] = useState(false);
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState(false);
     const [stats, setStats] = useState<Stats | null>(null);
 
     // margin tracker
@@ -149,16 +146,6 @@ export default function ProfitPage() {
     const [preCollectionExpenseList, setPreCollectionExpenseList] = useState<ExpenseItem[]>([]);
     const [hasPreCollectionData, setHasPreCollectionData] = useState(false);
     const [showPreCollectionLedger, setShowPreCollectionLedger] = useState(false);
-
-    const handleUnlock = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (password === MARGIN_PASSWORD) {
-            setUnlocked(true); setError(false);
-            fetchAll();
-        } else {
-            setError(true); setPassword('');
-        }
-    };
 
     const fetchAll = async () => {
         setLoading(true);
@@ -484,33 +471,11 @@ export default function ProfitPage() {
     const hasCashToDeposit  = uncollectedCash > 0;
     const monthCash         = monthCashStats?.cashReceived ?? 0;
 
-    if (!unlocked) {
-        return (
-            <DashboardLayout>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-                    <div className="card" style={{ maxWidth: '380px', width: '100%', textAlign: 'center', padding: '2.5rem' }}>
-                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</div>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>Profit Breakdown</h2>
-                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-                            Enter password to view profit details
-                        </p>
-                        <form onSubmit={handleUnlock}>
-                            <input type="password" className="input" placeholder="Password" value={password}
-                                onChange={e => { setPassword(e.target.value); setError(false); }}
-                                style={{ marginBottom: '0.75rem', borderColor: error ? '#ef4444' : undefined, textAlign: 'center', fontSize: '1.25rem', letterSpacing: '0.2em' }}
-                                autoFocus />
-                            {error && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Wrong password</p>}
-                            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Unlock</button>
-                        </form>
-                    </div>
-                </div>
-            </DashboardLayout>
-        );
-    }
-
     const monthName = new Date().toLocaleDateString('en-PK', { month: 'long' });
 
     return (
+        <MarginLockScreen title="Profit Breakdown" subtitle="Enter password to view profit details" onUnlock={fetchAll}>
+            {(relock) => (
         <DashboardLayout>
             <div className="animate-fade-in">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -519,7 +484,7 @@ export default function ProfitPage() {
                         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Today — {new Date().toLocaleDateString('en-PK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                     </div>
                     <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }}
-                        onClick={() => { setUnlocked(false); setPassword(''); setStats(null); setSinceStats(null); setMonthStats(null); setLastMarginCol(null); setSinceCashStats(null); setMonthCashStats(null); setLastCashCol(null); }}>
+                        onClick={() => { relock(); setStats(null); setSinceStats(null); setMonthStats(null); setLastMarginCol(null); setSinceCashStats(null); setMonthCashStats(null); setLastCashCol(null); }}>
                         🔒 Lock
                     </button>
                 </div>
@@ -1062,5 +1027,7 @@ export default function ProfitPage() {
                 )}
             </div>
         </DashboardLayout>
+            )}
+        </MarginLockScreen>
     );
 }

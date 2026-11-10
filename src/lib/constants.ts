@@ -114,7 +114,7 @@ export function calcAdvanceMargin(bikeModel: string, totalPrice: number, registr
 }
 
 // Password to unlock margin section on dashboard
-export const MARGIN_PASSWORD = '786';
+export const MARGIN_PASSWORD = '1342';
 
 // Main-nav sections a 'user'-role account can be individually granted/denied access to.
 // `key` is the first path segment of every page in that section (e.g. '/sales/new' and
