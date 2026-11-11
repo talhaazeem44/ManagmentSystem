@@ -124,6 +124,13 @@ export async function PATCH(
                 set.balance = Math.max(0, currentBalance - paymentAmount);
             }
 
+            // Once a credit sale is fully paid off, it's no longer meaningfully "on credit" —
+            // relabel it by how the settling payment actually came in, so it stops showing up
+            // as CREDIT everywhere (Mode badges, breakdown tables) once there's nothing owed.
+            if (set.balance === 0 && existing.paymentMode === 'CREDIT') {
+                set.paymentMode = mode;
+            }
+
             const sale = await Sale.findByIdAndUpdate(
                 id,
                 {
