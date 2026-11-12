@@ -517,6 +517,7 @@ export const WorkshopDeposit: Model<IWorkshopDeposit> = models.WorkshopDeposit |
 // ── Khata Party ──────────────────────────────────────────────────────────────
 export interface IKhataItem {
     model: string;
+    color?: string;
     quantity: number;
     pricePerUnit: number;
     standardPrice: number;
@@ -558,6 +559,7 @@ const KhataTransactionSchema = new Schema<IKhataTransaction>({
     margin: { type: Number, default: 0 },
     items: [{
         model: { type: String },
+        color: { type: String },
         quantity: { type: Number },
         pricePerUnit: { type: Number },
         standardPrice: { type: Number },

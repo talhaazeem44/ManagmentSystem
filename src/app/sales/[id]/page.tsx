@@ -443,9 +443,15 @@ export default function ReceiptPage() {
                         </div>
                     </div>
 
-                    <div className={styles.field}>
-                        <span className={styles.label}>Model:</span>
-                        <span className={styles.value}>{new Date(sale.saleDate).getFullYear()}</span>
+                    <div className={styles.specsRow} style={{ marginBottom: '0.4rem' }}>
+                        <div className={styles.field} style={{ flex: 1, marginBottom: 0 }}>
+                            <span className={styles.label} style={{ minWidth: '100px' }}>Model:</span>
+                            <span className={styles.value}>{new Date(sale.saleDate).getFullYear()}</span>
+                        </div>
+                        <div className={styles.field} style={{ flex: 1, marginBottom: 0 }}>
+                            <span className={styles.label} style={{ minWidth: '80px' }}>Colour:</span>
+                            <span className={styles.value}>{sale.bike.color || sale.receiptColour || ''}</span>
+                        </div>
                     </div>
 
                     <div className={styles.specsRow}>

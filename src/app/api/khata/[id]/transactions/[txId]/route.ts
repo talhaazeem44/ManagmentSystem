@@ -65,16 +65,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         const existingTx = (existingParty as any)?.transactions?.find((t: any) => t._id.toString() === txId);
         oldBikeIds = (existingTx?.items || []).map((i: any) => i.bikeId?.toString()).filter(Boolean);
 
-        const items = (body.items || [])
+        let items = (body.items || [])
             .filter((item: any) => item.model && Number(item.quantity) > 0 && Number(item.pricePerUnit) > 0)
             .map((item: any) => {
                 const model = item.model;
+                const color = item.color ? String(item.color).trim() : undefined;
                 const quantity = item.bikeId ? 1 : Number(item.quantity);
                 const pricePerUnit = Number(item.pricePerUnit);
                 const { referencePrice: standardPrice, baseMargin, margin: marginPerUnit } = getKhataMargin(model, pricePerUnit);
                 const totalMargin = quantity * marginPerUnit;
                 return {
-                    model, quantity, pricePerUnit, standardPrice, baseMargin, totalMargin,
+                    model, color, quantity, pricePerUnit, standardPrice, baseMargin, totalMargin,
                     bikeId: item.bikeId || undefined,
                     engineNumber: item.engineNumber || undefined,
                     chassisNumber: item.chassisNumber || undefined,
@@ -93,6 +94,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             if (notAvailable.length > 0) {
                 return NextResponse.json({ message: `Bike ${notAvailable[0].engineNumber} is no longer available (already sold)` }, { status: 409 });
             }
+        }
+
+        if (newBikeIds.length > 0) {
+            const linkedBikes = await Bike.find({ _id: { $in: newBikeIds } }, 'color').lean();
+            const bikeColorMap = new Map(linkedBikes.map((b: any) => [b._id.toString(), b.color]));
+            items = items.map((i: any) => ({
+                ...i,
+                color: i.color || (i.bikeId ? bikeColorMap.get(i.bikeId.toString()) : undefined),
+            }));
         }
 
         const amount = items.reduce((s: number, i: any) => s + i.quantity * i.pricePerUnit, 0) + (Number(body.otherAmount) || 0);

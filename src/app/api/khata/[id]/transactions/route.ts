@@ -22,12 +22,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             .filter((item: any) => item.model && Number(item.quantity) > 0 && Number(item.pricePerUnit) > 0)
             .map((item: any) => {
                 const model = item.model;
+                const color = item.color ? String(item.color).trim() : undefined;
                 const quantity = item.bikeId ? 1 : Number(item.quantity);
                 const pricePerUnit = Number(item.pricePerUnit);
                 const { referencePrice: standardPrice, baseMargin, margin: marginPerUnit } = getKhataMargin(model, pricePerUnit);
                 const totalMargin = quantity * marginPerUnit;
                 return {
-                    model, quantity, pricePerUnit, standardPrice, baseMargin, totalMargin,
+                    model, color, quantity, pricePerUnit, standardPrice, baseMargin, totalMargin,
                     bikeId: item.bikeId || undefined,
                     engineNumber: item.engineNumber || undefined,
                     chassisNumber: item.chassisNumber || undefined,
@@ -39,8 +40,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
         // Validate every referenced bike is real and still available before committing anything
         const bikeIds = items.map((i: any) => i.bikeId).filter(Boolean);
+        let foundBikes: any[] = [];
         if (bikeIds.length > 0) {
-            const foundBikes = await Bike.find({ _id: { $in: bikeIds } }).lean();
+            foundBikes = await Bike.find({ _id: { $in: bikeIds } }).lean();
             const notAvailable = foundBikes.filter((b: any) => b.status !== 'AVAILABLE');
             if (foundBikes.length !== bikeIds.length) {
                 return NextResponse.json({ message: 'One of the selected bikes no longer exists' }, { status: 409 });
@@ -49,6 +51,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
                 return NextResponse.json({ message: `Bike ${notAvailable[0].engineNumber} is no longer available (already sold)` }, { status: 409 });
             }
         }
+
+        const bikeColorMap = new Map(foundBikes.map((b: any) => [b._id.toString(), b.color]));
+        items = items.map((i: any) => ({
+            ...i,
+            color: i.color || (i.bikeId ? bikeColorMap.get(i.bikeId.toString()) : undefined),
+        }));
 
         amount = items.reduce((s: number, i: any) => s + i.quantity * i.pricePerUnit, 0) + (Number(body.otherAmount) || 0);
         margin = items.reduce((s: number, i: any) => s + i.totalMargin, 0);
@@ -69,6 +77,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         description = body.description?.trim() || `Exchange Return — ${bike.model} (${bike.engineNumber})`;
         items = [{
             model: bike.model,
+            color: bike.color,
             quantity: 1,
             pricePerUnit: amount,
             standardPrice: amount,

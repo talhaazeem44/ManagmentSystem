@@ -115,7 +115,7 @@ export function formatKhataReceiptWhatsAppMessage(
         date: string | Date;
         amount: number;
         description?: string;
-        items?: Array<{ model?: string; quantity?: number; pricePerUnit?: number; engineNumber?: string }>;
+        items?: Array<{ model?: string; color?: string; quantity?: number; pricePerUnit?: number; engineNumber?: string }>;
     },
     balance: number,
     receiptUrl?: string
@@ -139,11 +139,12 @@ export function formatKhataReceiptWhatsAppMessage(
 
     if (tx.items && tx.items.length > 0) {
         tx.items.forEach((item, idx) => {
-            const bikeDetail = item.engineNumber ? ` (${item.engineNumber})` : '';
+            const colorDetail = item.color ? ` (${item.color})` : '';
+            const bikeDetail = item.engineNumber ? ` [${item.engineNumber}]` : '';
             const qty = item.quantity || 1;
             const price = Number(item.pricePerUnit || 0);
             lines.push(
-                `${idx + 1}. *${item.model || 'Bike'}*${bikeDetail}\n   Qty: ${qty} × Rs. ${price.toLocaleString()} = Rs. ${(qty * price).toLocaleString()}`
+                `${idx + 1}. *${item.model || 'Bike'}*${colorDetail}${bikeDetail}\n   Qty: ${qty} × Rs. ${price.toLocaleString()} = Rs. ${(qty * price).toLocaleString()}`
             );
         });
     } else {

@@ -253,9 +253,15 @@ export default function AdvanceBookingReceiptPage() {
                             </div>
                         </div>
 
-                        <div className={saleStyles.field}>
-                            <span className={saleStyles.label}>Model:</span>
-                            <span className={saleStyles.value}>{deliveryDate.getFullYear()}</span>
+                        <div className={saleStyles.specsRow} style={{ marginBottom: '0.4rem' }}>
+                            <div className={saleStyles.field} style={{ flex: 1, marginBottom: 0 }}>
+                                <span className={saleStyles.label} style={{ minWidth: '100px' }}>Model:</span>
+                                <span className={saleStyles.value}>{deliveryDate.getFullYear()}</span>
+                            </div>
+                            <div className={saleStyles.field} style={{ flex: 1, marginBottom: 0 }}>
+                                <span className={saleStyles.label} style={{ minWidth: '80px' }}>Colour:</span>
+                                <span className={saleStyles.value}>{booking.bikeColor || ''}</span>
+                            </div>
                         </div>
 
                         <div className={saleStyles.specsRow}>

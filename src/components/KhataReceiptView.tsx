@@ -6,6 +6,7 @@ import styles from './KhataReceiptView.module.css';
 
 export interface KhataReceiptItem {
     model: string;
+    color?: string;
     quantity: number;
     pricePerUnit: number;
     engineNumber?: string;
@@ -112,6 +113,7 @@ export const KhataReceiptView = forwardRef<HTMLDivElement, KhataReceiptViewProps
                     <thead>
                         <tr>
                             <th>Model</th>
+                            <th>Color</th>
                             <th>Engine # / Chassis #</th>
                             <th className={styles.num}>Qty</th>
                             <th className={styles.num}>Price / Unit</th>
@@ -123,6 +125,7 @@ export const KhataReceiptView = forwardRef<HTMLDivElement, KhataReceiptViewProps
                             items.map((item, i) => (
                                 <tr key={i}>
                                     <td>{item.model}</td>
+                                    <td>{item.color || '—'}</td>
                                     <td>
                                         {item.engineNumber
                                             ? `${item.engineNumber} / ${item.chassisNumber || '—'}`
@@ -139,7 +142,7 @@ export const KhataReceiptView = forwardRef<HTMLDivElement, KhataReceiptViewProps
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={2}>{tx.description || 'Stock Given'}</td>
+                                <td colSpan={3}>{tx.description || 'Stock Given'}</td>
                                 <td className={styles.num}>1</td>
                                 <td className={styles.num}>Rs. {tx.amount.toLocaleString()}</td>
                                 <td className={styles.num}>Rs. {tx.amount.toLocaleString()}</td>

@@ -110,7 +110,7 @@ export default function KhataShareModal({
     };
 
     const itemsSummary = (tx.items || [])
-        .map(i => `${i.quantity}x ${i.model}`)
+        .map(i => `${i.quantity}x ${i.model}${i.color ? ` (${i.color})` : ''}`)
         .join(', ') || tx.description || 'Stock Given';
 
     return (

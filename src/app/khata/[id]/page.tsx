@@ -7,12 +7,13 @@ import DashboardLayout from '@/components/DashboardLayout';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 import Loader from '@/components/Loader';
-import { HONDA_BIKE_MODELS, getKhataMargin } from '@/lib/constants';
+import { HONDA_BIKE_MODELS, BIKE_COLORS, getKhataMargin } from '@/lib/constants';
 import { dateInputValue } from '@/lib/dates';
 import KhataShareModal from '@/components/KhataShareModal';
 
 interface KhataItem {
     model: string;
+    color?: string;
     quantity: number;
     pricePerUnit: number;
     standardPrice: number;
@@ -59,6 +60,7 @@ interface KhataParty {
 interface BikeSlot {
     slotKey: string;
     bikeId?: string;
+    color?: string;
     engineNumber?: string;
     chassisNumber?: string;
     search: string;
@@ -67,6 +69,7 @@ interface BikeSlot {
 interface BikeRow {
     key: string;
     model: string;
+    color?: string;
     quantity: string;
     pricePerUnit: string;
     // One slot per unit — lets a "3x CD70" row link 3 distinct real bikes instead of forcing quantity to 1.
@@ -79,7 +82,7 @@ const emptyPaymentForm = { amount: '', paymentMode: 'CASH' as 'CASH' | 'BANK_TRA
 // meaningful mode here, so it's left out of the type entirely.
 const emptyRefundForm = { amount: '', paymentMode: 'CASH' as 'CASH' | 'BANK_TRANSFER', note: '', date: '' };
 const newBikeSlot = (): BikeSlot => ({ slotKey: Math.random().toString(36).slice(2), search: '' });
-const newBikeRow = (): BikeRow => ({ key: Math.random().toString(36).slice(2), model: '', quantity: '1', pricePerUnit: '', bikeSlots: [newBikeSlot()] });
+const newBikeRow = (): BikeRow => ({ key: Math.random().toString(36).slice(2), model: '', color: '', quantity: '1', pricePerUnit: '', bikeSlots: [newBikeSlot()] });
 
 interface ComputedRow { stdPrice: number; baseMargin: number; marginPerBike: number; rowTotal: number; rowMargin: number }
 
@@ -131,12 +134,16 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
         }
     };
 
+    const updateColor = (key: string, value: string) =>
+        setRows(rs => rs.map(r => r.key === key ? { ...r, color: value } : r));
+
     const selectSlotBike = (rowKey: string, slotKey: string, bike: AvailableBike) =>
         setRows(rs => rs.map(r => r.key !== rowKey ? r : {
             ...r,
             model: r.model || bike.model,
+            color: r.color || bike.color,
             bikeSlots: r.bikeSlots.map(s => s.slotKey === slotKey
-                ? { slotKey, bikeId: bike.id, engineNumber: bike.engineNumber, chassisNumber: bike.chassisNumber, search: '' }
+                ? { slotKey, bikeId: bike.id, color: bike.color, engineNumber: bike.engineNumber, chassisNumber: bike.chassisNumber, search: '' }
                 : s),
         }));
 
@@ -149,11 +156,17 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
 
     return (
         <div style={{ overflowX: 'auto', marginBottom: '0.75rem' }}>
+            <datalist id="khata-colors-list">
+                {BIKE_COLORS.map(c => <option key={c} value={c} />)}
+                <option value="Green" />
+                <option value="White" />
+                <option value="2-Tone" />
+            </datalist>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                 <thead>
                     <tr style={{ borderBottom: '2px solid var(--color-border)', background: 'var(--color-bg-elevated)' }}>
-                        {['Model', 'Bike (Engine/Chassis) — one per unit', 'Qty', 'Price / Bike (PKR)', 'Std Price', 'Margin / Bike', 'Row Total', ''].map(h => (
-                            <th key={h} style={{ padding: '7px 8px', textAlign: (h.startsWith('Model') || h.startsWith('Bike') || h === '') ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+                        {['Model', 'Color', 'Bike (Engine/Chassis) — one per unit', 'Qty', 'Price / Bike (PKR)', 'Std Price', 'Margin / Bike', 'Row Total', ''].map(h => (
+                            <th key={h} style={{ padding: '7px 8px', textAlign: (h.startsWith('Model') || h.startsWith('Color') || h.startsWith('Bike') || h === '') ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
                     </tr>
                 </thead>
@@ -170,6 +183,17 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
                                         <option value="">Select model</option>
                                         {HONDA_BIKE_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
                                     </select>
+                                </td>
+                                <td style={{ padding: '6px 8px', minWidth: '95px', maxWidth: '115px', verticalAlign: 'top' }}>
+                                    <input
+                                        type="text"
+                                        list="khata-colors-list"
+                                        className="input"
+                                        style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', width: '100%' }}
+                                        placeholder="Color"
+                                        value={row.color || ''}
+                                        onChange={e => updateColor(row.key, e.target.value)}
+                                    />
                                 </td>
                                 <td style={{ padding: '6px 8px', minWidth: '170px', maxWidth: '210px', verticalAlign: 'top' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
@@ -188,7 +212,8 @@ function BikeRowsTable({ rows, setRows, computeRow, availableBikes }: {
                                                     )}
                                                     {slot.bikeId ? (
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '6px', padding: '0.25rem 0.5rem', maxWidth: '100%' }}>
-                                                            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={`${slot.engineNumber} / ${slot.chassisNumber}`}>
+                                                            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={`${slot.color ? slot.color + ' · ' : ''}${slot.engineNumber} / ${slot.chassisNumber}`}>
+                                                                {slot.color && <strong style={{ color: '#059669', marginRight: '3px' }}>{slot.color} ·</strong>}
                                                                 {slot.engineNumber} / {slot.chassisNumber}
                                                             </span>
                                                             <button type="button" onClick={() => clearSlotBike(row.key, slot.slotKey)} style={{ flexShrink: 0, background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700 }}>✕</button>
@@ -367,11 +392,24 @@ export default function KhataDetailPage() {
                 const pricePerUnit = Number(r.pricePerUnit);
                 const linked = r.bikeSlots.filter(s => s.bikeId);
                 const items = linked.map(s => ({
-                    model: r.model, quantity: 1, pricePerUnit,
-                    bikeId: s.bikeId, engineNumber: s.engineNumber, chassisNumber: s.chassisNumber,
+                    model: r.model,
+                    color: s.color || r.color || undefined,
+                    quantity: 1,
+                    pricePerUnit,
+                    bikeId: s.bikeId,
+                    engineNumber: s.engineNumber,
+                    chassisNumber: s.chassisNumber,
                 }));
                 const remaining = Number(r.quantity) - linked.length;
-                if (remaining > 0) items.push({ model: r.model, quantity: remaining, pricePerUnit, bikeId: undefined, engineNumber: undefined, chassisNumber: undefined });
+                if (remaining > 0) items.push({
+                    model: r.model,
+                    color: r.color || undefined,
+                    quantity: remaining,
+                    pricePerUnit,
+                    bikeId: undefined,
+                    engineNumber: undefined,
+                    chassisNumber: undefined,
+                });
                 return items;
             });
     const bikesTotal = bikeRows.filter(isRowComplete).reduce((s, r) => s + computeRow(r).rowTotal, 0);
@@ -531,12 +569,13 @@ export default function KhataDetailPage() {
                 ? tx.items.map(item => ({
                     key: Math.random().toString(36).slice(2),
                     model: item.model,
+                    color: item.color || '',
                     quantity: String(item.quantity),
                     pricePerUnit: String(item.pricePerUnit),
                     // Bike-linked items are always stored as quantity 1 — one slot. Bulk (untracked) items
                     // can have quantity > 1, so give them one empty slot per unit up front, ready to fill.
                     bikeSlots: item.bikeId
-                        ? [{ slotKey: Math.random().toString(36).slice(2), bikeId: item.bikeId, engineNumber: item.engineNumber, chassisNumber: item.chassisNumber, search: '' }]
+                        ? [{ slotKey: Math.random().toString(36).slice(2), bikeId: item.bikeId, color: item.color, engineNumber: item.engineNumber, chassisNumber: item.chassisNumber, search: '' }]
                         : Array.from({ length: Math.max(1, item.quantity) }, newBikeSlot),
                 }))
                 : [newBikeRow()];
@@ -1206,8 +1245,10 @@ export default function KhataDetailPage() {
                                                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.15rem' }}>
                                                             {tx.items.map((item, i) => (
                                                                 <span key={i}>
-                                                                    {i > 0 ? ' · ' : ''}{item.quantity}× {item.model} @ Rs.{item.pricePerUnit.toLocaleString()}
-                                                                    {item.engineNumber && ` (${item.engineNumber} / ${item.chassisNumber})`}
+                                                                    {i > 0 ? ' · ' : ''}{item.quantity}× {item.model}
+                                                                    {item.color && <strong style={{ color: 'var(--color-primary)' }}> ({item.color})</strong>}
+                                                                    {item.engineNumber && ` (${item.engineNumber} / ${item.chassisNumber || '—'})`}
+                                                                    {' '}@ Rs.{item.pricePerUnit.toLocaleString()}
                                                                 </span>
                                                             ))}
                                                         </div>

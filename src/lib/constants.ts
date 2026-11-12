@@ -154,7 +154,10 @@ export const RECEIPT_COLOURS = [
 ];
 
 export function guessReceiptColour(colour: string): string {
-    const c = (colour || '').toLowerCase();
-    const found = RECEIPT_COLOURS.find(rc => c.startsWith(rc.match) || c.includes(rc.match));
+    const c = (colour || '').toLowerCase().trim();
+    if (!c) return '';
+    const exact = RECEIPT_COLOURS.find(rc => rc.label.toLowerCase() === c || rc.match === c);
+    if (exact) return exact.label;
+    const found = RECEIPT_COLOURS.find(rc => c.startsWith(rc.match) || c.includes(rc.match) || rc.match.startsWith(c));
     return found ? found.label : '';
 }
