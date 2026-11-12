@@ -17,27 +17,27 @@ const MODEL_CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444
 function getBikeColorStyle(color: string): { bg: string; text: string; dot: string; border: string } {
     const c = (color || '').toLowerCase().trim();
     if (c.includes('red')) {
-        return { bg: 'rgba(239, 68, 68, 0.12)', text: '#ef4444', dot: '#ef4444', border: 'rgba(239, 68, 68, 0.3)' };
+        return { bg: 'rgba(239, 68, 68, 0.12)', text: '#dc2626', dot: '#ef4444', border: 'rgba(239, 68, 68, 0.3)' };
     }
     if (c.includes('black') || c === 'blk') {
-        return { bg: 'rgba(51, 65, 85, 0.25)', text: '#cbd5e1', dot: '#0f172a', border: 'rgba(100, 116, 139, 0.5)' };
+        return { bg: 'rgba(0, 0, 0, 0.08)', text: '#000000', dot: '#000000', border: 'rgba(0, 0, 0, 0.35)' };
     }
     if (c.includes('blue') || c === 'blu') {
-        return { bg: 'rgba(59, 130, 246, 0.12)', text: '#3b82f6', dot: '#3b82f6', border: 'rgba(59, 130, 246, 0.3)' };
+        return { bg: 'rgba(59, 130, 246, 0.12)', text: '#2563eb', dot: '#3b82f6', border: 'rgba(59, 130, 246, 0.3)' };
     }
     if (c.includes('silver') || c.includes('slv') || c.includes('grey') || c.includes('gray')) {
-        return { bg: 'rgba(148, 163, 184, 0.15)', text: '#94a3b8', dot: '#94a3b8', border: 'rgba(148, 163, 184, 0.35)' };
+        return { bg: 'rgba(100, 116, 139, 0.12)', text: '#334155', dot: '#94a3b8', border: 'rgba(100, 116, 139, 0.35)' };
     }
     if (c.includes('green') || c.includes('grn')) {
-        return { bg: 'rgba(16, 185, 129, 0.12)', text: '#10b981', dot: '#10b981', border: 'rgba(16, 185, 129, 0.3)' };
+        return { bg: 'rgba(16, 185, 129, 0.12)', text: '#059669', dot: '#10b981', border: 'rgba(16, 185, 129, 0.3)' };
     }
     if (c.includes('white') || c.includes('wht')) {
-        return { bg: 'rgba(241, 245, 249, 0.15)', text: '#f1f5f9', dot: '#e2e8f0', border: 'rgba(203, 213, 225, 0.4)' };
+        return { bg: 'rgba(0, 0, 0, 0.05)', text: '#1e293b', dot: '#ffffff', border: 'rgba(0, 0, 0, 0.25)' };
     }
     if (c.includes('gold') || c.includes('yellow')) {
-        return { bg: 'rgba(245, 158, 11, 0.12)', text: '#f59e0b', dot: '#f59e0b', border: 'rgba(245, 158, 11, 0.3)' };
+        return { bg: 'rgba(245, 158, 11, 0.12)', text: '#d97706', dot: '#f59e0b', border: 'rgba(245, 158, 11, 0.3)' };
     }
-    return { bg: 'rgba(148, 163, 184, 0.1)', text: 'var(--color-text)', dot: '#94a3b8', border: 'var(--color-border)' };
+    return { bg: 'rgba(100, 116, 139, 0.08)', text: 'var(--color-text, #000000)', dot: '#64748b', border: 'var(--color-border)' };
 }
 
 interface SaleRecord {
@@ -697,7 +697,7 @@ export default function DashboardPage() {
                                                                     height: '8px',
                                                                     borderRadius: '50%',
                                                                     background: style.dot,
-                                                                    border: '1px solid rgba(255,255,255,0.4)',
+                                                                    border: '1px solid rgba(0,0,0,0.2)',
                                                                     display: 'inline-block',
                                                                 }}
                                                             />
@@ -781,7 +781,7 @@ export default function DashboardPage() {
                                                                                     height: '6px',
                                                                                     borderRadius: '50%',
                                                                                     background: style.dot,
-                                                                                    border: '1px solid rgba(255,255,255,0.4)',
+                                                                                    border: '1px solid rgba(0,0,0,0.2)',
                                                                                     display: 'inline-block',
                                                                                 }}
                                                                             />
@@ -890,7 +890,7 @@ export default function DashboardPage() {
                                                     height: '8px',
                                                     borderRadius: '50%',
                                                     background: style.dot,
-                                                    border: '1px solid rgba(255,255,255,0.4)',
+                                                    border: '1px solid rgba(0,0,0,0.2)',
                                                     display: 'inline-block',
                                                 }}
                                             />
