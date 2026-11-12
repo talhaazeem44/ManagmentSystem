@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
@@ -13,6 +13,32 @@ import { todayDateInputValue } from '@/lib/dates';
 // Categorical palette for the "This Month's Mix" donut chart — cycles if there are more
 // models than colors.
 const MODEL_CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#64748b'];
+
+function getBikeColorStyle(color: string): { bg: string; text: string; dot: string; border: string } {
+    const c = (color || '').toLowerCase().trim();
+    if (c.includes('red')) {
+        return { bg: 'rgba(239, 68, 68, 0.12)', text: '#ef4444', dot: '#ef4444', border: 'rgba(239, 68, 68, 0.3)' };
+    }
+    if (c.includes('black') || c === 'blk') {
+        return { bg: 'rgba(51, 65, 85, 0.25)', text: '#cbd5e1', dot: '#0f172a', border: 'rgba(100, 116, 139, 0.5)' };
+    }
+    if (c.includes('blue') || c === 'blu') {
+        return { bg: 'rgba(59, 130, 246, 0.12)', text: '#3b82f6', dot: '#3b82f6', border: 'rgba(59, 130, 246, 0.3)' };
+    }
+    if (c.includes('silver') || c.includes('slv') || c.includes('grey') || c.includes('gray')) {
+        return { bg: 'rgba(148, 163, 184, 0.15)', text: '#94a3b8', dot: '#94a3b8', border: 'rgba(148, 163, 184, 0.35)' };
+    }
+    if (c.includes('green') || c.includes('grn')) {
+        return { bg: 'rgba(16, 185, 129, 0.12)', text: '#10b981', dot: '#10b981', border: 'rgba(16, 185, 129, 0.3)' };
+    }
+    if (c.includes('white') || c.includes('wht')) {
+        return { bg: 'rgba(241, 245, 249, 0.15)', text: '#f1f5f9', dot: '#e2e8f0', border: 'rgba(203, 213, 225, 0.4)' };
+    }
+    if (c.includes('gold') || c.includes('yellow')) {
+        return { bg: 'rgba(245, 158, 11, 0.12)', text: '#f59e0b', dot: '#f59e0b', border: 'rgba(245, 158, 11, 0.3)' };
+    }
+    return { bg: 'rgba(148, 163, 184, 0.1)', text: 'var(--color-text)', dot: '#94a3b8', border: 'var(--color-border)' };
+}
 
 interface SaleRecord {
     id: string;
@@ -55,7 +81,14 @@ interface Stats {
         expenseCash: number; cashInHand: number; bankTransfer: number; cashDepositOnly: number;
         modelBreakdown?: Record<string, number>;
     };
-    allTime: { totalBikes: number; availableBikes: number; soldBikes: number; modelBreakdown?: Record<string, number>; availableModelBreakdown?: Record<string, number> };
+    allTime: {
+        totalBikes: number;
+        availableBikes: number;
+        soldBikes: number;
+        modelBreakdown?: Record<string, number>;
+        availableModelBreakdown?: Record<string, number>;
+        availableModelColorBreakdown?: Record<string, Record<string, number>>;
+    };
     creditSales: CreditSale[];
     advanceBookings: {
         pendingCount: number; pendingMargin: number;
@@ -96,9 +129,46 @@ export default function DashboardPage() {
     const [editingPlan, setEditingPlan] = useState(false);
     // Default view is plain stock-in-hand; the Honda plan columns are opt-in.
     const [showPlan, setShowPlan] = useState(false);
+    const [showColorTable, setShowColorTable] = useState(false);
     const [editTargets, setEditTargets] = useState<Record<string, string>>({});
     const [savingPlan, setSavingPlan] = useState(false);
     const currentMonth = new Date().toISOString().slice(0, 7);
+
+    const inventoryModels = useMemo(() => {
+        const set = new Set<string>();
+        HONDA_BIKE_MODELS.forEach(m => set.add(m));
+        if (stats?.allTime?.availableModelBreakdown) {
+            Object.keys(stats.allTime.availableModelBreakdown).forEach(m => set.add(m));
+        }
+        return Array.from(set);
+    }, [stats?.allTime?.availableModelBreakdown]);
+
+    const totalColorSummary = useMemo(() => {
+        const totals: Record<string, number> = {};
+        const modelColors = stats?.allTime?.availableModelColorBreakdown || {};
+        for (const colorMap of Object.values(modelColors)) {
+            for (const [col, count] of Object.entries(colorMap)) {
+                totals[col] = (totals[col] || 0) + count;
+            }
+        }
+        return Object.entries(totals).sort(([, a], [, b]) => b - a);
+    }, [stats?.allTime?.availableModelColorBreakdown]);
+
+    const colorTableRows = useMemo(() => {
+        const rows: { model: string; color: string; count: number }[] = [];
+        const modelColors = stats?.allTime?.availableModelColorBreakdown || {};
+        for (const [model, colors] of Object.entries(modelColors)) {
+            for (const [color, count] of Object.entries(colors)) {
+                if (count > 0) {
+                    rows.push({ model, color, count });
+                }
+            }
+        }
+        return rows.sort((a, b) => {
+            if (a.model !== b.model) return a.model.localeCompare(b.model);
+            return b.count - a.count;
+        });
+    }, [stats?.allTime?.availableModelColorBreakdown]);
 
     // Quick "Receive Payment" on a credit sale, right from the dashboard — avoids having to
     // go find the sale in the Sales section just to record a collection.
@@ -527,17 +597,37 @@ export default function DashboardPage() {
                     </div>
                 )}
 
-                {/* ── Stock by model. The Honda plan columns are kept behind a
+                {/* ── Stock by model & color. The Honda plan columns are kept behind a
                        toggle so the default view is just "what do I have". ── */}
                 <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>
                             {showPlan
                                 ? `${new Date().toLocaleDateString('en-PK', { month: 'long', year: 'numeric' })} — Honda Plan · Sold · Pending · Stock`
-                                : 'Stock in Hand — Model Wise'}
+                                : showColorTable
+                                    ? 'Stock in Hand — Detailed Colour Breakdown'
+                                    : 'Stock in Hand — Model & Colour Wise'}
                         </div>
                         {!showPlan ? (
-                            <button onClick={() => setShowPlan(true)} className="btn btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}>📋 Show Plan</button>
+                            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                <button
+                                    onClick={() => setShowColorTable(v => !v)}
+                                    className="btn btn-secondary"
+                                    style={{
+                                        padding: '0.3rem 0.75rem',
+                                        fontSize: '0.75rem',
+                                        background: showColorTable ? 'var(--color-primary-subtle, rgba(239, 68, 68, 0.15))' : undefined,
+                                        borderColor: showColorTable ? 'var(--color-primary, #ef4444)' : undefined,
+                                        color: showColorTable ? 'var(--color-primary, #ef4444)' : undefined,
+                                        fontWeight: showColorTable ? 700 : 500,
+                                    }}
+                                >
+                                    {showColorTable ? '📦 Model View' : '🎨 Colour Table'}
+                                </button>
+                                <button onClick={() => setShowPlan(true)} className="btn btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}>
+                                    📋 Show Plan
+                                </button>
+                            </div>
                         ) : editingPlan ? (
                             <div style={{ display: 'flex', gap: '0.4rem' }}>
                                 <button onClick={() => setEditingPlan(false)} className="btn btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}>Cancel</button>
@@ -552,86 +642,272 @@ export default function DashboardPage() {
                             </div>
                         )}
                     </div>
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
-                            <thead>
-                                <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                                    {(showPlan ? ['Model', 'Plan', 'Sold', 'Pending', 'In Stock'] : ['Model', 'In Stock']).map((h, i) => (
-                                        <th key={h} style={{ padding: '5px 8px', textAlign: i === 0 ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {HONDA_BIKE_MODELS
-                                    .filter(model => showPlan
-                                        ? (editingPlan || (planTargets[model] ?? 0) > 0 || (monthModelBreakdown?.[model] ?? 0) > 0 || (stats?.allTime?.availableModelBreakdown?.[model] ?? 0) > 0)
-                                        // Stock view: only models actually sitting in inventory
-                                        : (stats?.allTime?.availableModelBreakdown?.[model] ?? 0) > 0)
-                                    .map(model => {
-                                        const plan = planTargets[model] ?? 0;
-                                        const sold = monthModelBreakdown?.[model] ?? 0;
-                                        // Pending = how much of this month's Honda plan is still to be
-                                        // sold. Stock in hand is a separate thing and gets its own column.
-                                        const pending = plan - sold;
-                                        const inStock = stats?.allTime?.availableModelBreakdown?.[model] ?? 0;
+
+                    {showColorTable && !showPlan ? (
+                        /* Dedicated Detailed Colour Table View */
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                        <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--color-text-muted)', fontWeight: 600 }}>Model</th>
+                                        <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--color-text-muted)', fontWeight: 600 }}>Colour</th>
+                                        <th style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--color-text-muted)', fontWeight: 600 }}>In Stock</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {colorTableRows.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={3} style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                                                No bikes currently in stock.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        colorTableRows.map((row, idx) => {
+                                            const style = getBikeColorStyle(row.color);
+                                            const isFirstOfModel = idx === 0 || colorTableRows[idx - 1].model !== row.model;
+                                            return (
+                                                <tr
+                                                    key={`${row.model}-${row.color}`}
+                                                    style={{
+                                                        borderBottom: '1px solid var(--color-border)',
+                                                        borderTop: isFirstOfModel && idx > 0 ? '1px dashed var(--color-border)' : undefined,
+                                                    }}
+                                                >
+                                                    <td style={{ padding: '6px 8px', fontWeight: 600, color: 'var(--color-text)' }}>
+                                                        {row.model}
+                                                    </td>
+                                                    <td style={{ padding: '6px 8px' }}>
+                                                        <span
+                                                            style={{
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                gap: '0.35rem',
+                                                                padding: '2px 8px',
+                                                                borderRadius: '9999px',
+                                                                fontSize: '0.75rem',
+                                                                fontWeight: 600,
+                                                                background: style.bg,
+                                                                color: style.text,
+                                                                border: `1px solid ${style.border}`,
+                                                            }}
+                                                        >
+                                                            <span
+                                                                style={{
+                                                                    width: '8px',
+                                                                    height: '8px',
+                                                                    borderRadius: '50%',
+                                                                    background: style.dot,
+                                                                    border: '1px solid rgba(255,255,255,0.4)',
+                                                                    display: 'inline-block',
+                                                                }}
+                                                            />
+                                                            {row.color}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: 'var(--color-text)' }}>
+                                                        {row.count}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                    {colorTableRows.length > 0 && (
+                                        <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 800 }}>
+                                            <td style={{ padding: '8px 8px' }}>TOTAL</td>
+                                            <td style={{ padding: '8px 8px', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                                                {colorTableRows.length} colour variant{colorTableRows.length !== 1 ? 's' : ''}
+                                            </td>
+                                            <td style={{ padding: '8px 8px', textAlign: 'right' }}>
+                                                {colorTableRows.reduce((s, r) => s + r.count, 0)}
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        /* Standard Model Table View (with color breakdown badges) */
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                        {(showPlan ? ['Model', 'Plan', 'Sold', 'Pending', 'In Stock'] : ['Model', 'In Stock']).map((h, i) => (
+                                            <th key={h} style={{ padding: '5px 8px', textAlign: i === 0 ? 'left' : 'right', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {inventoryModels
+                                        .filter(model => showPlan
+                                            ? (editingPlan || (planTargets[model] ?? 0) > 0 || (monthModelBreakdown?.[model] ?? 0) > 0 || (stats?.allTime?.availableModelBreakdown?.[model] ?? 0) > 0)
+                                            // Stock view: only models actually sitting in inventory
+                                            : (stats?.allTime?.availableModelBreakdown?.[model] ?? 0) > 0)
+                                        .map(model => {
+                                            const plan = planTargets[model] ?? 0;
+                                            const sold = monthModelBreakdown?.[model] ?? 0;
+                                            const pending = plan - sold;
+                                            const inStock = stats?.allTime?.availableModelBreakdown?.[model] ?? 0;
+                                            const colorMap = stats?.allTime?.availableModelColorBreakdown?.[model] || {};
+                                            const colorEntries = Object.entries(colorMap).sort(([, a], [, b]) => b - a);
+
+                                            return (
+                                                <tr key={model} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                                    <td style={{ padding: '6px 8px' }}>
+                                                        <div style={{ fontWeight: 600 }}>{model}</div>
+                                                        {colorEntries.length > 0 && (
+                                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.25rem' }}>
+                                                                {colorEntries.map(([col, qty]) => {
+                                                                    const style = getBikeColorStyle(col);
+                                                                    return (
+                                                                        <span
+                                                                            key={col}
+                                                                            title={`${qty} ${col} ${model} in stock`}
+                                                                            style={{
+                                                                                display: 'inline-flex',
+                                                                                alignItems: 'center',
+                                                                                gap: '0.25rem',
+                                                                                padding: '1px 6px',
+                                                                                borderRadius: '9999px',
+                                                                                fontSize: '0.7rem',
+                                                                                fontWeight: 600,
+                                                                                background: style.bg,
+                                                                                color: style.text,
+                                                                                border: `1px solid ${style.border}`,
+                                                                            }}
+                                                                        >
+                                                                            <span
+                                                                                style={{
+                                                                                    width: '6px',
+                                                                                    height: '6px',
+                                                                                    borderRadius: '50%',
+                                                                                    background: style.dot,
+                                                                                    border: '1px solid rgba(255,255,255,0.4)',
+                                                                                    display: 'inline-block',
+                                                                                }}
+                                                                            />
+                                                                            {col}: <strong>{qty}</strong>
+                                                                        </span>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    {showPlan && (
+                                                        <>
+                                                            <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+                                                                {editingPlan ? (
+                                                                    <input
+                                                                        type="number"
+                                                                        className="input"
+                                                                        value={editTargets[model] ?? '0'}
+                                                                        onChange={e => setEditTargets(t => ({ ...t, [model]: e.target.value }))}
+                                                                        style={{ width: '70px', fontSize: '0.8rem', padding: '0.2rem 0.4rem', textAlign: 'right' }}
+                                                                        min="0"
+                                                                    />
+                                                                ) : (
+                                                                    <strong>{plan}</strong>
+                                                                )}
+                                                            </td>
+                                                            <td style={{ padding: '6px 8px', textAlign: 'right', color: '#10b981', fontWeight: 600 }}>{sold}</td>
+                                                            <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: pending > 0 ? '#f59e0b' : '#10b981' }}>
+                                                                {pending > 0 ? pending : pending === 0 ? '✓' : `✓ +${-pending}`}
+                                                            </td>
+                                                        </>
+                                                    )}
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right', color: inStock > 0 ? 'var(--color-text)' : '#ef4444', fontWeight: 700 }}>{inStock}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                    {/* Whole-month totals across every model */}
+                                    {(() => {
+                                        const tPlan = HONDA_BIKE_MODELS.reduce((s, m) => s + (planTargets[m] ?? 0), 0);
+                                        const tSold = HONDA_BIKE_MODELS.reduce((s, m) => s + (monthModelBreakdown?.[m] ?? 0), 0);
+                                        const tStock = Object.values(stats?.allTime?.availableModelBreakdown || {}).reduce((s, n) => s + (n || 0), 0);
+                                        const tPending = tPlan - tSold;
                                         return (
-                                            <tr key={model} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                                                <td style={{ padding: '5px 8px' }}>{model}</td>
+                                            <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 800 }}>
+                                                <td style={{ padding: '7px 8px' }}>TOTAL</td>
                                                 {showPlan && (
                                                     <>
-                                                        <td style={{ padding: '5px 8px', textAlign: 'right' }}>
-                                                            {editingPlan ? (
-                                                                <input
-                                                                    type="number"
-                                                                    className="input"
-                                                                    value={editTargets[model] ?? '0'}
-                                                                    onChange={e => setEditTargets(t => ({ ...t, [model]: e.target.value }))}
-                                                                    style={{ width: '70px', fontSize: '0.8rem', padding: '0.2rem 0.4rem', textAlign: 'right' }}
-                                                                    min="0"
-                                                                />
-                                                            ) : (
-                                                                <strong>{plan}</strong>
-                                                            )}
-                                                        </td>
-                                                        <td style={{ padding: '5px 8px', textAlign: 'right', color: '#10b981', fontWeight: 600 }}>{sold}</td>
-                                                        <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 600, color: pending > 0 ? '#f59e0b' : '#10b981' }}>
-                                                            {pending > 0 ? pending : pending === 0 ? '✓' : `✓ +${-pending}`}
+                                                        <td style={{ padding: '7px 8px', textAlign: 'right' }}>{tPlan}</td>
+                                                        <td style={{ padding: '7px 8px', textAlign: 'right', color: '#10b981' }}>{tSold}</td>
+                                                        <td style={{ padding: '7px 8px', textAlign: 'right', color: tPending > 0 ? '#f59e0b' : '#10b981' }}>
+                                                            {tPending > 0 ? tPending : tPending === 0 ? '✓' : `✓ +${-tPending}`}
                                                         </td>
                                                     </>
                                                 )}
-                                                <td style={{ padding: '5px 8px', textAlign: 'right', color: inStock > 0 ? 'var(--color-text)' : '#ef4444', fontWeight: 700 }}>{inStock}</td>
+                                                <td style={{ padding: '7px 8px', textAlign: 'right' }}>{tStock}</td>
                                             </tr>
                                         );
-                                    })}
-                                {/* Whole-month totals across every model */}
-                                {(() => {
-                                    const tPlan = HONDA_BIKE_MODELS.reduce((s, m) => s + (planTargets[m] ?? 0), 0);
-                                    const tSold = HONDA_BIKE_MODELS.reduce((s, m) => s + (monthModelBreakdown?.[m] ?? 0), 0);
-                                    const tStock = HONDA_BIKE_MODELS.reduce((s, m) => s + (stats?.allTime?.availableModelBreakdown?.[m] ?? 0), 0);
-                                    const tPending = tPlan - tSold;
+                                    })()}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {/* Dealership Overall Colour Breakdown */}
+                    {totalColorSummary.length > 0 && (
+                        <div
+                            style={{
+                                marginTop: '0.85rem',
+                                padding: '0.65rem 0.85rem',
+                                background: 'var(--color-surface-subtle, rgba(255, 255, 255, 0.03))',
+                                borderRadius: '8px',
+                                border: '1px solid var(--color-border)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                flexWrap: 'wrap',
+                                gap: '0.5rem',
+                            }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
+                                <span>🎨</span>
+                                <span>Total Stock by Colour:</span>
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+                                {totalColorSummary.map(([col, count]) => {
+                                    const style = getBikeColorStyle(col);
                                     return (
-                                        <tr style={{ borderTop: '2px solid var(--color-border)', fontWeight: 800 }}>
-                                            <td style={{ padding: '7px 8px' }}>TOTAL</td>
-                                            {showPlan && (
-                                                <>
-                                                    <td style={{ padding: '7px 8px', textAlign: 'right' }}>{tPlan}</td>
-                                                    <td style={{ padding: '7px 8px', textAlign: 'right', color: '#10b981' }}>{tSold}</td>
-                                                    <td style={{ padding: '7px 8px', textAlign: 'right', color: tPending > 0 ? '#f59e0b' : '#10b981' }}>
-                                                        {tPending > 0 ? tPending : tPending === 0 ? '✓' : `✓ +${-tPending}`}
-                                                    </td>
-                                                </>
-                                            )}
-                                            <td style={{ padding: '7px 8px', textAlign: 'right' }}>{tStock}</td>
-                                        </tr>
+                                        <span
+                                            key={col}
+                                            style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '0.35rem',
+                                                padding: '2px 8px',
+                                                borderRadius: '9999px',
+                                                fontSize: '0.72rem',
+                                                fontWeight: 700,
+                                                background: style.bg,
+                                                color: style.text,
+                                                border: `1px solid ${style.border}`,
+                                            }}
+                                        >
+                                            <span
+                                                style={{
+                                                    width: '8px',
+                                                    height: '8px',
+                                                    borderRadius: '50%',
+                                                    background: style.dot,
+                                                    border: '1px solid rgba(255,255,255,0.4)',
+                                                    display: 'inline-block',
+                                                }}
+                                            />
+                                            {col}: <span>{count}</span>
+                                        </span>
                                     );
-                                })()}
-                            </tbody>
-                        </table>
-                    </div>
+                                })}
+                            </div>
+                        </div>
+                    )}
+
                     <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
                         {showPlan
                             ? <><strong>Pending</strong> = plan still to sell this month (Plan − Sold). <strong>In Stock</strong> = bikes available in inventory right now.</>
-                            : <><strong>In Stock</strong> = bikes available in inventory right now. Models with zero stock are hidden.</>}
+                            : showColorTable
+                                ? <><strong>In Stock</strong> = bikes available in inventory right now broken down by model and colour. Models with zero stock are hidden.</>
+                                : <><strong>In Stock</strong> = bikes available in inventory right now with colour-wise breakdown. Models with zero stock are hidden.</>}
                     </div>
                 </div>
 

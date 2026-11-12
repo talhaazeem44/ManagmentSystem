@@ -444,10 +444,16 @@ export async function GET(request: NextRequest) {
             allTimeModelBreakdown[model] = (allTimeModelBreakdown[model] || 0) + 1;
         }
         const availableModelBreakdown: Record<string, number> = {};
+        const availableModelColorBreakdown: Record<string, Record<string, number>> = {};
         for (const bike of bikes as any[]) {
             if (bike.status !== 'AVAILABLE') continue;
             const model = bike.model || 'Unknown';
+            const color = (bike.color || 'Unspecified').trim();
             availableModelBreakdown[model] = (availableModelBreakdown[model] || 0) + 1;
+            if (!availableModelColorBreakdown[model]) {
+                availableModelColorBreakdown[model] = {};
+            }
+            availableModelColorBreakdown[model][color] = (availableModelColorBreakdown[model][color] || 0) + 1;
         }
         const allTimeRevenue = allSales.reduce((s, sale: any) => s + Number(sale.price || 0), 0);
         const allTimeUsedBikeProfit = (allSoldUsedBikes as any[]).reduce((s, u) => s + (Number(u.soldPrice || 0) - Number(u.purchasePrice || 0)), 0);
@@ -676,6 +682,7 @@ export async function GET(request: NextRequest) {
                 totalProfit: allTimeProfit,
                 modelBreakdown: allTimeModelBreakdown,
                 availableModelBreakdown,
+                availableModelColorBreakdown,
             },
             deliveryOrders: doStats,
             creditSales: allCreditSales,
