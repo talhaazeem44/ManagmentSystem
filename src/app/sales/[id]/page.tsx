@@ -443,13 +443,13 @@ export default function ReceiptPage() {
                         </div>
                     </div>
 
-                    <div className={styles.specsRow} style={{ marginBottom: '0.4rem' }}>
+                    <div className={styles.specsRow} style={{ marginBottom: '0.22rem' }}>
                         <div className={styles.field} style={{ flex: 1, marginBottom: 0 }}>
-                            <span className={styles.label} style={{ minWidth: '100px' }}>Model:</span>
+                            <span className={styles.label} style={{ minWidth: '70px' }}>Model:</span>
                             <span className={styles.value}>{new Date(sale.saleDate).getFullYear()}</span>
                         </div>
                         <div className={styles.field} style={{ flex: 1, marginBottom: 0 }}>
-                            <span className={styles.label} style={{ minWidth: '80px' }}>Colour:</span>
+                            <span className={styles.label} style={{ minWidth: '70px' }}>Colour:</span>
                             <span className={styles.value}>{sale.bike.color || sale.receiptColour || ''}</span>
                         </div>
                     </div>
@@ -562,18 +562,18 @@ export default function ReceiptPage() {
                             const MAX_ROWS = 3;
                             const shown = printablePayments.slice(0, MAX_ROWS);
                             const hiddenCount = printablePayments.length - shown.length;
-                            const rowFont = printablePayments.length > MAX_ROWS ? '0.68rem' : '0.75rem';
+                            const rowFont = printablePayments.length > MAX_ROWS ? '0.62rem' : '0.68rem';
                             return (
-                                <div style={{ marginTop: '0.4rem', borderTop: '1px solid #ccc', paddingTop: '0.3rem' }}>
-                                    <div style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '0.2rem' }}>Payment History:</div>
+                                <div style={{ marginTop: '0.25rem', borderTop: '1px solid #ccc', paddingTop: '0.2rem' }}>
+                                    <div style={{ fontWeight: 700, fontSize: '0.7rem', marginBottom: '0.12rem' }}>Payment History:</div>
                                     {shown.map((p, i) => (
-                                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: rowFont, marginBottom: '0.1rem' }}>
+                                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: rowFont, marginBottom: '0.06rem' }}>
                                             <span>{new Date(p.date).toLocaleDateString()}{p.note ? ` — ${p.note}` : ''}</span>
                                             <strong>Rs. {Number(p.amount).toLocaleString()}</strong>
                                         </div>
                                     ))}
                                     {hiddenCount > 0 && (
-                                        <div style={{ fontSize: '0.68rem', fontStyle: 'italic', color: '#555' }}>
+                                        <div style={{ fontSize: '0.62rem', fontStyle: 'italic', color: '#555' }}>
                                             +{hiddenCount} more payment{hiddenCount > 1 ? 's' : ''} — see Khata for full history
                                         </div>
                                     )}

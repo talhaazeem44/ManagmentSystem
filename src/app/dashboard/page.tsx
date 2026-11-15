@@ -40,6 +40,64 @@ function getBikeColorStyle(color: string): { bg: string; text: string; dot: stri
     return { bg: 'rgba(100, 116, 139, 0.08)', text: 'var(--color-text, #000000)', dot: '#64748b', border: 'var(--color-border)' };
 }
 
+function AnimatedNumber({
+    value,
+    duration = 1100,
+    prefix = '',
+    suffix = '',
+    format = true,
+    refreshKey = 0,
+}: {
+    value: number | undefined | null;
+    duration?: number;
+    prefix?: string;
+    suffix?: string;
+    format?: boolean;
+    refreshKey?: number;
+}) {
+    const targetValue = Math.round(Number(value) || 0);
+    const [displayValue, setDisplayValue] = useState(0);
+
+    useEffect(() => {
+        if (targetValue === 0) {
+            setDisplayValue(0);
+            return;
+        }
+
+        let animationFrameId: number;
+        let startTime: number | null = null;
+        const startValue = 0;
+
+        const step = (timestamp: number) => {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            // easeOutCubic: starts briskly, decelerates smoothly into the final value
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+            const current = Math.round(startValue + (targetValue - startValue) * easeProgress);
+
+            setDisplayValue(current);
+
+            if (progress < 1) {
+                animationFrameId = requestAnimationFrame(step);
+            } else {
+                setDisplayValue(targetValue);
+            }
+        };
+
+        setDisplayValue(0);
+        animationFrameId = requestAnimationFrame(step);
+
+        return () => {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        };
+    }, [targetValue, duration, refreshKey]);
+
+    const formatted = format ? displayValue.toLocaleString() : String(displayValue);
+    return <>{prefix}{formatted}{suffix}</>;
+}
+
+
 interface SaleRecord {
     id: string;
     saleDate: string;
@@ -132,6 +190,8 @@ export default function DashboardPage() {
     const [showColorTable, setShowColorTable] = useState(false);
     const [editTargets, setEditTargets] = useState<Record<string, string>>({});
     const [savingPlan, setSavingPlan] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [refreshing, setRefreshing] = useState(false);
     const currentMonth = new Date().toISOString().slice(0, 7);
 
     const inventoryModels = useMemo(() => {
@@ -321,6 +381,7 @@ export default function DashboardPage() {
             if (sinceRes.ok) { const d = await sinceRes.json(); setSinceStats(d.range); }
             if (yRes.ok) setYesterdayStats(await yRes.json());
             if (monthStatsRes.ok) { const d = await monthStatsRes.json(); setMonthModelBreakdown(d.range?.modelBreakdown ?? null); }
+            setRefreshKey(k => k + 1);
         } finally {
             setLoading(false);
         }
@@ -390,7 +451,24 @@ export default function DashboardPage() {
                             {new Date().toLocaleDateString('en-PK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                         </p>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <button
+                            onClick={async () => {
+                                setRefreshing(true);
+                                try {
+                                    await fetchData();
+                                } finally {
+                                    setRefreshing(false);
+                                }
+                            }}
+                            disabled={refreshing || loading}
+                            className="btn btn-secondary"
+                            title="Refresh dashboard numbers with live count animation"
+                            style={{ padding: '0.5rem 0.85rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                        >
+                            <span style={{ display: 'inline-block', transform: refreshing ? 'rotate(360deg)' : undefined, transition: 'transform 0.6s ease' }}>🔄</span>
+                            {refreshing ? 'Refreshing...' : 'Live Refresh'}
+                        </button>
                         <a href="/inventory/receive" className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>📦 Receive</a>
                         <a href="/sales/new" className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>➕ New Sale</a>
                     </div>
@@ -445,7 +523,9 @@ export default function DashboardPage() {
                             }}>🗄️</span>
                             <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Available Bikes</div>
                         </div>
-                        <div style={{ fontSize: '2rem', fontWeight: 800 }}>{stats?.allTime?.availableBikes ?? '-'}</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 800 }}>
+                            <AnimatedNumber value={stats?.allTime?.availableBikes ?? 0} refreshKey={refreshKey} />
+                        </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>in stock</div>
                     </motion.div>
 
@@ -466,7 +546,9 @@ export default function DashboardPage() {
                             }}>✅</span>
                             <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Sold Today</div>
                         </div>
-                        <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-success)' }}>{rs?.sales ?? '-'}</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-success)' }}>
+                            <AnimatedNumber value={rs?.sales ?? 0} refreshKey={refreshKey} />
+                        </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>bikes sold</div>
                     </motion.div>
 
@@ -506,16 +588,16 @@ export default function DashboardPage() {
                                 <div>
                                     <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Total</div>
                                     <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1 }}>
-                                        {Object.values(monthModelBreakdown ?? {}).reduce((s, n) => s + n, 0)}
+                                        <AnimatedNumber value={Object.values(monthModelBreakdown ?? {}).reduce((s, n) => s + n, 0)} refreshKey={refreshKey} />
                                     </div>
                                     <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>
                                         this month{(() => {
                                             const todayTotal = Object.values(stats.range?.modelBreakdown ?? {}).reduce((s, n) => s + n, 0);
-                                            return todayTotal > 0 ? ` · +${todayTotal} today` : '';
+                                            return todayTotal > 0 ? <> · +<AnimatedNumber value={todayTotal} refreshKey={refreshKey} /> today</> : '';
                                         })()}
                                     </div>
                                     <div style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', marginTop: '0.15rem' }}>
-                                        {Object.values(stats.allTime.modelBreakdown).reduce((s, n) => s + n, 0)} all time
+                                        <AnimatedNumber value={Object.values(stats.allTime.modelBreakdown).reduce((s, n) => s + n, 0)} refreshKey={refreshKey} /> all time
                                     </div>
                                 </div>
                             </div>
@@ -528,12 +610,14 @@ export default function DashboardPage() {
                                         <div key={model} className="card" style={{ padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
                                             <div>
                                                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>{model}</div>
-                                                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1 }}>{monthCount}</div>
+                                                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1 }}>
+                                                    <AnimatedNumber value={monthCount} refreshKey={refreshKey} />
+                                                </div>
                                                 <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>
-                                                    this month{todayCount > 0 ? ` · +${todayCount} today` : ''}
+                                                    this month{todayCount > 0 ? <> · +<AnimatedNumber value={todayCount} refreshKey={refreshKey} /> today</> : ''}
                                                 </div>
                                                 <div style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', marginTop: '0.15rem' }}>
-                                                    {allTimeCount} all time
+                                                    <AnimatedNumber value={allTimeCount} refreshKey={refreshKey} /> all time
                                                 </div>
                                             </div>
                                         </div>
@@ -718,7 +802,7 @@ export default function DashboardPage() {
                                                 {colorTableRows.length} colour variant{colorTableRows.length !== 1 ? 's' : ''}
                                             </td>
                                             <td style={{ padding: '8px 8px', textAlign: 'right' }}>
-                                                {colorTableRows.reduce((s, r) => s + r.count, 0)}
+                                                <AnimatedNumber value={colorTableRows.reduce((s, r) => s + r.count, 0)} refreshKey={refreshKey} />
                                             </td>
                                         </tr>
                                     )}
@@ -836,7 +920,9 @@ export default function DashboardPage() {
                                                         </td>
                                                     </>
                                                 )}
-                                                <td style={{ padding: '7px 8px', textAlign: 'right' }}>{tStock}</td>
+                                                <td style={{ padding: '7px 8px', textAlign: 'right' }}>
+                                                    <AnimatedNumber value={tStock} refreshKey={refreshKey} />
+                                                </td>
                                             </tr>
                                         );
                                     })()}
@@ -894,7 +980,7 @@ export default function DashboardPage() {
                                                     display: 'inline-block',
                                                 }}
                                             />
-                                            {col}: <span>{count}</span>
+                                            {col}: <span><AnimatedNumber value={count} refreshKey={refreshKey} /></span>
                                         </span>
                                     );
                                 })}
@@ -992,12 +1078,12 @@ export default function DashboardPage() {
                                 )}
                             </div>
                             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b', marginBottom: '0.75rem' }}>
-                                Rs. {Math.max(0, (sinceStats?.cashReceived ?? 0) + (sinceStats?.khataCashReceived ?? 0) + (sinceStats?.usedBikeCashReceived ?? 0) - (sinceStats?.expenseCash ?? 0) + (Number(manualCash) || 0)).toLocaleString()}
+                                Rs. <AnimatedNumber value={Math.max(0, (sinceStats?.cashReceived ?? 0) + (sinceStats?.khataCashReceived ?? 0) + (sinceStats?.usedBikeCashReceived ?? 0) - (sinceStats?.expenseCash ?? 0) + (Number(manualCash) || 0))} refreshKey={refreshKey} />
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.82rem', marginBottom: '0.75rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <span style={{ color: 'var(--color-text-muted)' }}>Received</span>
-                                    <strong style={{ color: '#10b981' }}>Rs. {(sinceStats?.cashReceived ?? 0).toLocaleString()}</strong>
+                                    <strong style={{ color: '#10b981' }}>Rs. <AnimatedNumber value={sinceStats?.cashReceived ?? 0} refreshKey={refreshKey} /></strong>
                                 </div>
                                 {(sinceStats?.khataCashReceived ?? 0) > 0 && (
                                     <div>
@@ -1006,7 +1092,7 @@ export default function DashboardPage() {
                                             <span style={{ color: 'var(--color-text-muted)' }}>
                                                 Khata Payments {showKhataDetails ? '▲' : '▼'}
                                             </span>
-                                            <strong style={{ color: '#10b981' }}>+ Rs. {(sinceStats?.khataCashReceived ?? 0).toLocaleString()}</strong>
+                                            <strong style={{ color: '#10b981' }}>+ Rs. <AnimatedNumber value={sinceStats?.khataCashReceived ?? 0} refreshKey={refreshKey} /></strong>
                                         </div>
                                         {showKhataDetails && (sinceStats?.khataCashPaymentDetails?.length ?? 0) > 0 && (
                                             <div style={{ marginTop: '0.3rem', marginBottom: '0.2rem', paddingLeft: '0.5rem', borderLeft: '2px solid rgba(16,185,129,0.25)', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
@@ -1016,7 +1102,7 @@ export default function DashboardPage() {
                                                             {d.partyName} · {new Date(d.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}
                                                             {d.note ? ` — ${d.note}` : ''}
                                                         </span>
-                                                        <span>Rs. {d.amount.toLocaleString()}</span>
+                                                        <span>Rs. <AnimatedNumber value={d.amount} refreshKey={refreshKey} /></span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -1026,31 +1112,31 @@ export default function DashboardPage() {
                                 {(sinceStats?.usedBikeCashReceived ?? 0) > 0 && (
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <span style={{ color: 'var(--color-text-muted)' }}>Used Bike Resale</span>
-                                        <strong style={{ color: '#10b981' }}>+ Rs. {(sinceStats?.usedBikeCashReceived ?? 0).toLocaleString()}</strong>
+                                        <strong style={{ color: '#10b981' }}>+ Rs. <AnimatedNumber value={sinceStats?.usedBikeCashReceived ?? 0} refreshKey={refreshKey} /></strong>
                                     </div>
                                 )}
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <span style={{ color: 'var(--color-text-muted)' }}>Bank Transfer</span>
-                                    <strong style={{ color: '#3b82f6' }}>Rs. {(sinceStats?.bankTransfer ?? 0).toLocaleString()}</strong>
+                                    <strong style={{ color: '#3b82f6' }}>Rs. <AnimatedNumber value={sinceStats?.bankTransfer ?? 0} refreshKey={refreshKey} /></strong>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <span style={{ color: 'var(--color-text-muted)' }}>Registration</span>
-                                    <strong style={{ color: '#8b5cf6' }}>Rs. {(sinceStats?.registrationCollected ?? 0).toLocaleString()}</strong>
+                                    <strong style={{ color: '#8b5cf6' }}>Rs. <AnimatedNumber value={sinceStats?.registrationCollected ?? 0} refreshKey={refreshKey} /></strong>
                                 </div>
                                 {(sinceStats?.expenseCash ?? 0) > 0 && (
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <span style={{ color: '#ef4444' }}>Cash Expenses</span>
-                                        <strong style={{ color: '#ef4444' }}>− Rs. {(sinceStats?.expenseCash ?? 0).toLocaleString()}</strong>
+                                        <strong style={{ color: '#ef4444' }}>− Rs. <AnimatedNumber value={sinceStats?.expenseCash ?? 0} refreshKey={refreshKey} /></strong>
                                     </div>
                                 )}
                                 <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.3rem', display: 'flex', justifyContent: 'space-between' }}>
                                     <span style={{ color: 'var(--color-text-muted)' }}>Honda Deposit</span>
-                                    <strong style={{ color: '#ef4444' }}>− Rs. {(sinceStats?.cashDepositOnly ?? 0).toLocaleString()}</strong>
+                                    <strong style={{ color: '#ef4444' }}>− Rs. <AnimatedNumber value={sinceStats?.cashDepositOnly ?? 0} refreshKey={refreshKey} /></strong>
                                 </div>
                                 {(Number(manualCash) || 0) > 0 && (
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <span style={{ color: '#f59e0b' }}>Manual Addition</span>
-                                        <strong style={{ color: '#f59e0b' }}>+ Rs. {(Number(manualCash)).toLocaleString()}</strong>
+                                        <strong style={{ color: '#f59e0b' }}>+ Rs. <AnimatedNumber value={Number(manualCash)} refreshKey={refreshKey} /></strong>
                                     </div>
                                 )}
                             </div>
@@ -1077,7 +1163,9 @@ export default function DashboardPage() {
                         {totalOutstanding > 0 && (
                             <div className="card" style={{ padding: '1.25rem', background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.2)' }}>
                                 <div style={{ fontSize: '0.7rem', color: '#ef4444', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.35rem' }}>Credit Outstanding</div>
-                                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ef4444' }}>Rs. {totalOutstanding.toLocaleString()}</div>
+                                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ef4444' }}>
+                                    Rs. <AnimatedNumber value={totalOutstanding} refreshKey={refreshKey} />
+                                </div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{stats?.creditSales?.length} customer{(stats?.creditSales?.length ?? 0) !== 1 ? 's' : ''}</div>
                             </div>
                         )}
