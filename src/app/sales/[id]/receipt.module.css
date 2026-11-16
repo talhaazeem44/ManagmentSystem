@@ -1,13 +1,28 @@
 .receipt {
-    max-width: 780px;
+    max-width: 820px;
+    min-height: 1080px;
     margin: 0 auto;
     background: white;
     color: #000;
-    padding: 1rem 1.5rem;
+    padding: 1.5rem 2rem;
     border: 2px solid #000;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.8rem;
-    line-height: 1.3;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 0.9rem;
+    line-height: 1.36;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.receiptMain {
+    display: flex;
+    flex-direction: column;
+}
+
+.receiptBottom {
+    display: flex;
+    flex-direction: column;
+    margin-top: 0.6rem;
 }
 
 /* ── Header: HONDA wordmark (left) + SALE RECEIPT (center) + 3S badge (right) ── */
@@ -15,14 +30,14 @@
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.85rem;
     border-bottom: 2px solid #000;
-    padding-bottom: 0.35rem;
-    margin-bottom: 0.45rem;
+    padding-bottom: 0.45rem;
+    margin-bottom: 0.6rem;
 }
 
 .hondaLogo {
-    width: 85px;
+    width: 105px;
     height: auto;
     justify-self: start;
 }
@@ -31,13 +46,13 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 0.12rem;
+    gap: 0.16rem;
     justify-self: end;
 }
 
 .badgeStripe {
     display: flex;
-    width: 75px;
+    width: 82px;
     height: 5px;
     border-radius: 3px;
     overflow: hidden;
@@ -50,26 +65,26 @@
 .badgeRow {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.4rem;
 }
 
 .badgeCircle {
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     background: #e2231a;
     color: #fff;
     font-weight: 900;
-    font-size: 0.65rem;
+    font-size: 0.72rem;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .badgeText {
-    font-size: 0.56rem;
+    font-size: 0.6rem;
     font-weight: 700;
-    line-height: 1.15;
+    line-height: 1.18;
     text-align: right;
 }
 
@@ -78,21 +93,21 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
+    gap: 0.9rem;
     justify-self: center;
 }
 
 .serialNumber {
-    font-size: 0.85rem;
-    font-weight: 700;
+    font-size: 1rem;
+    font-weight: 800;
 }
 
 .receiptTitleBox {
-    border: 1.5px solid #000;
-    padding: 0.2rem 1rem;
+    border: 2px solid #000;
+    padding: 0.28rem 1.25rem;
     font-weight: 800;
     letter-spacing: 0.08em;
-    font-size: 0.9rem;
+    font-size: 1.12rem;
 }
 
 /* ── C.N.I.C # / Dated digit-box rows ── */
@@ -100,37 +115,37 @@
     display: flex;
     justify-content: space-between;
     gap: 1.5rem;
-    margin-bottom: 0.45rem;
+    margin-bottom: 0.6rem;
     flex-wrap: nowrap;
 }
 
 .digitField {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.45rem;
 }
 
 .digitField .digitLabel {
     font-weight: 700;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     white-space: nowrap;
 }
 
 .digitBoxes {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 2.5px;
 }
 
 .digitBox {
-    width: 15px;
-    height: 18px;
-    border: 1px solid #000;
+    width: 19px;
+    height: 25px;
+    border: 1.3px solid #000;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: 0.7rem;
+    font-size: 0.88rem;
 }
 
 .digitDash {
@@ -140,72 +155,73 @@
 
 /* ── Plain label / underline fields (customer info + price section) ── */
 .section {
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.55rem;
 }
 
 .field {
     display: flex;
-    margin-bottom: 0.22rem;
-    font-size: 0.8rem;
-    line-height: 1.25;
+    margin-bottom: 0.32rem;
+    font-size: 0.9rem;
+    line-height: 1.35;
 }
 
 .label {
     font-weight: bold;
-    min-width: 155px;
+    min-width: 175px;
     flex-shrink: 0;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
 }
 
 .value {
     flex: 1;
     border-bottom: 1px dotted #000;
-    padding-left: 0.35rem;
+    padding-left: 0.45rem;
     font-weight: 600;
-    font-size: 0.8rem;
-    min-height: 1.1em;
+    font-size: 0.9rem;
+    min-height: 1.3em;
 }
 
 /* ── Honda model checkboxes (single row) ── */
 .bikeModels {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    margin-bottom: 0.4rem;
+    gap: 0.5rem;
+    margin-bottom: 0.55rem;
     flex-wrap: wrap;
 }
 
 .modelLabel {
     font-weight: bold;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     flex-shrink: 0;
 }
 
 .models {
     display: flex;
-    gap: 0.25rem;
+    gap: 0.32rem;
     flex-wrap: wrap;
 }
 
 .models label {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    font-size: 0.68rem;
-    border: 1px solid #000;
-    padding: 0.12rem 0.3rem;
+    gap: 0.3rem;
+    font-size: 0.78rem;
+    border: 1.2px solid #000;
+    padding: 0.18rem 0.42rem;
+    font-weight: 600;
 }
 
 .models input[type="checkbox"] {
-    width: 11px;
-    height: 11px;
+    width: 13px;
+    height: 13px;
     border: 1.2px solid #000;
     flex-shrink: 0;
 }
 
 .checked {
     font-weight: 800;
-    background: #f0f0f0;
+    background: #ebebeb;
 }
 
 /* ── Model / Engine# / Chassis# ── */
@@ -213,22 +229,31 @@
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    gap: 0.75rem;
-    margin-bottom: 0.25rem;
+    gap: 0.85rem;
+    margin-bottom: 0.4rem;
 }
 
 .boxedField {
     flex: 1;
-    border: 1px solid #000;
-    padding: 0.22rem 0.5rem;
-    font-size: 0.8rem;
+    border: 1.3px solid #000;
+    padding: 0.32rem 0.65rem;
+    font-size: 0.9rem;
     display: flex;
+    align-items: center;
 }
 
 .boxedField .label {
     min-width: auto;
-    margin-right: 0.35rem;
-    font-size: 0.8rem;
+    margin-right: 0.45rem;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.boxedField .value {
+    border-bottom: none;
+    padding-left: 0;
+    font-weight: 700;
+    font-size: 0.9rem;
 }
 
 /* ── Colour + payment mode row ── */
@@ -237,13 +262,13 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    margin: 0.35rem 0 0.45rem;
+    margin: 0.5rem 0 0.6rem;
     flex-wrap: nowrap;
-    gap: 0.5rem;
+    gap: 0.65rem;
 }
 
 .colourText {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     font-weight: 600;
 }
 
@@ -255,70 +280,70 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
-    gap: 0.35rem;
+    gap: 0.45rem;
 }
 
 .paymentModes label {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    font-size: 0.7rem;
+    gap: 0.32rem;
+    font-size: 0.8rem;
     font-weight: bold;
     border: 1.2px solid #000;
-    padding: 0.12rem 0.35rem;
+    padding: 0.18rem 0.48rem;
     white-space: nowrap;
 }
 
 .paymentModes input[type="checkbox"] {
-    width: 12px;
-    height: 12px;
-    border: 1.5px solid #000;
+    width: 13px;
+    height: 13px;
+    border: 1.2px solid #000;
 }
 
 /* ── Price section ── */
 .priceSection {
-    border-top: 1.5px solid #000;
-    padding-top: 0.3rem;
-    margin-bottom: 0.25rem;
+    border-top: 2px solid #000;
+    padding-top: 0.5rem;
+    margin-bottom: 0.55rem;
 }
 
 /* ── Urdu note (red rounded box) ── */
 .urduBox {
-    border: 1.5px solid #e2231a;
+    border: 2px solid #e2231a;
     border-radius: 12px;
-    padding: 0.32rem 0.75rem;
+    padding: 0.52rem 0.95rem;
     text-align: right;
     direction: rtl;
     background: #fff;
-    margin: 0.4rem 0;
+    margin: 0.6rem 0;
 }
 
 .urduText {
     margin: 0;
-    font-size: 0.68rem;
-    line-height: 1.35;
+    font-size: 0.85rem;
+    line-height: 1.5;
     font-weight: 600;
     color: #111;
 }
 
 /* ── Footer: dealer letterhead + signature ── */
 .footer {
-    margin-top: 0.35rem;
+    margin-top: 0.6rem;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    gap: 0.75rem;
+    gap: 1.2rem;
 }
 
 .dealerInfo {
-    font-size: 0.75rem;
-    line-height: 1.35;
+    font-size: 0.85rem;
+    line-height: 1.45;
 }
 
 .dealerInfo strong {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     display: block;
-    margin-bottom: 0.15rem;
+    margin-bottom: 0.2rem;
     letter-spacing: 0.03em;
     color: #e2231a;
     font-weight: 900;
@@ -331,20 +356,21 @@
 
 .signatureLine {
     border-bottom: 1.5px solid #000;
-    margin-bottom: 0.25rem;
-    height: 28px;
-    width: 160px;
+    margin-bottom: 0.35rem;
+    height: 40px;
+    width: 200px;
 }
 
 .signature p {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     font-weight: 700;
 }
 
 @media (max-width: 768px) {
     .receipt {
-        padding: 0.75rem;
+        padding: 0.85rem;
         border: 1px solid #ccc;
+        min-height: auto;
     }
 
     .topBar { grid-template-columns: 1fr; justify-items: center; gap: 0.4rem; }
@@ -365,26 +391,32 @@
 @media print {
     @page {
         size: A4 portrait;
-        margin: 5mm 7mm;
+        margin: 6mm 8mm;
     }
 
     html, body {
         margin: 0 !important;
         padding: 0 !important;
         background: #fff !important;
-        height: auto !important;
+        height: 100% !important;
+        overflow: visible !important;
     }
 
     .receipt {
         box-sizing: border-box !important;
         max-width: 100% !important;
         width: 100% !important;
-        margin: 0 !important;
-        padding: 0.45rem 0.85rem !important;
-        border: 1.5px solid #000 !important;
+        min-height: 278mm !important;
+        height: 278mm !important;
+        margin: 0 auto !important;
+        padding: 1.2rem 1.6rem !important;
+        border: 2px solid #000 !important;
         box-shadow: none !important;
-        font-size: 0.74rem !important;
-        line-height: 1.25 !important;
+        font-size: 0.88rem !important;
+        line-height: 1.35 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         color-adjust: exact !important;
@@ -392,6 +424,19 @@
         break-inside: avoid !important;
         page-break-after: avoid !important;
         break-after: avoid !important;
+    }
+
+    .receiptMain {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .receiptBottom {
+        display: flex !important;
+        flex-direction: column !important;
+        margin-top: 0.5rem !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
     }
 
     .receipt, .receipt * {
@@ -405,115 +450,116 @@
     }
 
     .topBar {
-        padding-bottom: 0.22rem !important;
-        margin-bottom: 0.3rem !important;
+        padding-bottom: 0.4rem !important;
+        margin-bottom: 0.55rem !important;
         grid-template-columns: 1fr auto 1fr !important;
-        gap: 0.4rem !important;
+        gap: 0.8rem !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
-    .hondaLogo     { width: 72px !important; }
-    .badgeCircle   { width: 22px !important; height: 22px !important; font-size: 0.58rem !important; }
-    .badgeText     { font-size: 0.5rem !important; line-height: 1.1 !important; }
-    .badgeStripe   { width: 65px !important; height: 4px !important; }
-    .receiptTitleBox { font-size: 0.82rem !important; padding: 0.15rem 0.8rem !important; }
-    .serialNumber  { font-size: 0.76rem !important; }
+    .hondaLogo     { width: 100px !important; }
+    .badgeCircle   { width: 28px !important; height: 28px !important; font-size: 0.72rem !important; }
+    .badgeText     { font-size: 0.6rem !important; line-height: 1.15 !important; }
+    .badgeStripe   { width: 80px !important; height: 5px !important; }
+    .receiptTitleBox { font-size: 1.1rem !important; padding: 0.28rem 1.2rem !important; }
+    .serialNumber  { font-size: 1rem !important; }
 
     .idRow {
-        margin-bottom: 0.3rem !important;
+        margin-bottom: 0.55rem !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         justify-content: space-between !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
-    .digitField    { flex-shrink: 0 !important; gap: 0.3rem !important; }
-    .digitLabel    { font-size: 0.74rem !important; }
-    .digitBox      { width: 13px !important; height: 16px !important; font-size: 0.65rem !important; }
+    .digitField    { flex-shrink: 0 !important; gap: 0.45rem !important; }
+    .digitLabel    { font-size: 0.9rem !important; }
+    .digitBox      { width: 19px !important; height: 25px !important; font-size: 0.88rem !important; }
 
     .section {
-        margin-bottom: 0.28rem !important;
+        margin-bottom: 0.55rem !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
     }
     .field {
-        margin-bottom: 0.15rem !important;
-        font-size: 0.74rem !important;
-        line-height: 1.2 !important;
+        margin-bottom: 0.32rem !important;
+        font-size: 0.9rem !important;
+        line-height: 1.35 !important;
     }
     .label {
-        font-size: 0.74rem !important;
-        min-width: 145px !important;
+        font-size: 0.9rem !important;
+        min-width: 175px !important;
     }
     .value {
-        font-size: 0.74rem !important;
-        padding-left: 0.25rem !important;
+        font-size: 0.9rem !important;
+        padding-left: 0.45rem !important;
     }
 
     .bikeModels {
-        margin-bottom: 0.25rem !important;
-        gap: 0.25rem !important;
+        margin-bottom: 0.55rem !important;
+        gap: 0.45rem !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
-    .modelLabel    { font-size: 0.74rem !important; }
-    .models        { gap: 0.2rem !important; }
-    .models label  { padding: 0.08rem 0.22rem !important; font-size: 0.6rem !important; }
-    .models input[type="checkbox"] { width: 10px !important; height: 10px !important; }
+    .modelLabel    { font-size: 0.9rem !important; }
+    .models        { gap: 0.3rem !important; }
+    .models label  { padding: 0.16rem 0.4rem !important; font-size: 0.78rem !important; }
+    .models input[type="checkbox"] { width: 13px !important; height: 13px !important; }
 
     .specsRow {
-        margin-bottom: 0.25rem !important;
+        margin-bottom: 0.4rem !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
-        gap: 0.5rem !important;
+        gap: 0.85rem !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
-    .boxedField    { padding: 0.18rem 0.4rem !important; font-size: 0.74rem !important; }
-    .boxedField .label { font-size: 0.74rem !important; }
+    .boxedField    { padding: 0.32rem 0.65rem !important; font-size: 0.9rem !important; }
+    .boxedField .label { font-size: 0.9rem !important; }
 
     .colourPaymentRow {
-        margin: 0.25rem 0 0.3rem !important;
+        margin: 0.5rem 0 0.6rem !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         justify-content: space-between !important;
         align-items: center !important;
-        gap: 0.4rem !important;
+        gap: 0.65rem !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
-    .colourText    { font-size: 0.74rem !important; }
-    .paymentModes  { gap: 0.25rem !important; }
-    .paymentModes label { padding: 0.1rem 0.3rem !important; font-size: 0.62rem !important; }
-    .paymentModes input[type="checkbox"] { width: 10px !important; height: 10px !important; }
+    .colourText    { font-size: 0.9rem !important; }
+    .paymentModes  { gap: 0.45rem !important; }
+    .paymentModes label { padding: 0.16rem 0.45rem !important; font-size: 0.8rem !important; }
+    .paymentModes input[type="checkbox"] { width: 13px !important; height: 13px !important; }
 
     .priceSection {
-        padding-top: 0.25rem !important;
-        margin-bottom: 0.25rem !important;
+        padding-top: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
 
     .urduBox {
-        padding: 0.25rem 0.6rem !important;
-        margin: 0.3rem 0 !important;
-        border-radius: 8px !important;
+        padding: 0.5rem 0.9rem !important;
+        margin: 0.55rem 0 !important;
+        border: 2px solid #e2231a !important;
+        border-radius: 12px !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
     .urduText {
-        font-size: 0.6rem !important;
-        line-height: 1.25 !important;
+        font-size: 0.84rem !important;
+        line-height: 1.45 !important;
     }
 
     .footer {
-        margin-top: 0.2rem !important;
-        padding-top: 0.25rem !important;
+        margin-top: 0.55rem !important;
+        padding-top: 0.35rem !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
     }
-    .dealerInfo    { font-size: 0.68rem !important; line-height: 1.25 !important; }
-    .dealerInfo strong { font-size: 0.95rem !important; margin-bottom: 0.08rem !important; }
-    .signatureLine { height: 24px !important; width: 140px !important; margin-bottom: 0.15rem !important; }
-    .signature p   { font-size: 0.68rem !important; }
+    .dealerInfo    { font-size: 0.84rem !important; line-height: 1.45 !important; }
+    .dealerInfo strong { font-size: 1.45rem !important; margin-bottom: 0.2rem !important; }
+    .signatureLine { height: 38px !important; width: 190px !important; margin-bottom: 0.35rem !important; }
+    .signature p   { font-size: 0.84rem !important; }
 }

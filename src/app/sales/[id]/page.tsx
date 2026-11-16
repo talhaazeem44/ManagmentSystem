@@ -202,7 +202,8 @@ export default function ReceiptPage() {
             const finalHeight = Math.min(imgHeight, pageHeight);
             const finalWidth = imgHeight > pageHeight ? (canvas.width * finalHeight) / canvas.height : imgWidth;
             const x = (pageWidth - finalWidth) / 2;
-            pdf.addImage(imgData, 'PNG', x, 0, finalWidth, finalHeight);
+            const y = imgHeight < pageHeight ? Math.max(0, (pageHeight - imgHeight) / 4) : 0;
+            pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
             const fileName = `Sale-Receipt-${(sale.customer.name || 'Customer').replace(/\s+/g, '_')}.pdf`;
             pdf.save(fileName);
         } finally {
@@ -232,7 +233,8 @@ export default function ReceiptPage() {
             const finalHeight = Math.min(imgHeight, pageHeight);
             const finalWidth = imgHeight > pageHeight ? (canvas.width * finalHeight) / canvas.height : imgWidth;
             const x = (pageWidth - finalWidth) / 2;
-            pdf.addImage(imgData, 'PNG', x, 0, finalWidth, finalHeight);
+            const y = imgHeight < pageHeight ? Math.max(0, (pageHeight - imgHeight) / 4) : 0;
+            pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
             const fileName = `Sale-Receipt-${(sale.customer.name || 'Customer').replace(/\s+/g, '_')}.pdf`;
             const blob = pdf.output('blob');
             const file = new File([blob], fileName, { type: 'application/pdf' });
@@ -358,7 +360,8 @@ export default function ReceiptPage() {
 
                 {/* ── Printable receipt ── */}
                 <div className={styles.receipt} ref={receiptRef}>
-                    <div className={styles.topBar}>
+                    <div className={styles.receiptMain}>
+                        <div className={styles.topBar}>
                         <Image src="/honda-logo.png" alt="Honda" width={160} height={110} className={styles.hondaLogo} priority />
 
                         <div className={styles.titleRow}>
@@ -562,18 +565,18 @@ export default function ReceiptPage() {
                             const MAX_ROWS = 3;
                             const shown = printablePayments.slice(0, MAX_ROWS);
                             const hiddenCount = printablePayments.length - shown.length;
-                            const rowFont = printablePayments.length > MAX_ROWS ? '0.62rem' : '0.68rem';
+                            const rowFont = printablePayments.length > MAX_ROWS ? '0.74rem' : '0.78rem';
                             return (
-                                <div style={{ marginTop: '0.25rem', borderTop: '1px solid #ccc', paddingTop: '0.2rem' }}>
-                                    <div style={{ fontWeight: 700, fontSize: '0.7rem', marginBottom: '0.12rem' }}>Payment History:</div>
+                                <div style={{ marginTop: '0.35rem', borderTop: '1px solid #ccc', paddingTop: '0.25rem' }}>
+                                    <div style={{ fontWeight: 700, fontSize: '0.82rem', marginBottom: '0.15rem' }}>Payment History:</div>
                                     {shown.map((p, i) => (
-                                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: rowFont, marginBottom: '0.06rem' }}>
+                                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: rowFont, marginBottom: '0.08rem' }}>
                                             <span>{new Date(p.date).toLocaleDateString()}{p.note ? ` — ${p.note}` : ''}</span>
                                             <strong>Rs. {Number(p.amount).toLocaleString()}</strong>
                                         </div>
                                     ))}
                                     {hiddenCount > 0 && (
-                                        <div style={{ fontSize: '0.62rem', fontStyle: 'italic', color: '#555' }}>
+                                        <div style={{ fontSize: '0.72rem', fontStyle: 'italic', color: '#555' }}>
                                             +{hiddenCount} more payment{hiddenCount > 1 ? 's' : ''} — see Khata for full history
                                         </div>
                                     )}
@@ -581,7 +584,9 @@ export default function ReceiptPage() {
                             );
                         })()}
                     </div>
+                </div>
 
+                <div className={styles.receiptBottom}>
                     <div className={styles.urduBox}>
                         <p className={styles.urduText}>نوٹ: یہ رسید رجسٹریشن کیلئے استعمال نہیں ہو سکتی۔ اصل کاغذات کے حصول کیلئے یہ رسید اور اصل شناختی کارڈ ضرور لائیں۔ نیز موٹر سائیکل کی تاریخ خرید اور گاہک کا نام تبدیل نہ ہوگا۔</p>
                     </div>
@@ -598,6 +603,7 @@ export default function ReceiptPage() {
                         </div>
                     </div>
                 </div>
+            </div>
 
             </div>
         </DashboardLayout>
