@@ -362,248 +362,237 @@ export default function ReceiptPage() {
                 <div className={styles.receipt} ref={receiptRef}>
                     <div className={styles.receiptMain}>
                         <div className={styles.topBar}>
-                        <Image src="/honda-logo.png" alt="Honda" width={160} height={110} className={styles.hondaLogo} priority />
+                            <Image src="/honda-logo.png" alt="Honda" width={160} height={110} className={styles.hondaLogo} priority />
 
-                        <div className={styles.titleRow}>
-                            <div className={styles.serialNumber}>{sale.receiptNumber || sale.id}</div>
-                            <div className={styles.receiptTitleBox}>SALE RECEIPT</div>
-                        </div>
+                            <div className={styles.titleRow}>
+                                <div className={styles.serialNumber}>{sale.receiptNumber || sale.id}</div>
+                                <div className={styles.receiptTitleBox}>SALE RECEIPT</div>
+                            </div>
 
-                        <div className={styles.badgeArea}>
-                            <div className={styles.badgeStripe}><span /><span /><span /></div>
-                            <div className={styles.badgeRow}>
-                                <div className={styles.badgeCircle}>3S</div>
-                                <div className={styles.badgeText}>SALES<br />SERVICE<br />SPARE PARTS</div>
+                            <div className={styles.badgeArea}>
+                                <div className={styles.badgeStripe}><span /><span /><span /></div>
+                                <div className={styles.badgeRow}>
+                                    <div className={styles.badgeCircle}>3S</div>
+                                    <div className={styles.badgeText}>SALES<br />SERVICE<br />SPARE PARTS</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div className={styles.idRow}>
-                        <div className={styles.digitField}>
-                            <span className={styles.digitLabel}>C.N.I.C #:</span>
-                            <DigitBoxes value={sale.customer.cnic} groups={[5, 7, 1]} />
+                        <div className={styles.idRow}>
+                            <div className={styles.digitField}>
+                                <span className={styles.digitLabel}>C.N.I.C #:</span>
+                                <DigitBoxes value={sale.customer.cnic} groups={[5, 7, 1]} />
+                            </div>
+                            <div className={styles.digitField}>
+                                <span className={styles.digitLabel}>Dated:</span>
+                                <DigitBoxes
+                                    value={new Date(sale.saleDate).toLocaleDateString('en-GB').replace(/\//g, '')}
+                                    groups={[2, 2, 4]}
+                                />
+                            </div>
                         </div>
-                        <div className={styles.digitField}>
-                            <span className={styles.digitLabel}>Dated:</span>
-                            <DigitBoxes
-                                value={new Date(sale.saleDate).toLocaleDateString('en-GB').replace(/\//g, '')}
-                                groups={[2, 2, 4]}
-                            />
-                        </div>
-                    </div>
 
-                    <div className={styles.section}>
-                        <div className={styles.field}>
-                            <span className={styles.label}>Customer&apos;s Name:</span>
-                            <span className={styles.value}>{sale.customer.name}</span>
-                        </div>
-                        {sale.customer.fatherName && (
+                        <div className={styles.section}>
                             <div className={styles.field}>
-                                <span className={styles.label}>Father/Husband Name:</span>
-                                <span className={styles.value}>{sale.customer.fatherName}</span>
+                                <span className={styles.label}>Customer&apos;s Name:</span>
+                                <span className={styles.value}>{sale.customer.name}</span>
                             </div>
-                        )}
-                        {sale.customer.careOf && (
+                            {sale.customer.fatherName && (
+                                <div className={styles.field}>
+                                    <span className={styles.label}>Father/Husband Name:</span>
+                                    <span className={styles.value}>{sale.customer.fatherName}</span>
+                                </div>
+                            )}
+                            {sale.customer.careOf && (
+                                <div className={styles.field}>
+                                    <span className={styles.label}>Care of:</span>
+                                    <span className={styles.value}>{sale.customer.careOf}</span>
+                                </div>
+                            )}
                             <div className={styles.field}>
-                                <span className={styles.label}>Care of:</span>
-                                <span className={styles.value}>{sale.customer.careOf}</span>
+                                <span className={styles.label}>Address:</span>
+                                <span className={styles.value}>{sale.customer.address || ''}</span>
                             </div>
-                        )}
-                        <div className={styles.field}>
-                            <span className={styles.label}>Address:</span>
-                            <span className={styles.value}>{sale.customer.address || ''}</span>
+                            <div className={styles.field}>
+                                <span className={styles.label}>Mobile #:</span>
+                                <span className={styles.value}>{sale.customer.mobile || ''}</span>
+                            </div>
                         </div>
-                        <div className={styles.field}>
-                            <span className={styles.label}>Mobile #:</span>
-                            <span className={styles.value}>{sale.customer.mobile || ''}</span>
-                        </div>
-                    </div>
 
-                    <div className={styles.bikeModels}>
-                        <span className={styles.modelLabel}>Honda:</span>
-                        <div className={styles.models}>
-                            {[
-                                { label: 'CD70', match: 'CD70' },
-                                { label: 'DREAM', match: 'DREAM' },
-                                { label: 'PRIDOR', match: 'PRIDOR' },
-                                { label: 'CG 125', match: 'CG 125' },
-                                { label: 'CG125S.SE', match: 'CG125S.SE' },
-                                { label: 'CG125GOLD', match: 'CG125GOLD' },
-                                { label: 'CB125F.SE', match: 'CB125F.SE' },
-                                { label: 'CB150F', match: 'CB150F' },
-                                { label: 'CB150FSE', match: 'CB150FSE' },
-                                { label: 'CG150-2T', match: 'CG150 2-Tone' },
-                                { label: 'CG 150', match: 'CG 150' },
-                                { label: 'ICON EV', match: 'ICON EV' },
-                            ].map(({ label, match }) => {
-                                const isChecked = sale.bike.model === match;
-                                return (
-                                    <label key={label} className={isChecked ? styles.checked : ''}>
-                                        <input type="checkbox" readOnly checked={isChecked} /> {label}
-                                    </label>
-                                );
-                            })}
+                        <div className={styles.bikeModels}>
+                            <span className={styles.modelLabel}>Honda:</span>
+                            <div className={styles.models}>
+                                {[
+                                    { label: 'CD70', match: 'CD70' },
+                                    { label: 'DREAM', match: 'DREAM' },
+                                    { label: 'PRIDOR', match: 'PRIDOR' },
+                                    { label: 'CG 125', match: 'CG 125' },
+                                    { label: 'CG125S.SE', match: 'CG125S.SE' },
+                                    { label: 'CG125GOLD', match: 'CG125GOLD' },
+                                    { label: 'CB125F.SE', match: 'CB125F.SE' },
+                                    { label: 'CB150F', match: 'CB150F' },
+                                    { label: 'CB150FSE', match: 'CB150FSE' },
+                                    { label: 'CG150-2T', match: 'CG150 2-Tone' },
+                                    { label: 'CG 150', match: 'CG 150' },
+                                    { label: 'ICON EV', match: 'ICON EV' },
+                                ].map(({ label, match }) => {
+                                    const isChecked = sale.bike.model === match;
+                                    return (
+                                        <label key={label} className={isChecked ? styles.checked : ''}>
+                                            <input type="checkbox" readOnly checked={isChecked} /> {label}
+                                        </label>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
 
-                    <div className={styles.specsRow} style={{ marginBottom: '0.22rem' }}>
-                        <div className={styles.field} style={{ flex: 1, marginBottom: 0 }}>
-                            <span className={styles.label} style={{ minWidth: '70px' }}>Model:</span>
-                            <span className={styles.value}>{new Date(sale.saleDate).getFullYear()}</span>
+                        <div className={styles.specsRow} style={{ marginBottom: '0.22rem' }}>
+                            <div className={styles.field} style={{ flex: 1, marginBottom: 0 }}>
+                                <span className={styles.label} style={{ minWidth: '70px' }}>Model:</span>
+                                <span className={styles.value}>{new Date(sale.saleDate).getFullYear()}</span>
+                            </div>
+                            <div className={styles.field} style={{ flex: 1, marginBottom: 0 }}>
+                                <span className={styles.label} style={{ minWidth: '70px' }}>Colour:</span>
+                                <span className={styles.value}>{sale.bike.color || sale.receiptColour || ''}</span>
+                            </div>
                         </div>
-                        <div className={styles.field} style={{ flex: 1, marginBottom: 0 }}>
-                            <span className={styles.label} style={{ minWidth: '70px' }}>Colour:</span>
-                            <span className={styles.value}>{sale.bike.color || sale.receiptColour || ''}</span>
-                        </div>
-                    </div>
 
-                    <div className={styles.specsRow}>
-                        <div className={styles.boxedField}>
-                            <span className={styles.label}>Engine #:</span>
-                            <span className={styles.value}>{sale.bike.engineNumber}</span>
+                        <div className={styles.specsRow}>
+                            <div className={styles.boxedField}>
+                                <span className={styles.label}>Engine #:</span>
+                                <span className={styles.value}>{sale.bike.engineNumber}</span>
+                            </div>
+                            <div className={styles.boxedField}>
+                                <span className={styles.label}>Chassis #:</span>
+                                <span className={styles.value}>{sale.bike.chassisNumber}</span>
+                            </div>
                         </div>
-                        <div className={styles.boxedField}>
-                            <span className={styles.label}>Chassis #:</span>
-                            <span className={styles.value}>{sale.bike.chassisNumber}</span>
-                        </div>
-                    </div>
 
-                    {sale.bike.deliveryOrder?.dealerName && (
+                        {/* {sale.bike.deliveryOrder?.dealerName && (
                         <div className={styles.field}>
                             <span className={styles.label}>Dealership:</span>
                             <span className={styles.value}>{sale.bike.deliveryOrder.dealerName}</span>
                         </div>
-                    )}
+                    )} */}
 
-                    <div className={styles.colourPaymentRow}>
-                        <div className={styles.colourText}>
-                            Colour: {COLOUR_OPTIONS.map((c, i) => (
-                                <Fragment key={c}>
-                                    {i > 0 && ' / '}
-                                    {(sale.receiptColour || guessReceiptColour(sale.bike.color)) === c ? <strong>{c}</strong> : c}
-                                </Fragment>
-                            ))}
-                            {/* Fallback: colour doesn't match any checklist item (e.g. Grey, Maroon) — print it anyway so it's never blank */}
-                            {!(sale.receiptColour || guessReceiptColour(sale.bike.color)) && sale.bike.color && (
-                                <strong> ({sale.bike.color})</strong>
-                            )}
-                        </div>
-                        <div className={styles.paymentModes}>
-                            {[
-                                { modes: ['CASH'], label: 'CASH' },
-                                { modes: ['BANK_TRANSFER', 'BANK'], label: 'BANK' },
-                                { modes: ['CREDIT'], label: 'CREDIT' },
-                                { modes: ['LEASE'], label: 'LEASE' },
-                                { modes: ['ONLINE'], label: 'ONLINE' },
-                            ].map(({ modes, label }) => {
-                                const isChecked = modes.includes(sale.paymentMode);
-                                return (
-                                    <label key={label} className={isChecked ? styles.checked : ''}>
-                                        <input type="checkbox" readOnly checked={isChecked} /> {label}
-                                    </label>
-                                );
-                            })}
-                        </div>
-                    </div>
+                        <div className={styles.colourPaymentRow}>
 
-                    <div className={styles.priceSection}>
-                        <div className={styles.field}>
-                            <span className={styles.label}>Cash Price:</span>
-                            <span className={styles.value}>
-                                {displayStandardPrice.toLocaleString()}
-                            </span>
+                            <div className={styles.paymentModes}>
+                                {[
+                                    { modes: ['CASH'], label: 'CASH' },
+                                    { modes: ['BANK_TRANSFER', 'BANK'], label: 'BANK' },
+                                    { modes: ['CREDIT'], label: 'CREDIT' },
+                                    { modes: ['LEASE'], label: 'LEASE' },
+                                    { modes: ['ONLINE'], label: 'ONLINE' },
+                                ].map(({ modes, label }) => {
+                                    const isChecked = modes.includes(sale.paymentMode);
+                                    return (
+                                        <label key={label} className={isChecked ? styles.checked : ''}>
+                                            <input type="checkbox" readOnly checked={isChecked} /> {label}
+                                        </label>
+                                    );
+                                })}
+                            </div>
                         </div>
-                        <div className={styles.field}>
-                            <span className={styles.label}>Advance Amount:</span>
-                            <span className={styles.value}>{sale.advanceAmount || ''}</span>
-                        </div>
-                        <div className={styles.field}>
-                            <span className={styles.label}>Received Cash:</span>
-                            <span className={styles.value}>
-                                {sale.paymentMode === 'CASH' || sale.paymentMode === 'ONLINE'
-                                    ? displayStandardPrice.toLocaleString()
-                                    : Number(sale.receivedCash || 0).toLocaleString()}
-                            </span>
-                        </div>
-                        {sale.bankTransferAmount ? (
+
+                        <div className={styles.priceSection}>
                             <div className={styles.field}>
-                                <span className={styles.label}>Bank Transfer:</span>
+                                <span className={styles.label}>Cash Price:</span>
                                 <span className={styles.value}>
-                                    {sale.paymentMode === 'BANK_TRANSFER'
+                                    {displayStandardPrice.toLocaleString()}
+                                </span>
+                            </div>
+                            <div className={styles.field}>
+                                <span className={styles.label}>Advance Amount:</span>
+                                <span className={styles.value}>{sale.advanceAmount || ''}</span>
+                            </div>
+                            <div className={styles.field}>
+                                <span className={styles.label}>Received Cash:</span>
+                                <span className={styles.value}>
+                                    {sale.paymentMode === 'CASH' || sale.paymentMode === 'ONLINE'
                                         ? displayStandardPrice.toLocaleString()
-                                        : Number(sale.bankTransferAmount).toLocaleString()}
+                                        : Number(sale.receivedCash || 0).toLocaleString()}
                                 </span>
                             </div>
-                        ) : null}
-                        <div className={styles.field}>
-                            <span className={styles.label}>Balance:</span>
-                            <span className={styles.value}>
-                                {displayBalance ? displayBalance.toLocaleString() : ''}
-                            </span>
-                        </div>
-                        <div className={styles.field}>
-                            <span className={styles.label}>Registration Fees:</span>
-                            <span className={styles.value}>
-                                {sale.registrationCost ? Number(sale.registrationCost).toLocaleString() : ''}
-                            </span>
-                        </div>
-                        {sale.registrationCost ? (
+                            {sale.bankTransferAmount ? (
+                                <div className={styles.field}>
+                                    <span className={styles.label}>Bank Transfer:</span>
+                                    <span className={styles.value}>
+                                        {sale.paymentMode === 'BANK_TRANSFER'
+                                            ? displayStandardPrice.toLocaleString()
+                                            : Number(sale.bankTransferAmount).toLocaleString()}
+                                    </span>
+                                </div>
+                            ) : null}
                             <div className={styles.field}>
-                                <span className={styles.label}>Reg. Payment Mode:</span>
+                                <span className={styles.label}>Balance:</span>
                                 <span className={styles.value}>
-                                    {(sale.registrationPaymentMode ?? sale.paymentMode).replace('_', ' ')}
+                                    {displayBalance ? displayBalance.toLocaleString() : ''}
                                 </span>
                             </div>
-                        ) : null}
+                            <div className={styles.field}>
+                                <span className={styles.label}>Registration Fees:</span>
+                                <span className={styles.value}>
+                                    {sale.registrationCost ? Number(sale.registrationCost).toLocaleString() : ''}
+                                </span>
+                            </div>
+                            {sale.registrationCost ? (
+                                <div className={styles.field}>
+                                    <span className={styles.label}>Reg. Payment Mode:</span>
+                                    <span className={styles.value}>
+                                        {(sale.registrationPaymentMode ?? sale.paymentMode).replace('_', ' ')}
+                                    </span>
+                                </div>
+                            ) : null}
 
-                        {/* Payment history inside receipt (visible on print) — capped so it can never push the receipt past one A4 page.
+                            {/* Payment history inside receipt (visible on print) — capped so it can never push the receipt past one A4 page.
                             Internal corrections (edits made on the Sales list page, not real customer payments) are excluded here —
                             they still show in the on-screen payment history above for staff, just not on the printed receipt. */}
-                        {(() => {
-                            const printablePayments = payments.filter(p => p.note !== 'Edited on Sales page');
-                            if (printablePayments.length === 0) return null;
-                            const MAX_ROWS = 3;
-                            const shown = printablePayments.slice(0, MAX_ROWS);
-                            const hiddenCount = printablePayments.length - shown.length;
-                            const rowFont = printablePayments.length > MAX_ROWS ? '0.74rem' : '0.78rem';
-                            return (
-                                <div style={{ marginTop: '0.35rem', borderTop: '1px solid #ccc', paddingTop: '0.25rem' }}>
-                                    <div style={{ fontWeight: 700, fontSize: '0.82rem', marginBottom: '0.15rem' }}>Payment History:</div>
-                                    {shown.map((p, i) => (
-                                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: rowFont, marginBottom: '0.08rem' }}>
-                                            <span>{new Date(p.date).toLocaleDateString()}{p.note ? ` — ${p.note}` : ''}</span>
-                                            <strong>Rs. {Number(p.amount).toLocaleString()}</strong>
-                                        </div>
-                                    ))}
-                                    {hiddenCount > 0 && (
-                                        <div style={{ fontSize: '0.72rem', fontStyle: 'italic', color: '#555' }}>
-                                            +{hiddenCount} more payment{hiddenCount > 1 ? 's' : ''} — see Khata for full history
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })()}
-                    </div>
-                </div>
-
-                <div className={styles.receiptBottom}>
-                    <div className={styles.urduBox}>
-                        <p className={styles.urduText}>نوٹ: یہ رسید رجسٹریشن کیلئے استعمال نہیں ہو سکتی۔ اصل کاغذات کے حصول کیلئے یہ رسید اور اصل شناختی کارڈ ضرور لائیں۔ نیز موٹر سائیکل کی تاریخ خرید اور گاہک کا نام تبدیل نہ ہوگا۔</p>
-                    </div>
-
-                    <div className={styles.footer}>
-                        <div className={styles.dealerInfo}>
-                            <strong>NAEEM AUTOS</strong>
-                            <p>📍 1.5 Km Daska Road, Sambrial</p>
-                            <p>📞 Ph: 052-6525001-2 Cell: 0331-8800216, 0334-8179775</p>
-                        </div>
-                        <div className={styles.signature}>
-                            <div className={styles.signatureLine} />
-                            <p>Customer Signature</p>
+                            {(() => {
+                                const printablePayments = payments.filter(p => p.note !== 'Edited on Sales page');
+                                if (printablePayments.length === 0) return null;
+                                const MAX_ROWS = 3;
+                                const shown = printablePayments.slice(0, MAX_ROWS);
+                                const hiddenCount = printablePayments.length - shown.length;
+                                const rowFont = printablePayments.length > MAX_ROWS ? '0.74rem' : '0.78rem';
+                                return (
+                                    <div style={{ marginTop: '0.35rem', borderTop: '1px solid #ccc', paddingTop: '0.25rem' }}>
+                                        <div style={{ fontWeight: 700, fontSize: '0.82rem', marginBottom: '0.15rem' }}>Payment History:</div>
+                                        {shown.map((p, i) => (
+                                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: rowFont, marginBottom: '0.08rem' }}>
+                                                <span>{new Date(p.date).toLocaleDateString()}{p.note ? ` — ${p.note}` : ''}</span>
+                                                <strong>Rs. {Number(p.amount).toLocaleString()}</strong>
+                                            </div>
+                                        ))}
+                                        {hiddenCount > 0 && (
+                                            <div style={{ fontSize: '0.72rem', fontStyle: 'italic', color: '#555' }}>
+                                                +{hiddenCount} more payment{hiddenCount > 1 ? 's' : ''} — see Khata for full history
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
+
+                    <div className={styles.receiptBottom}>
+                        <div className={styles.urduBox}>
+                            <p className={styles.urduText}>نوٹ: یہ رسید رجسٹریشن کیلئے استعمال نہیں ہو سکتی۔ اصل کاغذات کے حصول کیلئے یہ رسید اور اصل شناختی کارڈ ضرور لائیں۔ نیز موٹر سائیکل کی تاریخ خرید اور گاہک کا نام تبدیل نہ ہوگا۔</p>
+                        </div>
+
+                        <div className={styles.footer}>
+                            <div className={styles.dealerInfo}>
+                                <strong>NAEEM AUTOS</strong>
+                                <p>📍 1.5 Km Daska Road, Sambrial</p>
+                                <p>📞 Ph: 052-6525001-2 Cell: 0331-8800216, 0334-8179775</p>
+                            </div>
+                            <div className={styles.signature}>
+                                <div className={styles.signatureLine} />
+                                <p>Customer Signature</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
             </div>
         </DashboardLayout>
