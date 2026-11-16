@@ -1,6 +1,6 @@
 .receipt {
     max-width: 820px;
-    /* min-height: 100vh; */
+    /* min-height: 1080px; */
     margin: 0 auto;
     background: white;
     color: #000;
@@ -436,7 +436,7 @@
         margin: 0 !important;
         padding: 0 !important;
         background: #fff !important;
-        height: 100% !important;
+        height: auto !important;
         overflow: visible !important;
     }
 
@@ -445,7 +445,7 @@
         max-width: 100% !important;
         width: 100% !important;
         min-height: 278mm !important;
-        height: 278mm !important;
+        height: 283mm !important;
         margin: 0 auto !important;
         padding: 1.2rem 1.6rem !important;
         border: 2px solid #000 !important;
@@ -465,8 +465,10 @@
     }
 
     .receiptMain {
+        flex: 1 !important;
         display: flex !important;
         flex-direction: column !important;
+        justify-content: space-between !important;
     }
 
     .receiptBottom {
