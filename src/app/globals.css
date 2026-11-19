@@ -424,6 +424,23 @@ a {
 
 /* Print Styles */
 @media print {
+  /* Sale receipt page setup – these MUST be in globals.css because @page
+     and html/body selectors are global and get stripped by CSS Modules
+     in production builds (works in dev but breaks on Vercel). */
+  @page {
+    size: A4 portrait;
+    margin: 6mm 8mm;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
   /* Entrance animations (e.g. .animate-fade-in, which starts at opacity:0)
      can restart when the browser switches into print-preview rendering.
      If the print snapshot is taken before the animation finishes, the

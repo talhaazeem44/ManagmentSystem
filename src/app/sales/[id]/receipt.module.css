@@ -426,19 +426,8 @@
 }
 
 @media print {
-    @page {
-        size: A4 portrait;
-        margin: 6mm 8mm;
-    }
-
-    html,
-    body {
-        margin: 0 !important;
-        padding: 0 !important;
-        background: #fff !important;
-        height: auto !important;
-        overflow: visible !important;
-    }
+    /* NOTE: @page and html/body print selectors are in globals.css because
+       CSS Modules strip non-class selectors in production builds. */
 
     .receipt {
         box-sizing: border-box !important;
