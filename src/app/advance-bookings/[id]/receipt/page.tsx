@@ -120,15 +120,29 @@ export default function AdvanceBookingReceiptPage() {
     // price (any extra collected above standard price is never shown on the receipt), and
     // Balance never goes negative.
     const displayTotalPrice = BIKE_STANDARD_PRICES[booking.bikeModel || ''] || booking.totalPrice || 0;
+    // Cap advance so it never prints higher than the total price on the receipt
     const displayAdvancePaid = Math.min(booking.advancePaid, displayTotalPrice);
-    const remaining = displayTotalPrice ? Math.max(0, displayTotalPrice - booking.advancePaid) : null;
+    const remaining = displayTotalPrice ? Math.max(0, displayTotalPrice - displayAdvancePaid) : null;
 
-    // Payments recorded after booking creation are only ever the balance collected at
-    // delivery (see PATCH /api/advance-bookings/[id]) — so the original advance paid up
-    // front is whatever's left of advancePaid once those are subtracted back out.
+    // Payments recorded after booking creation fall into two categories:
+    //  1. "Additional advance payment" — extra money collected while still PENDING
+    //  2. "Collected at delivery"      — the remaining balance paid when the bike is handed over
+    // The receipt must show:
+    //  • Advance Amount  = initial advance + all additional advance payments
+    //  • Received Cash   = only the delivery-time payment(s)
+    // We separate them by the `note` field that the PATCH handler stamps on each entry.
     const payments = booking.payments ?? [];
-    const collectedAtDelivery = payments.reduce((s, p) => s + Number(p.amount || 0), 0);
-    const originalAdvance = Math.max(0, displayAdvancePaid - collectedAtDelivery);
+    const deliveryPayments = payments.filter(p => (p.note || '').toLowerCase().includes('delivery'));
+    const additionalAdvancePayments = payments.filter(p => !(p.note || '').toLowerCase().includes('delivery'));
+    const collectedAtDelivery = deliveryPayments.reduce((s, p) => s + Number(p.amount || 0), 0);
+    const additionalAdvance = additionalAdvancePayments.reduce((s, p) => s + Number(p.amount || 0), 0);
+    // Original advance = total advancePaid − all recorded payments (both additional + delivery)
+    const initialAdvance = Math.max(0, booking.advancePaid - collectedAtDelivery - additionalAdvance);
+    // Full advance = initial + any additional payments made before delivery
+    const realOriginalAdvance = initialAdvance + additionalAdvance;
+    // For the printed receipt: cap so Advance + Received never exceeds the displayed total.
+    const originalAdvance = Math.min(realOriginalAdvance, displayTotalPrice);
+    const displayReceivedCash = Math.min(collectedAtDelivery, Math.max(0, displayTotalPrice - originalAdvance));
 
     const deliveryDate = isDelivered
         ? new Date(booking.deliveredAt || booking.updatedAt || booking.date)
@@ -312,11 +326,11 @@ export default function AdvanceBookingReceiptPage() {
                             </div>
                             <div className={saleStyles.field}>
                                 <span className={saleStyles.label}>Received Cash:</span>
-                                <span className={saleStyles.value}>{collectedAtDelivery.toLocaleString()}</span>
+                                <span className={saleStyles.value}>{displayReceivedCash.toLocaleString()}</span>
                             </div>
                             <div className={saleStyles.field}>
                                 <span className={saleStyles.label}>Balance:</span>
-                                <span className={saleStyles.value}>{remaining ? remaining.toLocaleString() : ''}</span>
+                                <span className={saleStyles.value}>{Math.max(0, displayTotalPrice - originalAdvance - displayReceivedCash).toLocaleString()}</span>
                             </div>
                             <div className={saleStyles.field}>
                                 <span className={saleStyles.label}>Registration Fees:</span>
