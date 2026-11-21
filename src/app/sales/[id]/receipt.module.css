@@ -433,14 +433,14 @@
         box-sizing: border-box !important;
         max-width: 100% !important;
         width: 100% !important;
-        min-height: 278mm !important;
-        height: 283mm !important;
+        height: auto !important;
+        max-height: 280mm !important;
         margin: 0 auto !important;
-        padding: 1.2rem 1.6rem !important;
+        padding: 0.8rem 1.4rem !important;
         border: 2px solid #000 !important;
         box-shadow: none !important;
-        font-size: 0.88rem !important;
-        line-height: 1.35 !important;
+        font-size: 0.86rem !important;
+        line-height: 1.3 !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
@@ -542,144 +542,144 @@
     }
 
     .section {
-        margin-bottom: 0.55rem !important;
+        margin-bottom: 0.38rem !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
     }
 
     .field {
-        margin-bottom: 0.32rem !important;
-        font-size: 0.9rem !important;
-        line-height: 1.35 !important;
+        margin-bottom: 0.22rem !important;
+        font-size: 0.88rem !important;
+        line-height: 1.3 !important;
     }
 
     .label {
-        font-size: 0.9rem !important;
+        font-size: 0.88rem !important;
         min-width: 175px !important;
     }
 
     .value {
-        font-size: 0.9rem !important;
+        font-size: 0.88rem !important;
         padding-left: 0.45rem !important;
     }
 
     .bikeModels {
-        margin-bottom: 0.55rem !important;
-        gap: 0.45rem !important;
+        margin-bottom: 0.38rem !important;
+        gap: 0.4rem !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
 
     .modelLabel {
-        font-size: 0.9rem !important;
+        font-size: 0.88rem !important;
     }
 
     .models {
-        gap: 0.3rem !important;
+        gap: 0.25rem !important;
     }
 
     .models label {
-        padding: 0.16rem 0.4rem !important;
-        font-size: 0.78rem !important;
+        padding: 0.14rem 0.38rem !important;
+        font-size: 0.76rem !important;
     }
 
     .models input[type="checkbox"] {
-        width: 13px !important;
-        height: 13px !important;
+        width: 12px !important;
+        height: 12px !important;
     }
 
     .specsRow {
-        margin-bottom: 0.4rem !important;
+        margin-bottom: 0.32rem !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
-        gap: 0.85rem !important;
+        gap: 0.75rem !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
 
     .boxedField {
-        padding: 0.32rem 0.65rem !important;
-        font-size: 0.9rem !important;
+        padding: 0.25rem 0.55rem !important;
+        font-size: 0.88rem !important;
     }
 
     .boxedField .label {
-        font-size: 0.9rem !important;
+        font-size: 0.88rem !important;
     }
 
     .colourPaymentRow {
-        margin: 0.5rem 0 0.6rem !important;
+        margin: 0.35rem 0 0.45rem !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         justify-content: space-between !important;
         align-items: center !important;
-        gap: 0.65rem !important;
+        gap: 0.5rem !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
 
     .colourText {
-        font-size: 0.9rem !important;
+        font-size: 0.88rem !important;
     }
 
     .paymentModes {
-        gap: 0.45rem !important;
+        gap: 0.4rem !important;
     }
 
     .paymentModes label {
-        padding: 0.16rem 0.45rem !important;
-        font-size: 0.8rem !important;
+        padding: 0.14rem 0.4rem !important;
+        font-size: 0.78rem !important;
     }
 
     .paymentModes input[type="checkbox"] {
-        width: 13px !important;
-        height: 13px !important;
+        width: 12px !important;
+        height: 12px !important;
     }
 
     .priceSection {
-        padding-top: 0.5rem !important;
-        margin-bottom: 0.5rem !important;
+        padding-top: 0.35rem !important;
+        margin-bottom: 0.35rem !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
 
     .urduBox {
-        padding: 0.5rem 0.9rem !important;
-        margin: 0.55rem 0 !important;
+        padding: 0.35rem 0.8rem !important;
+        margin: 0.35rem 0 !important;
         border: 2px solid #e2231a !important;
-        border-radius: 12px !important;
+        border-radius: 10px !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
 
     .urduText {
-        font-size: 0.84rem !important;
-        line-height: 1.45 !important;
+        font-size: 0.82rem !important;
+        line-height: 1.35 !important;
     }
 
     .footer {
-        margin-top: 0.55rem !important;
-        padding-top: 0.35rem !important;
+        margin-top: 0.4rem !important;
+        padding-top: 0.25rem !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
     }
 
     .dealerInfo {
-        font-size: 0.84rem !important;
-        line-height: 1.45 !important;
+        font-size: 0.82rem !important;
+        line-height: 1.35 !important;
     }
 
     .dealerInfo strong {
-        font-size: 1.45rem !important;
-        margin-bottom: 0.2rem !important;
+        font-size: 1.35rem !important;
+        margin-bottom: 0.15rem !important;
     }
 
     .signatureLine {
-        height: 38px !important;
-        width: 190px !important;
-        margin-bottom: 0.35rem !important;
+        height: 32px !important;
+        width: 180px !important;
+        margin-bottom: 0.25rem !important;
     }
 
     .signature p {
-        font-size: 0.84rem !important;
+        font-size: 0.82rem !important;
     }
 }

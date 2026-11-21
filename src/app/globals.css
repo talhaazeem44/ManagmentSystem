@@ -429,7 +429,7 @@ a {
      in production builds (works in dev but breaks on Vercel). */
   @page {
     size: A4 portrait;
-    margin: 6mm 8mm;
+    margin: 5mm 6mm;
   }
 
   html,
