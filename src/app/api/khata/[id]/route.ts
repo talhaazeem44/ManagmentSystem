@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { KhataParty, Bike } from '@/models';
+import { ensureKhataReceiptNumbers } from '@/lib/khataReceipt';
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     await dbConnect();
+    await ensureKhataReceiptNumbers();
     const { id } = await params;
     const party = await KhataParty.findById(id).lean();
     if (!party) return NextResponse.json({ message: 'Not found' }, { status: 404 });

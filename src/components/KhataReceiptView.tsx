@@ -15,6 +15,7 @@ export interface KhataReceiptItem {
 
 export interface KhataReceiptTx {
     _id: string;
+    receiptNumber?: number;
     date: string | Date;
     type?: string;
     description?: string;
@@ -86,7 +87,7 @@ export const KhataReceiptView = forwardRef<HTMLDivElement, KhataReceiptViewProps
                     </div>
                     <div>
                         Receipt No:{' '}
-                        <strong>{tx._id ? tx._id.slice(-8).toUpperCase() : 'NEW'}</strong>
+                        <strong>{tx.receiptNumber !== undefined && tx.receiptNumber !== null ? tx.receiptNumber : (tx._id ? tx._id.slice(-8).toUpperCase() : 'NEW')}</strong>
                     </div>
                 </div>
 

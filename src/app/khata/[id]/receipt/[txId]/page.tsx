@@ -69,7 +69,7 @@ export default function KhataStockReceiptPage() {
         if (t._id === tx._id) break;
     }
 
-    const receiptNo = tx._id ? tx._id.slice(-8).toUpperCase() : 'RECEIPT';
+    const receiptNo = tx.receiptNumber !== undefined && tx.receiptNumber !== null ? String(tx.receiptNumber) : (tx._id ? tx._id.slice(-8).toUpperCase() : 'RECEIPT');
     const fileName = `Sale-Receipt-${(party.name || 'Party').replace(/\s+/g, '_')}-${receiptNo}.pdf`;
     const receiptUrl = typeof window !== 'undefined' ? window.location.href : '';
 

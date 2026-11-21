@@ -34,6 +34,7 @@ interface AvailableBike {
 
 interface KhataTransaction {
     _id: string;
+    receiptNumber?: number;
     date: string;
     type: 'STOCK_GIVEN' | 'PAYMENT' | 'EXCHANGE_RETURN' | 'REFUND';
     description: string;
@@ -818,7 +819,7 @@ export default function KhataDetailPage() {
                                         fontWeight: 700,
                                     }}
                                 >
-                                    #{recentSaleReceipt._id ? recentSaleReceipt._id.slice(-8).toUpperCase() : 'RECEIPT'}
+                                    #{recentSaleReceipt.receiptNumber !== undefined && recentSaleReceipt.receiptNumber !== null ? recentSaleReceipt.receiptNumber : (recentSaleReceipt._id ? recentSaleReceipt._id.slice(-8).toUpperCase() : 'RECEIPT')}
                                 </span>
                             </div>
                             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
@@ -1240,7 +1241,14 @@ export default function KhataDetailPage() {
                                                     {new Date(tx.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                 </td>
                                                 <td style={{ padding: '7px 10px' }}>
-                                                    <div style={{ fontWeight: 500 }}>{tx.description}</div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                                                        <span style={{ fontWeight: 500 }}>{tx.description}</span>
+                                                        {tx.type === 'STOCK_GIVEN' && tx.receiptNumber !== undefined && tx.receiptNumber !== null && (
+                                                            <span style={{ fontSize: '0.7rem', background: 'rgba(16,185,129,0.12)', color: '#059669', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                                                                Receipt #{tx.receiptNumber}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     {tx.items && tx.items.length > 0 && (
                                                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.15rem' }}>
                                                             {tx.items.map((item, i) => (

@@ -125,7 +125,7 @@ export function formatKhataReceiptWhatsAppMessage(
         month: 'long',
         year: 'numeric',
     });
-    const receiptNo = tx._id.slice(-8).toUpperCase();
+    const receiptNo = (tx as any).receiptNumber !== undefined && (tx as any).receiptNumber !== null ? String((tx as any).receiptNumber) : tx._id.slice(-8).toUpperCase();
 
     const lines = [
         `🏍️ *HONDA 3S — SALE RECEIPT*`,

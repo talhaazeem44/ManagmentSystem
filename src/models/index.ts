@@ -530,6 +530,7 @@ export interface IKhataItem {
 
 export interface IKhataTransaction {
     _id?: string;
+    receiptNumber?: number;
     date: Date;
     type: 'STOCK_GIVEN' | 'PAYMENT' | 'EXCHANGE_RETURN' | 'REFUND';
     description: string;
@@ -552,6 +553,7 @@ export interface IKhataParty {
 }
 
 const KhataTransactionSchema = new Schema<IKhataTransaction>({
+    receiptNumber: { type: Number },
     date: { type: Date, default: Date.now },
     type: { type: String, enum: ['STOCK_GIVEN', 'PAYMENT', 'EXCHANGE_RETURN', 'REFUND'], required: true },
     description: { type: String, required: true },

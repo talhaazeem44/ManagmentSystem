@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import { KhataParty, Bike } from '@/models';
 import { getKhataMargin } from '@/lib/constants';
 import { resolveTransactionDate } from '@/lib/dates';
+import { getNextKhataReceiptNumber } from '@/lib/khataReceipt';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     await dbConnect();
@@ -106,12 +107,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
     if (!description) return NextResponse.json({ message: 'description required' }, { status: 400 });
 
+    const receiptNumber = body.type === 'STOCK_GIVEN' ? await getNextKhataReceiptNumber() : undefined;
+
     const party = await KhataParty.findByIdAndUpdate(
         id,
         {
             $push: {
                 transactions: {
                     type: body.type,
+                    receiptNumber,
                     description,
                     amount,
                     margin: margin || 0,
