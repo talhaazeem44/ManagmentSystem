@@ -644,3 +644,35 @@ const MechanicSchema = new Schema<IMechanic>({
 }, { timestamps: true });
 
 export const Mechanic: Model<IMechanic> = models.Mechanic || mongoose.model<IMechanic>('Mechanic', MechanicSchema);
+
+// ── Advance Salary ────────────────────────────────────────────────────────────
+// Records advance salary payments given to staff members (users). These are
+// separate from regular Expenses so they can be tracked per-staff and are shown
+// on a dedicated advance-salary ledger where outstanding advances are visible.
+export interface IAdvanceSalary {
+    _id?: string;
+    staffName: string;          // Free-text name (not tied to User._id — simpler)
+    amount: number;
+    deductFrom: 'CASH' | 'MARGIN'; // Which pool the money came from
+    note?: string;
+    date: Date;
+    // Whether the advance has been recovered (deducted from future salary)
+    recovered: boolean;
+    recoveredAt?: Date;
+    recoveredNote?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+const AdvanceSalarySchema = new Schema<IAdvanceSalary>({
+    staffName: { type: String, required: true, trim: true },
+    amount: { type: Number, required: true },
+    deductFrom: { type: String, enum: ['CASH', 'MARGIN'], required: true, default: 'CASH' },
+    note: { type: String },
+    date: { type: Date, default: Date.now },
+    recovered: { type: Boolean, default: false },
+    recoveredAt: { type: Date },
+    recoveredNote: { type: String },
+}, { timestamps: true });
+
+export const AdvanceSalary: Model<IAdvanceSalary> = models.AdvanceSalary || mongoose.model<IAdvanceSalary>('AdvanceSalary', AdvanceSalarySchema);

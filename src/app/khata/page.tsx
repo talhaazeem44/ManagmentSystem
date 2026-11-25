@@ -78,6 +78,8 @@ export default function KhataListPage() {
     };
 
     const totalOutstanding = parties.reduce((s, p) => s + Math.max(0, p.balance), 0);
+    const totalCreditAll = parties.reduce((s, p) => s + p.totalCredit, 0);
+    const totalDebitAll = parties.reduce((s, p) => s + p.totalDebit, 0);
 
     return (
         <DashboardLayout>
@@ -92,6 +94,22 @@ export default function KhataListPage() {
                     <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
                         {showForm ? 'Cancel' : '➕ Add Party'}
                     </button>
+                </div>
+
+                {/* Summary Stats */}
+                <div className="grid-3" style={{ marginBottom: '1.5rem' }}>
+                    {[
+                        { label: 'Total Given (Debit)', value: totalDebitAll, color: '#ef4444', icon: '📤' },
+                        { label: 'Total Received (Credit)', value: totalCreditAll, color: '#10b981', icon: '📥' },
+                        { label: 'Total Outstanding', value: totalOutstanding, color: '#f59e0b', icon: '⚖️' },
+                    ].map(({ label, value, color, icon }) => (
+                        <div key={label} className="card" style={{ padding: '1.1rem' }}>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                <span>{icon}</span> {label}
+                            </div>
+                            <div style={{ fontSize: '1.4rem', fontWeight: 700, color }}>Rs. {value.toLocaleString()}</div>
+                        </div>
+                    ))}
                 </div>
 
                 {showForm && (

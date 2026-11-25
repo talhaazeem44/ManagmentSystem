@@ -26,6 +26,7 @@ export default function DashboardLayout({
         { href: '/reports', label: 'Reports', icon: '📈' },
         { href: '/profit', label: 'Profit', icon: '💰' },
         { href: '/expenses', label: 'Expenses', icon: '💸' },
+        { href: '/advance-salary', label: 'Advance Salary', icon: '💰' },
         { href: '/khata', label: 'Ledgers', icon: '📒' },
         { href: '/used-bikes', label: 'Used Bikes', icon: '🔁' },
     ];
